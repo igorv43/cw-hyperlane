@@ -115,24 +115,7 @@ deploy:
 
 ## 2. Upload Contract Codes
 
-You can upload contract codes from local environment or from [Github](https://github.com/many-things/cw-hyperlane/releases).
-
-### Local
-
-```bash
-yarn install
-
-# Build contracts from local environment
-make optimize
-# Run compatibility test
-make check
-
-# This command will create one file:
-# - context with artifacts (default path: {project-root}/context/terraclassic.json)
-yarn cw-hpl upload local -n terraclassic
-```
-
-### Remote (Github)
+You must use the original contract codes from [Github](https://github.com/many-things/cw-hyperlane/releases).
 
 ```bash
 yarn install

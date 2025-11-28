@@ -82,7 +82,25 @@ You can easily get the bech32 address by running the commands below (first setup
 
 > Don't forget to setup deploy settings below
 
-Example `config.yaml` file for Terra Classic:
+**📁 Configuration Templates Available:**
+
+This repository includes ready-to-use configuration templates:
+- `config-testnet.yaml` - Configuration for Terra Classic Testnet
+- `config-mainnet.yaml` - Configuration for Terra Classic Mainnet
+
+You can copy one of these files as a starting point:
+
+```bash
+# For Testnet
+cp config-testnet.yaml config.yaml
+
+# Or for Mainnet
+cp config-mainnet.yaml config.yaml
+```
+
+Then edit the `config.yaml` file with your specific settings (private key, addresses, etc.).
+
+### Example `config.yaml` file for Terra Classic:
 
 ```yaml
 networks:

@@ -10,7 +10,53 @@
 
 ### Setting Up Your Wallet
 
-It is recommended to use the same account for all networks. You can easily get the bech32 address by running the commands below (first setup `config.yaml`):
+It is recommended to use the same account for all networks.
+
+#### Generating Private Key from Existing Wallet
+
+If you already have a Terra Classic wallet with a mnemonic phrase, you can export the private key in hexadecimal format to use in the configuration:
+
+```bash
+# Step 1: Recover your wallet using the mnemonic
+terrad keys add hyperlane-validator --recover --keyring-backend file
+
+# You will be prompted to enter your mnemonic phrase
+> Enter your bip39 mnemonic
+# Example: coffee table mountain river sunset ocean forest digital cloud brave wisdom happy journey frozen treasure robot galaxy planet crystal silver moon star universe magic
+
+# Enter and confirm a keyring passphrase
+Enter keyring passphrase (attempt 1/3):
+Re-enter keyring passphrase:
+
+# Output will show your address information:
+- address: terra1abc123def456ghi789jkl012mno345pqr678st
+  name: hyperlane-validator
+  pubkey: '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Ax1Y2Z3..."}'
+  type: local
+```
+
+```bash
+# Step 2: Export the private key in unarmored hexadecimal format
+terrad keys export hyperlane-validator --unarmored-hex --unsafe --keyring-backend file
+
+WARNING: The private key will be exported as an unarmored hexadecimal string. USE AT YOUR OWN RISK. Continue? [y/N]: y
+
+# Enter your keyring passphrase
+Enter keyring passphrase (attempt 1/3):
+
+# Output will be your private key in hexadecimal format (64 characters)
+# Example: 1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890
+```
+
+**⚠️ SECURITY WARNING:**
+- Never share your mnemonic phrase or private key with anyone
+- Never commit private keys to version control (Git)
+- Store your keys securely (use password managers or hardware wallets)
+- The private key shown above is for **EXAMPLE ONLY** - use your real key in config files
+
+#### Getting Addresses from Existing Keys
+
+You can easily get the bech32 address by running the commands below (first setup `config.yaml`):
 
 - Get address from private key:  
   ```bash

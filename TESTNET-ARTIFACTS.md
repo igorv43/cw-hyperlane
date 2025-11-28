@@ -79,7 +79,7 @@ When creating a governance proposal to instantiate a contract, use this module a
   "msg": {
     "hrp": "terra",
     "domain": 1325,
-    "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+    "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
   }
 }
 ```

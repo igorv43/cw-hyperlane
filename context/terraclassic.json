@@ -1,0 +1,25 @@
+{
+  "artifacts": {
+    "hpl_mailbox": 1981,
+    "hpl_validator_announce": 1982,
+    "hpl_ism_aggregate": 1983,
+    "hpl_ism_multisig": 1984,
+    "hpl_ism_pausable": 1985,
+    "hpl_ism_routing": 1986,
+    "hpl_igp": 1987,
+    "hpl_hook_aggregate": 1988,
+    "hpl_hook_fee": 1989,
+    "hpl_hook_merkle": 1990,
+    "hpl_hook_pausable": 1991,
+    "hpl_hook_routing": 1992,
+    "hpl_hook_routing_custom": 1993,
+    "hpl_hook_routing_fallback": 1994,
+    "hpl_test_mock_hook": 1995,
+    "hpl_test_mock_ism": 1996,
+    "hpl_test_mock_msg_receiver": 1997,
+    "hpl_igp_oracle": 1998,
+    "hpl_warp_cw20": 1999,
+    "hpl_warp_native": 2000
+  },
+  "deployments": {}
+}

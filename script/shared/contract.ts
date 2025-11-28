@@ -24,32 +24,7 @@ export async function deployContract<T extends ContractNames>(
   try {
     const codeId = ctx.artifacts[contractName];
 
-    const msg = MsgInstantiateContract.fromJSON({
-      sender: injective_signer,
-      admin: injective_signer,
-      codeId: ctx.artifacts[contractName],
-      msg: initMsg,
-      label: `cw-hpl: ${contractName}`,
-    });
-
-    const resp = await injective.broadcast({
-      msgs: msg,
-    });
-
-    const instantiateEvent = resp.events!.find(
-      (event) => event.type === 'cosmwasm.wasm.v1.EventContractInstantiated',
-    );
-
-    const address = JSON.parse(
-      new TextDecoder().decode(instantiateEvent.attributes[2].value),
-    );
-
-    return {
-      type: contractName,
-      address,
-      hexed: extractByte32AddrFromBech32(address),
-    };
-
+    
     const res = await wasm.instantiate(
       signer,
       codeId,
@@ -125,24 +100,7 @@ export async function executeMultiMsg(
     ]),
   );
 
-  let executeMessages = msgs.map((v) => MsgExecuteContract.fromJSON({
-    sender: injective_signer,
-    contractAddress: v.contract.address,
-    msg: v.msg,
-  }));
-
-  // avoid exceeding block gas limit
-  const CHUNK_SIZE = 20;
-  while (executeMessages.length > 0) {
-    const chunk = executeMessages.splice(0, CHUNK_SIZE);
-    const resp = await injective.broadcast({
-      msgs: chunk
-    });
-    console.log({resp});
-  }
-
-  // @ts-ignore
-  return;
+  
 
   const res = await wasm.executeMultiple(
     signer,

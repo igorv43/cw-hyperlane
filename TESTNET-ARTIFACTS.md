@@ -151,7 +151,7 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 
 - **Network**: Terra Classic Testnet (rebel-2)
 - **Domain**: 1325
-- **Owner/Admin**: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+- **Owner/Admin**: terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n (Governance Module)
 - **Deployment Date**: November 28, 2025
 
 ### Contract Instances
@@ -165,13 +165,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 {
   "hrp": "terra",
   "domain": 1325,
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1mjdm53je88ns0zj23tm0ra56dwx5xv74qvgnw9clxfsaz54ztnhqd69lqw`
-- **Hex Address**: `dc9bba465939e7078a4a8af6f1f69a6b8d4333d5031137171f3261d152a25cee`
+- **Address**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
+- **Hex Address**: `18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b`
 
 ---
 
@@ -183,13 +183,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 ```json
 {
   "hrp": "terra",
-  "mailbox": "terra1mjdm53je88ns0zj23tm0ra56dwx5xv74qvgnw9clxfsaz54ztnhqd69lqw"
+  "mailbox": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1d7g4g60v2prh46nx6kj03qntgr456ck0swtsfcq0gc0snm88h3vq30z5km`
-- **Hex Address**: `6f915469ec50477aea66d5a4f8826b40eb4d62cf839704e00f461f09ece7bc58`
+- **Address**: `terra10szy9ppjpgt8xk3tkywu3dhss8s5scsga85f4cgh452p6mwd092qdzfyup`
+- **Hex Address**: `7c044284320a16735a2bb11dc8b6f081e1486208e9e89ae117ad141d6dcd7954`
 
 ---
 
@@ -200,13 +200,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1mpu46t6wf0vajldup3q2k7damyp34tdf99aljyrwakuh27vdxh7sayd7yf`
-- **Hex Address**: `d8795d2f4e4bd9d97dbc0c40ab79bdd9031aada9297bf9106eedb975798d35fd`
+- **Address**: `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`
+- **Hex Address**: `18d6fb643be899d66edc8305aa1cbfa1115d8256a9679581205ae7b4a895c9b6`
 
 ---
 
@@ -217,13 +217,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra17vguen3eqtgfgy4dvrhuqhr20wj9cdpunwzxflgph9xpekeaujzq8x25nt`
-- **Hex Address**: `f311ccce3902d09412ad60efc05c6a7ba45c343c9b8464fd01b94c1cdb3de484`
+- **Address**: `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`
+- **Hex Address**: `6fbb4504dc8bc2c218740f16f482877d2ef608f16665e5543034712af292a3c`
 
 ---
 
@@ -234,23 +234,23 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "isms": [
     {
       "domain": 97,
-      "address": "terra1mpu46t6wf0vajldup3q2k7damyp34tdf99aljyrwakuh27vdxh7sayd7yf"
+      "address": "terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv"
     },
     {
       "domain": 1399811150,
-      "address": "terra17vguen3eqtgfgy4dvrhuqhr20wj9cdpunwzxflgph9xpekeaujzq8x25nt"
+      "address": "terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a"
     }
   ]
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1ptsc9k7lx60j3t665rupcjvuetxkw9atxsh6rgy5cwv347xgtelslwx2s9`
-- **Hex Address**: `0ae182dbdf369f28af5aa0f81c499ccacd6717ab342fa1a094c3991af8c85e7f`
+- **Address**: `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh`
+- **Hex Address**: `bd60d3a486bb73e6e0ae290a2be159086e887a80f08494456924f67030398cbf`
 
 ---
 
@@ -261,13 +261,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "mailbox": "terra1mjdm53je88ns0zj23tm0ra56dwx5xv74qvgnw9clxfsaz54ztnhqd69lqw"
+  "mailbox": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1pkc27ekty0kc02nw2emc2x5xrpyryjk427cqq9lulpus6yr8024qr2wkzs`
-- **Hex Address**: `0db0af66cb23ed87aa6e5677851a861848324ad557b00017fcf8790d10677aaa`
+- **Address**: `terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df`
+- **Hex Address**: `3152bdec927acb3783fe38d4c6a6c582cc8a0b4c9ba6e91365df824d7d8611ff`
 
 ---
 
@@ -279,16 +279,16 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 ```json
 {
   "hrp": "terra",
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "gas_token": "uluna",
-  "beneficiary": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "beneficiary": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "default_gas_usage": "100000"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1vneg8slgymmffh8xhdvuvccakhw2f5ura2n0d9adpp97alldrusqld8jyg`
-- **Hex Address**: `64f283c3e826f694dce6bb59c6631db5dca4d383eaa6f697ad084beeffed1f20`
+- **Address**: `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`
+- **Hex Address**: `9f9e88b11e3233a01f75a8f8ddd49a4ef59f860174109da43784579c883db6b1`
 
 ---
 
@@ -299,13 +299,13 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1mejzprhvkfgl6tyxjv5d6txaf7ue9tcjyr4uwdc3wp3ka8v59resfd8ggw`
-- **Hex Address**: `de64208eecb251fd2c869328dd2cdd4fb992af1220ebc7371170636e9d9428f3`
+- **Address**: `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`
+- **Hex Address**: `3ac80cf8a4b2fb8d063dfb229a96cfd1813ea81452dc4ea7e315280b74b9ddc7`
 
 ---
 
@@ -316,17 +316,17 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "hooks": [
-    "terra1pkc27ekty0kc02nw2emc2x5xrpyryjk427cqq9lulpus6yr8024qr2wkzs",
-    "terra1vneg8slgymmffh8xhdvuvccakhw2f5ura2n0d9adpp97alldrusqld8jyg"
+    "terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df",
+    "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
   ]
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1l630ywz0w0sdfp37z60dfnndezzc402gvaxkja5pztu3grk025js2wzv28`
-- **Hex Address**: `fea2f2384f73e0d4863e169ed4ce6dc8858abd48674d69768112f9140ecf5525`
+- **Address**: `terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh`
+- **Hex Address**: `a825b2bfd4d9db2e42abf9f5fc526a34e0ce745987e8a6009c1683becab6a428`
 - **Note**: Set as 'default_hook' in the Mailbox
 
 ---
@@ -338,14 +338,14 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "paused": false
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1lm4gpqjjk5mlpah70ql89un6cvysdxxp56n54vrrl3klwjymce5q95cuta`
-- **Hex Address**: `feea808252b537f0f6fe783e72f27ac3090698c1a6a74ab063fc6df7489bc668`
+- **Address**: `terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l`
+- **Hex Address**: `93eb6eef8e84118b4bd42a9d4646ff5af7f07f85c02c2630d092ce30117182c3`
 
 ---
 
@@ -356,7 +356,7 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "fee": {
     "denom": "uluna",
     "amount": "283215"
@@ -365,8 +365,8 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1tnyfwmpxg0epqswp4r436q4wkd3u8m7fh2hmmttlwx73vvfxgqgqasn82h`
-- **Hex Address**: `5cc8976c2643f21041c1a8eb1d02aeb363c3efc9baafbdad7f71bd1631264010`
+- **Address**: `terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j`
+- **Hex Address**: `8934c864640024f2f385ef51639ad0ab46548d417987176913434526c74abd2b`
 - **Note**: Fee: 0.283215 LUNC per message
 
 ---
@@ -378,17 +378,17 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 **Instantiation Parameters**:
 ```json
 {
-  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "hooks": [
-    "terra1lm4gpqjjk5mlpah70ql89un6cvysdxxp56n54vrrl3klwjymce5q95cuta",
-    "terra1tnyfwmpxg0epqswp4r436q4wkd3u8m7fh2hmmttlwx73vvfxgqgqasn82h"
+    "terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l",
+    "terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j"
   ]
 }
 ```
 
 **Deployed Contract**:
-- **Address**: `terra1rg5tc6xlq2mq5x6jpfv7r3zpnekwasehnrava22vsanh2egmlj9s59z93u`
-- **Hex Address**: `1a28bc68df02b60a1b520a59e1c4419e6ceec33798facea94c876775651bfc8b`
+- **Address**: `terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj`
+- **Hex Address**: `3343dbbd999bd51909a7781cf9d8359b646255be450852b6e14bb2b277fa06a4`
 - **Note**: Set as 'required_hook' in the Mailbox
 
 ---
@@ -397,18 +397,18 @@ Below are the contracts that have been instantiated on Terra Classic Testnet for
 
 ```json
 {
-  "hpl_mailbox": "terra1mjdm53je88ns0zj23tm0ra56dwx5xv74qvgnw9clxfsaz54ztnhqd69lqw",
-  "hpl_validator_announce": "terra1d7g4g60v2prh46nx6kj03qntgr456ck0swtsfcq0gc0snm88h3vq30z5km",
-  "hpl_ism_multisig_bsc": "terra1mpu46t6wf0vajldup3q2k7damyp34tdf99aljyrwakuh27vdxh7sayd7yf",
-  "hpl_ism_multisig_sol": "terra17vguen3eqtgfgy4dvrhuqhr20wj9cdpunwzxflgph9xpekeaujzq8x25nt",
-  "hpl_ism_routing": "terra1ptsc9k7lx60j3t665rupcjvuetxkw9atxsh6rgy5cwv347xgtelslwx2s9",
-  "hpl_hook_merkle": "terra1pkc27ekty0kc02nw2emc2x5xrpyryjk427cqq9lulpus6yr8024qr2wkzs",
-  "hpl_igp": "terra1vneg8slgymmffh8xhdvuvccakhw2f5ura2n0d9adpp97alldrusqld8jyg",
-  "hpl_igp_oracle": "terra1mejzprhvkfgl6tyxjv5d6txaf7ue9tcjyr4uwdc3wp3ka8v59resfd8ggw",
-  "hpl_hook_aggregate_default": "terra1l630ywz0w0sdfp37z60dfnndezzc402gvaxkja5pztu3grk025js2wzv28",
-  "hpl_hook_pausable": "terra1lm4gpqjjk5mlpah70ql89un6cvysdxxp56n54vrrl3klwjymce5q95cuta",
-  "hpl_hook_fee": "terra1tnyfwmpxg0epqswp4r436q4wkd3u8m7fh2hmmttlwx73vvfxgqgqasn82h",
-  "hpl_hook_aggregate_required": "terra1rg5tc6xlq2mq5x6jpfv7r3zpnekwasehnrava22vsanh2egmlj9s59z93u"
+  "hpl_mailbox": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf",
+  "hpl_validator_announce": "terra10szy9ppjpgt8xk3tkywu3dhss8s5scsga85f4cgh452p6mwd092qdzfyup",
+  "hpl_ism_multisig_bsc": "terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv",
+  "hpl_ism_multisig_sol": "terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a",
+  "hpl_ism_routing": "terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh",
+  "hpl_hook_merkle": "terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df",
+  "hpl_igp": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+  "hpl_igp_oracle": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+  "hpl_hook_aggregate_default": "terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh",
+  "hpl_hook_pausable": "terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l",
+  "hpl_hook_fee": "terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j",
+  "hpl_hook_aggregate_required": "terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj"
 }
 ```
 

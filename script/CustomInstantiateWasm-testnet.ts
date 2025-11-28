@@ -19,7 +19,7 @@ function extractByte32AddrFromBech32(addr: string): string {
 const RPC = "https://rpc.luncblaze.com";
 const CHAIN_ID = "rebel-2";
 
-const ADMIN = "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze";
+const ADMIN = "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n";
 const OWNER = ADMIN;
 
 // GET FROM ENVIRONMENT — NEVER HARDCODE

@@ -194,14 +194,7 @@ yarn cw-hpl upload remote v0.0.6-rc8 -n terraclassic
 
 ## 3. Instantiate Contracts
 
-If you configured and uploaded contract codes correctly, you can deploy contracts with one simple command.
-
-```bash
-# This command will output two results:
-# - context + deployment    (default path: ./context/terraclassic.json)
-# - Hyperlane agent-config  (default path: ./context/terraclassic.config.json)
-yarn cw-hpl deploy -n terraclassic
-```
+Contract instantiation on Terra Classic is performed through a separate governance process and custom scripts.
 
 ### 📚 Additional Documentation
 

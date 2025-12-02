@@ -1,0 +1,118 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv",
+      "msg": {
+        "set_validators": {
+          "domain": 97,
+          "threshold": 2,
+          "validators": [
+            "242d8a855a8c932dec51f7999ae7d1e48b10c95e",
+            "f620f5e3d25a3ae848fec74bccae5de3edcd8796",
+            "1f030345963c54ff8229720dd3a711c15c554aeb"
+          ]
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a",
+      "msg": {
+        "set_validators": {
+          "domain": 1399811150,
+          "threshold": 1,
+          "validators": [
+            "d4ce8fa138d4e083fc0e480cca0dbfa4f5f30bd5"
+          ]
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+      "msg": {
+        "set_remote_gas_data_configs": {
+          "configs": [
+            {
+              "remote_domain": 97,
+              "token_exchange_rate": "1805936462255558",
+              "gas_price": "50000000"
+            },
+            {
+              "remote_domain": 1399811150,
+              "token_exchange_rate": "57675000000000000",
+              "gas_price": "1"
+            }
+          ]
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+      "msg": {
+        "router": {
+          "set_routes": {
+            "set": [
+              {
+                "domain": 97,
+                "route": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+              },
+              {
+                "domain": 1399811150,
+                "route": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+              }
+            ]
+          }
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf",
+      "msg": {
+        "set_default_ism": {
+          "ism": "terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh"
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf",
+      "msg": {
+        "set_default_hook": {
+          "hook": "terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh"
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf",
+      "msg": {
+        "set_required_hook": {
+          "hook": "terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj"
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Initial configuration of Hyperlane contracts for testnet multi-chain support",
+  "deposit": "10000000uluna",
+  "title": "Hyperlane Contracts Configuration - Testnet Multi-Chain",
+  "summary": "Proposal to configure Hyperlane contracts for BSC Testnet and Solana Testnet: set ISM validators (BSC 2/3, Solana 1/1), configure IGP Oracle for testnet chains, set IGP routes, configure default ISM and hooks (default and required) in Mailbox",
+  "expedited": false
+}

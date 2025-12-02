@@ -745,11 +745,210 @@ terrad tx gov vote <PROPOSAL_ID> no \
 
 ### Check Proposal Status
 
+#### Method 1: Using CLI (Basic Query)
+
 ```bash
 terrad query gov proposal <PROPOSAL_ID> \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 ```
+
+This command returns basic information about the proposal, including:
+- Proposal status (DepositPeriod, VotingPeriod, Passed, Rejected, etc.)
+- Voting results (tally)
+- Proposal messages
+- Important timestamps
+
+#### Method 2: Using the Complete Verification Script
+
+The `query-proposal-status.ts` script automatically verifies:
+1. **Proposal status** - Whether it was approved or not
+2. **Contract execution** - Whether all messages were executed correctly
+3. **Contract configurations** - Compares expected vs. actual values
+
+**Usage:**
+
+```bash
+npx tsx script/query-proposal-status.ts <PROPOSAL_ID>
+```
+
+**Example:**
+
+```bash
+npx tsx script/query-proposal-status.ts 1
+```
+
+**What the script verifies:**
+
+1. **ISM Multisig BSC (Domain 97)**
+   - Validators configured correctly
+   - Correct threshold (2/3)
+
+2. **ISM Multisig Solana (Domain 1399811150)**
+   - Validators configured correctly
+   - Correct threshold (1/1)
+
+3. **IGP Oracle**
+   - Exchange rates configured
+   - Gas prices configured
+   - For all supported domains
+
+4. **IGP Routes**
+   - Routes pointing to the correct Oracle
+   - For all supported domains
+
+5. **Mailbox Configuration**
+   - Default ISM configured
+   - Default Hook configured
+   - Required Hook configured
+
+6. **Hook Fee**
+   - Fee amount configured correctly
+
+7. **Hook Pausable**
+   - Pause status (should be unpaused normally)
+
+**Script Output:**
+
+The script displays:
+- ✅ for successful verifications
+- ❌ for failed verifications
+- Final summary with success/failure count
+
+**Example Output:**
+
+```
+================================================================================
+PROPOSAL AND CONTRACT EXECUTION VERIFICATION
+================================================================================
+Proposal ID: 1
+Chain ID: rebel-2
+Node: https://rpc.luncblaze.com:443
+
+📋 QUERYING PROPOSAL STATUS...
+────────────────────────────────────────────────────────────────────────────────
+Status: PROPOSAL_STATUS_PASSED
+Yes Votes: 1000000000
+No Votes: 0
+Abstentions: 0
+Veto: 0
+Voting End: 2024-01-15T10:00:00Z
+
+✅ PROPOSAL APPROVED
+
+================================================================================
+🔍 VERIFYING CONTRACT EXECUTION...
+================================================================================
+
+[1/7] Verifying ISM Multisig BSC (Domain 97)...
+✅ Configuration correct
+   Validators: 3
+   Threshold: 2
+   Match: ✅
+
+...
+
+📊 VERIFICATION SUMMARY
+================================================================================
+Proposal: 1
+Status: PROPOSAL_STATUS_PASSED
+Approved: Yes ✅
+
+Contracts verified: 7/7
+✅ ALL CONTRACTS WERE EXECUTED CORRECTLY!
+```
+
+#### Method 3: Manual Verification of Specific Contracts
+
+If you want to verify only a specific contract, you can use direct queries:
+
+**Verify ISM Multisig Validators:**
+
+```bash
+terrad query wasm contract-state smart <ISM_MULTISIG_ADDRESS> \
+  '{"multisig_ism":{"enrolled_validators":{"domain":97}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify IGP Oracle Configuration:**
+
+```bash
+terrad query wasm contract-state smart <IGP_ORACLE_ADDRESS> \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":97}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify Mailbox Default ISM:**
+
+```bash
+terrad query wasm contract-state smart <MAILBOX_ADDRESS> \
+  '{"mailbox":{"default_ism":{}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify Mailbox Default Hook:**
+
+```bash
+terrad query wasm contract-state smart <MAILBOX_ADDRESS> \
+  '{"mailbox":{"default_hook":{}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify Mailbox Required Hook:**
+
+```bash
+terrad query wasm contract-state smart <MAILBOX_ADDRESS> \
+  '{"mailbox":{"required_hook":{}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify Hook Fee:**
+
+```bash
+terrad query wasm contract-state smart <HOOK_FEE_ADDRESS> \
+  '{"fee_hook":{"fee":{}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+**Verify Pause Status:**
+
+```bash
+terrad query wasm contract-state smart <HOOK_PAUSABLE_ADDRESS> \
+  '{"pausable":{"pause_info":{}}}' \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+#### Verifying Proposal Message Execution
+
+After a proposal is approved, messages are executed automatically. To verify if there were any execution errors:
+
+1. **Check execution transaction logs:**
+
+```bash
+terrad query tx <TX_HASH> \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2
+```
+
+2. **Check proposal events:**
+
+```bash
+terrad query gov proposal <PROPOSAL_ID> \
+  --node https://rpc.luncblaze.com:443 \
+  --chain-id rebel-2 \
+  --output json | jq '.messages'
+```
+
+3. **Check execution height:**
+
+When a proposal is approved, it is executed in the next block. You can verify the execution height by comparing `voting_end_time` with the current block.
 
 ---
 

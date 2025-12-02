@@ -12,7 +12,7 @@ const CHAIN_ID = "rebel-2";
 const NODE = "https://rpc.luncblaze.com:443";
 
 // GET FROM ENVIRONMENT
-const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || "";
+const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || "a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6";
 
 // ---------------------------
 // CONTRACT ADDRESSES (TESTNET)

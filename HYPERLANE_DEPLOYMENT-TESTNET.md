@@ -1038,6 +1038,38 @@ mailbox: "0x18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b"
 merkleTreeHook: "0x3152bdec927acb3783fe38d4c6a6c582cc8a0b4c9ba6e91365df824d7d8611ff"
 ```
 
+**Para Warp Routes (interchainSecurityModule / messageIdMultisigIsm):**
+
+Os endereços hex dos ISM Multisig são usados quando você precisa referenciar o `interchainSecurityModule` em configurações de Warp Routes:
+
+**BSC Testnet (Domain 97):**
+```yaml
+interchainSecurityModule:
+  type: messageIdMultisigIsm
+  # O endereço hex do ISM Multisig BSC é:
+  address: "0x18d6fb643be899d66edc8305aa1cbfa1115d8256a9679581205ae7b4a895c9b6"
+  # Ou use a configuração com validadores:
+  validators:
+    - "242d8a855a8c932dec51f7999ae7d1e48b10c95e"
+    - "f620f5e3d25a3ae848fec74bccae5de3edcd8796"
+    - "1f030345963c54ff8229720dd3a711c15c554aeb"
+  threshold: 2
+```
+
+**Solana Testnet (Domain 1399811150):**
+```yaml
+interchainSecurityModule:
+  type: messageIdMultisigIsm
+  # O endereço hex do ISM Multisig Solana é:
+  address: "0x6fbb4504dc8bcb2c218740f16f482877d2ef608f16665e5543034712af292a3c"
+  # Ou use a configuração com validadores:
+  validators:
+    - "d4ce8fa138d4e083fc0e480cca0dbfa4f5f30bd5"
+  threshold: 1
+```
+
+**Nota:** Em configurações de Warp Routes, geralmente você especifica os `validators` e `threshold` diretamente, e o Hyperlane CLI cria ou referencia o ISM apropriado. O endereço hex acima é o endereço do contrato ISM Multisig instanciado na Terra Classic Testnet.
+
 ---
 
 ## 7️⃣ Troubleshooting

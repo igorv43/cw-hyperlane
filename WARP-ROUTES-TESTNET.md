@@ -11,6 +11,7 @@ This guide provides step-by-step instructions for creating Warp Routes to connec
 - [Creating Warp Routes](#creating-warp-routes)
 - [Examples](#examples)
 - [Verification](#verification)
+- [Managing Validators on Existing Warp Routes](#managing-validators-on-existing-warp-routes)
 
 ---
 
@@ -825,6 +826,216 @@ npm install -g @hyperlane-xyz/cli@latest
 ```
 
 3. **Verify official contracts**: The Hyperlane CLI automatically uses the official contract addresses from the [Hyperlane Registry](https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/bsctestnet). No additional configuration files are needed.
+
+---
+
+## Managing Validators on Existing Warp Routes
+
+After deploying a warp route, you may need to add or remove validators from the Interchain Security Module (ISM). The `hyperlane warp apply` command allows you to update validator configurations for existing warp routes.
+
+### Understanding warp.json
+
+The `warp.json` file is a registry of deployed warp route tokens. It lists all the tokens that have been deployed across different chains, allowing you to reference them when applying validator changes.
+
+### Creating warp.json
+
+Create a `warp.json` file that lists your deployed tokens:
+
+```bash
+cat > warp/warp.json << 'EOF'
+{
+  "tokens": [
+    {
+      "chainName": "bsctestnet",
+      "standard": "ERC20",
+      "addressOrDenom": "0xc298796dDed03429F308a164a41B4D95e2f6061D",
+      "name": "Wrapped Terra Classic LUNC",
+      "symbol": "wLUNC",
+      "decimals": 6
+    },
+    {
+      "chainName": "bsctestnet",
+      "standard": "ERC20",
+      "addressOrDenom": "0xANOTHER_TOKEN_ADDRESS",
+      "name": "ZTCC Token",
+      "symbol": "ZTCC",
+      "decimals": 6
+    }
+  ]
+}
+EOF
+```
+
+**File Structure:**
+- `tokens`: Array of token objects
+- `chainName`: The chain where the token is deployed (e.g., `bsctestnet`, `sepolia`)
+- `standard`: Token standard (`ERC20` for EVM chains, `CW20` for Cosmos chains)
+- `addressOrDenom`: The contract address (EVM) or denom (Cosmos) of the deployed warp token
+- `name`: Full token name
+- `symbol`: Token symbol
+- `decimals`: Number of decimal places
+
+### Using hyperlane warp apply
+
+The `hyperlane warp apply` command applies validator configuration changes to existing warp routes. It uses:
+- `--config`: Your warp configuration file (same as used for deployment)
+- `--warp`: Path to the `warp.json` file containing deployed tokens
+
+**Basic Command:**
+```bash
+hyperlane warp apply \
+  --config warp-bsc-testnet.yaml \
+  --warp ./warp/warp.json
+```
+
+### Adding Validators
+
+To add validators to an existing warp route, update your `warp-bsc-testnet.yaml` configuration file with the new validators:
+
+```yaml
+bsctestnet:
+  isNft: false
+  type: synthetic
+  name: "Wrapped Terra Classic LUNC"
+  symbol: "wLUNC"
+  decimals: 6
+  owner: "0xYOUR_BSC_ADDRESS"
+  interchainSecurityModule:
+    type: messageIdMultisigIsm
+    validators:
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"  # Existing validator
+      - "0xNEW_VALIDATOR_ADDRESS_1"                    # New validator
+      - "0xNEW_VALIDATOR_ADDRESS_2"                    # New validator
+    threshold: 2  # Update threshold if needed (e.g., 2 of 3)
+```
+
+Then apply the changes:
+
+```bash
+hyperlane warp apply \
+  --config warp-bsc-testnet.yaml \
+  --warp ./warp/warp.json \
+  --private-key 0xYOUR_PRIVATE_KEY
+```
+
+### Removing Validators
+
+To remove validators, simply remove them from the `validators` array in your config file:
+
+```yaml
+bsctestnet:
+  # ... other config ...
+  interchainSecurityModule:
+    type: messageIdMultisigIsm
+    validators:
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"  # Keep this one
+      # Removed: "0xOLD_VALIDATOR_ADDRESS"
+    threshold: 1  # Update threshold (e.g., 1 of 1)
+```
+
+Then apply:
+
+```bash
+hyperlane warp apply \
+  --config warp-bsc-testnet.yaml \
+  --warp ./warp/warp.json \
+  --private-key 0xYOUR_PRIVATE_KEY
+```
+
+### Updating Threshold
+
+You can also update the threshold (minimum number of signatures required) without changing validators:
+
+```yaml
+bsctestnet:
+  # ... other config ...
+  interchainSecurityModule:
+    type: messageIdMultisigIsm
+    validators:
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"
+      - "0xf620f5e3d25a3ae848fec74bccae5de3edcd8796"
+      - "1f030345963c54ff8229720dd3a711c15c554aeb"
+    threshold: 3  # Changed from 2 to 3 (now requires all 3 validators)
+```
+
+### Complete Example
+
+**1. Create warp.json with your deployed token:**
+
+```bash
+mkdir -p warp
+cat > warp/warp.json << 'EOF'
+{
+  "tokens": [
+    {
+      "chainName": "bsctestnet",
+      "standard": "ERC20",
+      "addressOrDenom": "0xc298796dDed03429F308a164a41B4D95e2f6061D",
+      "name": "Wrapped Terra Classic LUNC",
+      "symbol": "wLUNC",
+      "decimals": 6
+    }
+  ]
+}
+EOF
+```
+
+**2. Update your config file with new validators:**
+
+```bash
+cat > warp-bsc-testnet.yaml << 'EOF'
+bsctestnet:
+  isNft: false
+  type: synthetic
+  name: "Wrapped Terra Classic LUNC"
+  symbol: "wLUNC"
+  decimals: 6
+  owner: "0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"
+  interchainSecurityModule:
+    type: messageIdMultisigIsm
+    validators:
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"
+      - "0xNEW_VALIDATOR_ADDRESS"
+    threshold: 2
+EOF
+```
+
+**3. Apply the changes:**
+
+```bash
+hyperlane warp apply \
+  --config warp-bsc-testnet.yaml \
+  --warp ./warp/warp.json \
+  --private-key 0xYOUR_PRIVATE_KEY
+```
+
+### Important Notes
+
+1. **Token Address**: The `addressOrDenom` in `warp.json` must match the actual deployed warp token contract address on the chain.
+
+2. **Chain Name**: Use the correct chain name format:
+   - `bsctestnet` (all lowercase) for BSC Testnet
+   - `sepolia` for Ethereum Sepolia
+   - `solanatestnet` for Solana Testnet
+
+3. **Threshold**: Always ensure the threshold is valid for the number of validators:
+   - If you have 3 validators, threshold can be 1, 2, or 3
+   - Threshold cannot exceed the number of validators
+
+4. **Private Key**: The private key must be for an account that has permission to update the warp route (typically the owner address).
+
+5. **Multiple Tokens**: You can list multiple tokens in `warp.json` if you have deployed multiple warp routes. The `hyperlane warp apply` command will apply changes to all matching tokens.
+
+### Verifying Changes
+
+After applying validator changes, verify them:
+
+```bash
+# Check the ISM configuration on the warp route
+hyperlane warp read \
+  --address 0xc298796dDed03429F308a164a41B4D95e2f6061D \
+  --chain bsctestnet
+```
 
 ---
 

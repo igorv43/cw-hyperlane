@@ -46,6 +46,13 @@ Before you begin, ensure you have:
 
 4. **Hyperlane contracts deployed** (see `TESTNET-ARTIFACTS.md`)
 
+5. **Hyperlane Agent Config File**: The Hyperlane CLI requires an `agent-config.json` file that contains the addresses of Hyperlane contracts on BSC Testnet. This file tells the CLI where to find the Mailbox, ISM, and other contracts.
+
+   **⚠️ IMPORTANT**: If you get the error `No addresses found for chain bscTestnet`, you need to:
+   - Ensure Hyperlane contracts are deployed on BSC Testnet
+   - Create or update an `agent-config.json` file with BSC Testnet contract addresses
+   - Point the CLI to this config file using `--agent-config` flag or place it in the default location
+
 ---
 
 ## Installing Hyperlane CLI
@@ -794,6 +801,117 @@ Error: invalid validator address format
 - 40-character hexadecimal strings
 - Without `0x` prefix in YAML
 - Lowercase letters
+
+### Issue: No addresses found for chain bscTestnet
+
+```
+Error: No addresses found for chain bscTestnet
+```
+
+**Cause**: The Hyperlane CLI cannot find the Hyperlane contract addresses on BSC Testnet. This happens when:
+1. Hyperlane contracts are not deployed on BSC Testnet
+2. The `agent-config.json` file is missing or doesn't contain BSC Testnet addresses
+3. The CLI cannot locate the config file
+
+**Solution**: You need to create an `agent-config.json` file with BSC Testnet contract addresses.
+
+#### Step 1: Verify Hyperlane Contracts on BSC Testnet
+
+First, ensure that Hyperlane contracts are deployed on BSC Testnet. You need:
+- Mailbox contract address
+- ValidatorAnnounce contract address
+- ISM contracts addresses
+- IGP contract addresses
+- Hook contract addresses
+
+If contracts are not deployed, you need to deploy them first using the Hyperlane deployment tools.
+
+#### Step 2: Create agent-config.json
+
+Create a file named `agent-config.json` in your working directory or in `~/.hyperlane/`:
+
+```bash
+cat > agent-config.json << 'EOF'
+{
+  "chains": {
+    "bscTestnet": {
+      "name": "bscTestnet",
+      "chainId": 97,
+      "domainId": 97,
+      "protocol": "ethereum",
+      "isTestnet": true,
+      "displayName": "BSC Testnet",
+      "nativeToken": {
+        "symbol": "BNB",
+        "name": "Binance Coin",
+        "decimals": 18
+      },
+      "rpcUrls": [
+        {
+          "http": "https://data-seed-prebsc-1-s1.binance.org:8545"
+        },
+        {
+          "http": "https://data-seed-prebsc-2-s1.binance.org:8545"
+        }
+      ],
+      "blockExplorers": [
+        {
+          "name": "BscScan",
+          "url": "https://testnet.bscscan.com",
+          "apiUrl": "https://api-testnet.bscscan.com/api",
+          "family": "etherscan"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 3,
+        "reorgPeriod": 1
+      },
+      "mailbox": "0xYOUR_BSC_MAILBOX_ADDRESS",
+      "validatorAnnounce": "0xYOUR_BSC_VALIDATOR_ANNOUNCE_ADDRESS",
+      "interchainGasPaymaster": "0xYOUR_BSC_IGP_ADDRESS",
+      "merkleTreeHook": "0xYOUR_BSC_MERKLE_HOOK_ADDRESS",
+      "interchainSecurityModule": "0xYOUR_BSC_ISM_ADDRESS",
+      "messageIdMultisigIsmFactory": "0xYOUR_BSC_MESSAGE_ID_MULTISIG_ISM_FACTORY",
+      "merkleRootMultisigIsmFactory": "0xYOUR_BSC_MERKLE_ROOT_MULTISIG_ISM_FACTORY"
+    }
+  }
+}
+EOF
+```
+
+**⚠️ IMPORTANT**: Replace all `0xYOUR_BSC_*_ADDRESS` placeholders with actual contract addresses from your BSC Testnet deployment.
+
+#### Step 3: Use the Config File
+
+You can specify the config file location in two ways:
+
+**Option A: Use `--agent-config` flag**
+```bash
+hyperlane warp deploy \
+  --config warp-bsc-testnet.yaml \
+  --agent-config ./agent-config.json \
+  --private-key 0xYOUR_PRIVATE_KEY
+```
+
+**Option B: Place in default location**
+The CLI looks for config files in:
+- `./agent-config.json` (current directory)
+- `~/.hyperlane/agent-config.json` (home directory)
+
+If you place the file in one of these locations, you don't need the `--agent-config` flag.
+
+#### Step 4: Verify Config File
+
+You can verify your config file is being read correctly:
+
+```bash
+hyperlane config show --agent-config ./agent-config.json
+```
+
+This should display the chain configuration including BSC Testnet.
+
+**Note**: If you don't have Hyperlane contracts deployed on BSC Testnet yet, you'll need to deploy them first. The Hyperlane CLI can help with this, or you can use the official Hyperlane deployment scripts.
 
 ---
 

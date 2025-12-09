@@ -1,0 +1,57 @@
+{
+  "chains": {
+    "bscTestnet": {
+      "name": "bscTestnet",
+      "chainId": 97,
+      "domainId": 97,
+      "protocol": "ethereum",
+      "isTestnet": true,
+      "displayName": "BSC Testnet",
+      "nativeToken": {
+        "symbol": "BNB",
+        "name": "Binance Coin",
+        "decimals": 18
+      },
+      "rpcUrls": [
+        {
+          "http": "https://data-seed-prebsc-1-s1.binance.org:8545"
+        },
+        {
+          "http": "https://data-seed-prebsc-2-s1.binance.org:8545"
+        },
+        {
+          "http": "https://bsc-testnet.publicnode.com"
+        }
+      ],
+      "blockExplorers": [
+        {
+          "name": "BscScan",
+          "url": "https://testnet.bscscan.com",
+          "apiUrl": "https://api-testnet.bscscan.com/api",
+          "family": "etherscan"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 3,
+        "reorgPeriod": 1
+      },
+      "mailbox": "0xREPLACE_WITH_BSC_MAILBOX_ADDRESS",
+      "validatorAnnounce": "0xREPLACE_WITH_BSC_VALIDATOR_ANNOUNCE_ADDRESS",
+      "interchainGasPaymaster": "0xREPLACE_WITH_BSC_IGP_ADDRESS",
+      "merkleTreeHook": "0xREPLACE_WITH_BSC_MERKLE_HOOK_ADDRESS",
+      "interchainSecurityModule": "0xREPLACE_WITH_BSC_ISM_ADDRESS",
+      "messageIdMultisigIsmFactory": "0xREPLACE_WITH_BSC_MESSAGE_ID_MULTISIG_ISM_FACTORY",
+      "merkleRootMultisigIsmFactory": "0xREPLACE_WITH_BSC_MERKLE_ROOT_MULTISIG_ISM_FACTORY",
+      "aggregationIsmFactory": "0xREPLACE_WITH_BSC_AGGREGATION_ISM_FACTORY",
+      "aggregationHookFactory": "0xREPLACE_WITH_BSC_AGGREGATION_HOOK_FACTORY",
+      "proxyAdmin": "0xREPLACE_WITH_BSC_PROXY_ADMIN_ADDRESS",
+      "storageGasOracle": "0xREPLACE_WITH_BSC_STORAGE_GAS_ORACLE_ADDRESS",
+      "index": {
+        "from": 0,
+        "chunk": 100000
+      }
+    }
+  }
+}
+

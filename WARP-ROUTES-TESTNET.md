@@ -12,6 +12,7 @@ This guide provides step-by-step instructions for creating Warp Routes to connec
 - [Examples](#examples)
 - [Verification](#verification)
 - [Managing Validators on Existing Warp Routes](#managing-validators-on-existing-warp-routes)
+- [Creating a Multisig Safe Wallet](#creating-a-multisig-safe-wallet-recommended-for-production)
 
 ---
 
@@ -755,6 +756,366 @@ The `owner` address in the warp config:
 - Can update security settings
 - Can pause/unpause the warp
 - Should be a **secure multisig or governance address** in production
+
+---
+
+## Creating a Multisig Safe Wallet (Recommended for Production)
+
+For production deployments, it's **highly recommended** to use a multisig wallet (Safe) as the owner address instead of a single private key. This provides better security and requires multiple signatures for critical operations.
+
+### What is Safe?
+
+Safe (formerly Gnosis Safe) is a smart contract wallet that requires multiple signatures to execute transactions. It's the industry standard for managing funds and contracts securely.
+
+### Prerequisites
+
+- Python 3.7 or higher
+- pip (Python package manager)
+- BNB tokens in the deployer account (for gas fees)
+- Owner addresses ready (the accounts that will control the multisig)
+
+### Step 1: Install Safe CLI
+
+```bash
+pip install safe-cli
+```
+
+**Note**: If you encounter dependency warnings, they are usually safe to ignore. The CLI will still function correctly.
+
+### Step 2: Prepare Owner Addresses
+
+Collect the addresses of all accounts that will be owners of the multisig:
+
+```bash
+# Example owner addresses (replace with your actual addresses)
+OWNER1="0x867f9CE9F0D7218b016351CB6122406E6D247a5e"
+OWNER2="0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA"
+OWNER3="0xANOTHER_OWNER_ADDRESS"  # Add more as needed
+```
+
+### Step 3: Create the Multisig Safe
+
+**For BSC Testnet:**
+
+```bash
+safe-creator \
+  https://data-seed-prebsc-1-s1.binance.org:8545 \
+  0xYOUR_DEPLOYER_PRIVATE_KEY \
+  --owners 0xOWNER1 0xOWNER2 0xOWNER3 \
+  --threshold 2
+```
+
+**For BSC Mainnet:**
+
+```bash
+safe-creator \
+  https://bsc-dataseed.binance.org \
+  0xYOUR_DEPLOYER_PRIVATE_KEY \
+  --owners 0xOWNER1 0xOWNER2 0xOWNER3 \
+  --threshold 2
+```
+
+**Parameters:**
+- **First argument**: RPC URL for the network
+- **Second argument**: Private key of the deployer account (must have BNB for gas)
+- `--owners`: List of owner addresses (space-separated)
+- `--threshold`: Minimum number of signatures required (e.g., `2` means 2 out of 3 owners must sign)
+
+### Step 4: Confirm Deployment
+
+The CLI will show you:
+- Network information
+- Deployer address and balance
+- Safe configuration (owners, threshold)
+- Predicted Safe address
+
+You'll be prompted twice:
+1. `Do you want to continue? [y/N]:` - Confirm the configuration
+2. `Safe will be deployed on 0x..., would you like to proceed? [y/N]:` - Confirm deployment
+
+### Example Output
+
+```
+Network BNB_SMART_CHAIN_TESTNET - Sender 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA - Balance: 0.100000Ξ
+Creating new Safe with owners=['0x867f9CE9F0D7218b016351CB6122406E6D247a5e', '0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA'] threshold=1
+Safe-master-copy=0x29fcB43b46531BcA003ddC8FCB67FFE91900C762 version=1.4.1
+Fallback-handler=0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99
+Proxy factory=0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67
+
+Do you want to continue? [y/N]: y
+Safe will be deployed on 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee, would you like to proceed? [y/N]: y
+
+Sent tx with tx-hash=0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72
+Safe=0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee is being created
+```
+
+### Step 5: Save the Safe Address
+
+After deployment, save the Safe address. This is the address you'll use as the `owner` in your warp route configuration:
+
+```bash
+# Save the Safe address
+SAFE_ADDRESS="0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"
+
+# Use it in your warp config
+cat > warp-bsc-testnet.yaml << EOF
+bsctestnet:
+  isNft: false
+  type: synthetic
+  name: "Wrapped Terra Classic LUNC"
+  symbol: "wLUNC"
+  decimals: 6
+  owner: "${SAFE_ADDRESS}"  # ✅ Using Safe multisig address
+  interchainSecurityModule:
+    type: messageIdMultisigIsm
+    validators:
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"
+    threshold: 1
+EOF
+```
+
+### Threshold Recommendations
+
+Choose your threshold based on security needs:
+
+| Owners | Recommended Threshold | Use Case |
+|--------|----------------------|----------|
+| 2 | 2 | Maximum security (both must sign) |
+| 3 | 2 | Balanced (2 of 3) |
+| 3 | 1 | Lower security (any can sign) |
+| 5 | 3 | Production standard (3 of 5) |
+| 7 | 4 | High security (4 of 7) |
+
+**Best Practice**: For production, use at least 3 owners with a threshold of 2 or higher.
+
+### Using the Safe Address
+
+Once deployed, use the Safe address as the `owner` in your warp route configuration. All operations that require owner permissions will need to be executed through the Safe multisig interface.
+
+**Important Notes:**
+1. **Gas Fees**: The deployer account pays for the Safe deployment. Ensure it has sufficient BNB.
+2. **Owner Addresses**: All owner addresses must be valid Ethereum addresses (checksummed or lowercase).
+3. **Threshold**: Cannot exceed the number of owners.
+4. **Network**: The same Safe CLI works for both testnet and mainnet - just change the RPC URL.
+5. **Safe Interface**: After deployment, you can manage the Safe using the Safe web interface at:
+   - Testnet: https://safe-testnet.safe.global/
+   - Mainnet: https://app.safe.global/
+
+### Verifying the Safe
+
+After deployment, verify the Safe on the block explorer:
+
+```bash
+# BSC Testnet
+https://testnet.bscscan.com/address/0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+
+# Or use the Safe interface
+https://safe-testnet.safe.global/
+```
+
+### Using Safe CLI for Governance Operations
+
+Once your Safe multisig is deployed and set as the owner of your warp routes, all governance operations must be executed through the Safe. This ensures that multiple signatures are required for critical changes.
+
+**⚠️ IMPORTANT**: The commands below are based on Safe CLI documentation. Please verify the exact syntax with the latest Safe CLI documentation as syntax may vary by version.
+
+#### Understanding the Safe Transaction Flow
+
+1. **Propose**: An owner creates a transaction proposal
+2. **Confirm**: Other owners confirm the proposal (until threshold is reached)
+3. **Execute**: Once threshold is met, any owner can execute the transaction
+
+#### Step 1: Creating a Transaction Proposal
+
+When you want to make a change (e.g., update validators), an owner creates a proposal:
+
+```bash
+# Example: Propose updating the ISM
+safe-cli propose \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --value 0 \
+  --data "0x..." \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Note**: The `--data` field contains the encoded function call. You may need to use tools like `cast` (from Foundry) to encode the function call.
+
+#### Step 2: Owners Confirm the Proposal
+
+Each owner (except the proposer) needs to confirm the transaction:
+
+```bash
+safe-cli confirm \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --tx <TX_HASH_OF_THE_PROPOSAL> \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Getting the TX_HASH**: 
+- The TX_HASH is returned when the proposal is created
+- You can also find it in the Safe interface under "Queue" or "History"
+- Or check the block explorer for transactions to your Safe address
+
+**Example:**
+```bash
+# Owner 1 confirms
+safe-cli confirm \
+  --safe 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
+  --tx 0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72 \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+
+# Owner 2 confirms (if threshold is 2)
+safe-cli confirm \
+  --safe 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
+  --tx 0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72 \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+#### Step 3: Execute the Transaction (After Threshold is Reached)
+
+Once enough owners have confirmed (threshold reached), any owner can execute:
+
+```bash
+safe-cli execute \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --tx <TX_HASH_OF_THE_PROPOSAL> \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Example:**
+```bash
+safe-cli execute \
+  --safe 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
+  --tx 0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72 \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+### Common Governance Operations via Safe
+
+After transferring ownership to the Safe multisig, all governance operations must be done through Safe. Below are common operations:
+
+#### 1. Add or Update ISM (Interchain Security Module)
+
+**⚠️ Note**: The exact method name and parameters may vary. Verify the correct function signature for your warp route contract.
+
+```bash
+# Example: Update ISM on a warp route
+safe-cli call \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --method setInterchainSecurityModule \
+  --args 0xNEW_ISM_ADDRESS \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Alternative using propose/confirm/execute flow:**
+
+```bash
+# Step 1: Propose
+safe-cli propose \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --value 0 \
+  --data $(cast calldata "setInterchainSecurityModule(address)" 0xNEW_ISM_ADDRESS) \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+
+# Step 2: Owners confirm (repeat until threshold)
+safe-cli confirm \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --tx <TX_HASH> \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+
+# Step 3: Execute
+safe-cli execute \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --tx <TX_HASH> \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+#### 2. Update Validators
+
+**⚠️ Note**: The method name `setRequiredValidators` may not be correct for Hyperlane warp routes. Verify the actual function name in your contract. Warp routes typically use ISM configuration rather than direct validator management.
+
+```bash
+# Example: Update validators (verify method name)
+safe-cli call \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --method setRequiredValidators \
+  --args "[0xVAL1,0xVAL2,0xVAL3]" \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Important**: For Hyperlane warp routes, validator management is typically done through the ISM configuration, not directly on the warp route contract. You may need to:
+1. Update the ISM contract itself (if you control it)
+2. Or use `hyperlane warp apply` with a private key that has permission through the Safe
+
+#### 3. Pause/Unpause Warp Route
+
+```bash
+# Pause
+safe-cli call \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --method pause \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+
+# Unpause
+safe-cli call \
+  --safe 0xYOUR_SAFE_ADDRESS \
+  --to 0xWARP_ROUTE_ADDRESS \
+  --method unpause \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+### Using Safe Web Interface (Alternative)
+
+Instead of using the CLI, you can also use the Safe web interface for all operations:
+
+1. **Go to Safe Interface**:
+   - Testnet: https://safe-testnet.safe.global/
+   - Mainnet: https://app.safe.global/
+
+2. **Connect your wallet** (one of the owners)
+
+3. **Create transaction**:
+   - Click "New Transaction"
+   - Enter the contract address
+   - Enter the function data
+   - Submit
+
+4. **Other owners confirm**:
+   - Each owner connects their wallet
+   - Confirms the pending transaction
+
+5. **Execute**:
+   - Once threshold is reached, any owner can execute
+
+### Important Notes
+
+1. **Verify Function Names**: The exact function names (`setInterchainSecurityModule`, `setRequiredValidators`, etc.) may vary. Always verify against your actual contract ABI.
+
+2. **Encode Function Calls**: For complex operations, you may need to encode function calls. Use tools like:
+   - `cast` from Foundry: `cast calldata "functionName(type1,type2)" arg1 arg2`
+   - Online ABI encoders
+   - Web3 libraries
+
+3. **RPC URLs**: Always use the correct RPC URL for your network:
+   - BSC Testnet: `https://data-seed-prebsc-1-s1.binance.org:8545`
+   - BSC Mainnet: `https://bsc-dataseed.binance.org`
+
+4. **Private Keys**: Each owner needs their private key to confirm/execute transactions. Store these securely.
+
+5. **Gas Fees**: The executing account pays for gas fees. Ensure sufficient BNB balance.
+
+6. **Testing**: **⚠️ These commands have not been fully tested**. Please verify the syntax with the latest Safe CLI documentation and test on testnet before using in production.
+
+### Getting Help
+
+- **Safe CLI Documentation**: Check the official Safe CLI repository
+- **Safe Interface**: Use the web interface as a reference for correct function calls
+- **Contract ABI**: Review your warp route contract ABI to find correct function names and parameters
 
 ---
 

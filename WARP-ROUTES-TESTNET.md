@@ -48,7 +48,7 @@ Before you begin, ensure you have:
 
 5. **Hyperlane Agent Config File**: The Hyperlane CLI requires an `agent-config.json` file that contains the addresses of Hyperlane contracts on BSC Testnet. This file tells the CLI where to find the Mailbox, ISM, and other contracts.
 
-   **⚠️ IMPORTANT**: If you get the error `No addresses found for chain bscTestnet`, you need to:
+   **⚠️ IMPORTANT**: If you get the error `No addresses found for chain bsctestnet`, you need to:
    - Ensure Hyperlane contracts are deployed on BSC Testnet
    - Create or update an `agent-config.json` file with BSC Testnet contract addresses
    - Point the CLI to this config file using `--agent-config` flag or place it in the default location
@@ -118,7 +118,7 @@ chainName:
 
 | Attribute | Description | Example Values |
 |-----------|-------------|----------------|
-| **chainName** | The network identifier where the warp will be deployed | `bscTestnet`, `sepolia`, `solanatestnet` |
+| **chainName** | The network identifier where the warp will be deployed | `bsctestnet`, `sepolia`, `solanatestnet` |
 | **isNft** | Whether the token is an NFT (true) or fungible token (false) | `false` (for fungible tokens), `true` (for NFTs) |
 | **type** | Token representation type:<br>• `synthetic`: Newly minted wrapped token on destination<br>• `collateral`: Locks original token, mints wrapped version<br>• `native`: Uses the chain's native token | `synthetic`, `collateral`, `native` |
 | **name** | Full name of the token | `"Terra Classic LUNC"`, `"Wrapped LUNC"` |
@@ -141,7 +141,7 @@ This example creates a synthetic LUNC token on BSC Testnet.
 
 ```bash
 cat > warp-bsc-testnet.yaml << 'EOF'
-bscTestnet:
+bsctestnet:
   isNft: false
   type: synthetic
   name: "Wrapped Terra Classic LUNC"
@@ -185,7 +185,7 @@ hyperlane warp deploy \
 The CLI will output the deployed contract address. Save this information:
 
 ```
-Deployed warp route on bscTestnet:
+Deployed warp route on bsctestnet:
   Token: 0xABCDEF1234567890...
   Router: 0x1234567890ABCDEF...
 ```
@@ -233,7 +233,7 @@ You can configure warp routes for multiple chains in a single file:
 ```bash
 cat > warp-multi-chain.yaml << 'EOF'
 # BSC Testnet Configuration
-bscTestnet:
+bsctestnet:
   isNft: false
   type: synthetic
   name: "Wrapped Terra Classic LUNC"
@@ -270,7 +270,7 @@ Deploy to specific chain:
 # Deploy only to BSC Testnet
 hyperlane warp deploy \
   --config warp-multi-chain.yaml \
-  --chain bscTestnet \
+  --chain bsctestnet \
   --private-key $BSC_PRIVATE_KEY
 
 # Deploy to Solana Testnet (requires different approach - see Solana documentation)
@@ -347,7 +347,7 @@ Create configuration for the synthetic wrapped token on BSC:
 
 ```bash
 cat > warp-cw20-bsc.yaml << 'EOF'
-bscTestnet:
+bsctestnet:
   isNft: false
   type: synthetic
   name: "Wrapped TAZ Token"
@@ -380,7 +380,7 @@ hyperlane warp deploy \
 
 **Expected Output**:
 ```
-Deploying warp route on bscTestnet...
+Deploying warp route on bsctestnet...
 ✓ Token contract deployed at: 0xABCDEF...
 ✓ Router contract deployed at: 0x123456...
 ```
@@ -558,7 +558,7 @@ export TERRA_PRIVATE_KEY="your_terra_private_key_here"
 ```bash
 # Create configuration for BSC Testnet
 cat > warp-bsc-testnet.yaml << EOF
-bscTestnet:
+bsctestnet:
   isNft: false
   type: synthetic
   name: "Wrapped Terra Classic LUNC"
@@ -644,7 +644,7 @@ yarn cw-hpl warp link \
 # Query warp route info using Hyperlane CLI
 hyperlane warp read \
   --address $BSC_WARP_ADDRESS \
-  --chain bscTestnet
+  --chain bsctestnet
 ```
 
 ### Verify Warp Deployment on Terra Classic
@@ -741,7 +741,7 @@ Different chains use different naming conventions:
 
 | Network | Hyperlane CLI Name | Domain | Notes |
 |---------|-------------------|--------|-------|
-| BSC Testnet | `bscTestnet` | 97 | Use in warp-config.yaml |
+| BSC Testnet | `bsctestnet` | 97 | Use in warp-config.yaml |
 | Solana Testnet | `solanatestnet` | 1399811150 | Special deployment process |
 | Terra Classic Testnet | `terraclassic` | 1325 | Use CosmWasm tools |
 
@@ -802,10 +802,10 @@ Error: invalid validator address format
 - Without `0x` prefix in YAML
 - Lowercase letters
 
-### Issue: No addresses found for chain bscTestnet
+### Issue: No addresses found for chain bsctestnet
 
 ```
-Error: No addresses found for chain bscTestnet
+Error: No addresses found for chain bsctestnet
 ```
 
 **Cause**: The Hyperlane CLI cannot find the Hyperlane contract addresses on BSC Testnet. This happens when:
@@ -828,14 +828,27 @@ If contracts are not deployed, you need to deploy them first using the Hyperlane
 
 #### Step 2: Create agent-config.json
 
-Create a file named `agent-config.json` in your working directory or in `~/.hyperlane/`:
+**Option A: Use the official Hyperlane Registry (Recommended)**
+
+The Hyperlane team maintains an official registry with all contract addresses. You can use the official configuration:
+
+```bash
+# Copy the example file with official addresses
+cp example/agent-config-bsc-testnet.json agent-config.json
+```
+
+The file `example/agent-config-bsc-testnet.json` contains the **official contract addresses** from the [Hyperlane Registry](https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/bsctestnet).
+
+**Option B: Create manually**
+
+If you need to create the file manually, use the official addresses from the Hyperlane Registry:
 
 ```bash
 cat > agent-config.json << 'EOF'
 {
   "chains": {
-    "bscTestnet": {
-      "name": "bscTestnet",
+    "bsctestnet": {
+      "name": "bsctestnet",
       "chainId": 97,
       "domainId": 97,
       "protocol": "ethereum",
@@ -843,15 +856,15 @@ cat > agent-config.json << 'EOF'
       "displayName": "BSC Testnet",
       "nativeToken": {
         "symbol": "BNB",
-        "name": "Binance Coin",
+        "name": "BNB",
         "decimals": 18
       },
       "rpcUrls": [
         {
-          "http": "https://data-seed-prebsc-1-s1.binance.org:8545"
+          "http": "https://bsc-testnet.publicnode.com"
         },
         {
-          "http": "https://data-seed-prebsc-2-s1.binance.org:8545"
+          "http": "https://bsc-testnet.drpc.org"
         }
       ],
       "blockExplorers": [
@@ -865,22 +878,29 @@ cat > agent-config.json << 'EOF'
       "blocks": {
         "confirmations": 1,
         "estimateBlockTime": 3,
-        "reorgPeriod": 1
+        "reorgPeriod": 9
       },
-      "mailbox": "0xYOUR_BSC_MAILBOX_ADDRESS",
-      "validatorAnnounce": "0xYOUR_BSC_VALIDATOR_ANNOUNCE_ADDRESS",
-      "interchainGasPaymaster": "0xYOUR_BSC_IGP_ADDRESS",
-      "merkleTreeHook": "0xYOUR_BSC_MERKLE_HOOK_ADDRESS",
-      "interchainSecurityModule": "0xYOUR_BSC_ISM_ADDRESS",
-      "messageIdMultisigIsmFactory": "0xYOUR_BSC_MESSAGE_ID_MULTISIG_ISM_FACTORY",
-      "merkleRootMultisigIsmFactory": "0xYOUR_BSC_MERKLE_ROOT_MULTISIG_ISM_FACTORY"
+      "mailbox": "0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D",
+      "validatorAnnounce": "0xf09701B0a93210113D175461b6135a96773B5465",
+      "interchainGasPaymaster": "0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949",
+      "merkleTreeHook": "0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f",
+      "interchainSecurityModule": "0xe4245cCB6427Ba0DC483461bb72318f5DC34d090",
+      "staticMessageIdMultisigIsmFactory": "0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763",
+      "staticMerkleRootMultisigIsmFactory": "0x3E235B90197E1D6b5DB5ad5aD49f2c1ED6406382",
+      "staticAggregationIsmFactory": "0x40613dE82d672605Ab051C64079022Bb4F8bDE4f",
+      "staticAggregationHookFactory": "0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942",
+      "domainRoutingIsmFactory": "0xD2a0c68ed92D1Eb3C699D2808b06dd7b70367F92",
+      "proxyAdmin": "0xb12282d2E838Aa5f2A4F9Ee5f624a77b7199A078",
+      "storageGasOracle": "0x124EBCBC018A5D4Efe639f02ED86f95cdC3f6498"
     }
   }
 }
 EOF
 ```
 
-**⚠️ IMPORTANT**: Replace all `0xYOUR_BSC_*_ADDRESS` placeholders with actual contract addresses from your BSC Testnet deployment.
+**📚 Official Source**: All addresses are from the [Hyperlane Registry](https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/bsctestnet):
+- [Metadata](https://raw.githubusercontent.com/hyperlane-xyz/hyperlane-registry/main/chains/bsctestnet/metadata.yaml)
+- [Addresses](https://raw.githubusercontent.com/hyperlane-xyz/hyperlane-registry/main/chains/bsctestnet/addresses.yaml)
 
 #### Step 3: Use the Config File
 
@@ -911,7 +931,7 @@ hyperlane config show --agent-config ./agent-config.json
 
 This should display the chain configuration including BSC Testnet.
 
-**Note**: If you don't have Hyperlane contracts deployed on BSC Testnet yet, you'll need to deploy them first. The Hyperlane CLI can help with this, or you can use the official Hyperlane deployment scripts.
+**Note**: The official Hyperlane contracts are already deployed on BSC Testnet by the Hyperlane team. You can use the addresses from the [Hyperlane Registry](https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/bsctestnet) - they are included in the `example/agent-config-bsc-testnet.json` file.
 
 ---
 

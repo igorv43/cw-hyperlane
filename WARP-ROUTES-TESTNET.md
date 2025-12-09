@@ -1069,12 +1069,143 @@ safe-cli call \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 ```
 
+### Using Python Scripts (Alternative to Safe CLI)
+
+**⚠️ IMPORTANT**: If `safe-cli` is not working (e.g., ImportError with EtherscanClient), you can use Python scripts directly with `safe-eth-py` library.
+
+#### Prerequisites
+
+Install required Python libraries:
+
+```bash
+# Install system-wide
+pip3 install safe-eth-py web3 eth-account
+
+# Or in a virtual environment (recommended)
+python3 -m venv safe-env
+source safe-env/bin/activate
+pip install safe-eth-py web3 eth-account
+```
+
+**Note**: If you're using a virtual environment, activate it before running the scripts:
+```bash
+source safe-env/bin/activate
+python3 script/safe-propose-direct.py ...
+```
+
+#### Step 1: Create a Transaction Proposal
+
+Use the Python script to create a proposal:
+
+```bash
+# Encode the function call first using cast
+CALLDATA=$(cast calldata "setInterchainSecurityModule(address)" 0xNEW_ISM_ADDRESS)
+
+# Create proposal using Python script
+python3 script/safe-propose-direct.py \
+  0xYOUR_PRIVATE_KEY \
+  0xWARP_ROUTE_ADDRESS \
+  $CALLDATA
+```
+
+**Output**: The script will return:
+- `TX_HASH`: Transaction hash for the proposal
+- `Safe TX Hash`: Hash that other owners need to confirm
+
+#### Step 2: Owners Confirm the Proposal
+
+Each owner confirms using their private key:
+
+```bash
+python3 script/safe-confirm.py \
+  0xOWNER_PRIVATE_KEY \
+  <SAFE_TX_HASH>
+```
+
+**Example**:
+```bash
+# Owner 1 confirms
+python3 script/safe-confirm.py \
+  0xPRIVATE_KEY_1 \
+  0xabc123def456...
+
+# Owner 2 confirms (if threshold is 2)
+python3 script/safe-confirm.py \
+  0xPRIVATE_KEY_2 \
+  0xabc123def456...
+```
+
+The script will show:
+- Current approvals count
+- Whether threshold is reached
+- Instructions to execute when ready
+
+#### Step 3: Execute the Transaction
+
+Once threshold is reached, execute the transaction:
+
+**Note**: Executing Safe transactions via script is complex as it requires collecting all signatures. For execution, you have two options:
+
+1. **Use Safe Web Interface** (if available):
+   - Go to https://app.safe.global/
+   - Connect wallet
+   - Execute pending transaction
+
+2. **Use safe-eth-py directly** (advanced):
+   ```python
+   from safe_eth_py import Safe
+   from eth_account import Account
+   
+   safe = Safe("0xYOUR_SAFE_ADDRESS", "RPC_URL")
+   account = Account.from_key("0xPRIVATE_KEY")
+   
+   # Get pending transaction
+   safe_tx = safe.get_transaction(safe_tx_hash)
+   
+   # Execute (requires all signatures)
+   tx_hash = safe_tx.execute(account.key)
+   ```
+
+#### Available Scripts
+
+The following scripts are available in `script/` directory:
+
+- **`safe-propose-direct.py`**: Create transaction proposals using `safe-eth-py`
+- **`safe-confirm.py`**: Confirm pending proposals
+- **`safe-execute.py`**: Placeholder (execution is complex, see notes above)
+
+#### Example: Complete Workflow
+
+```bash
+# 1. Encode function call
+CALLDATA=$(cast calldata "setValidators(address[],uint8)" \
+  "[0xVAL1,0xVAL2,0xVAL3]" 2)
+
+# 2. Owner 1 creates proposal
+python3 script/safe-propose-direct.py \
+  0xOWNER1_PRIVATE_KEY \
+  0xWARP_ROUTE_ADDRESS \
+  $CALLDATA
+
+# Output: Safe TX Hash = 0xabc123...
+
+# 3. Owner 2 confirms
+python3 script/safe-confirm.py \
+  0xOWNER2_PRIVATE_KEY \
+  0xabc123...
+
+# 4. If threshold=2, transaction is ready to execute
+# Use Safe web interface or safe-eth-py directly
+```
+
 ### Using Safe Web Interface (Alternative)
 
-Instead of using the CLI, you can also use the Safe web interface for all operations:
+**⚠️ NOTE**: The testnet Safe interface URL may not be available. Use the Python scripts above instead.
+
+If the Safe web interface is available:
 
 1. **Go to Safe Interface**:
-   - Testnet: https://safe-testnet.safe.global/
+   - Testnet: https://app.safe.global/ (may not work for testnet)
    - Mainnet: https://app.safe.global/
 
 2. **Connect your wallet** (one of the owners)

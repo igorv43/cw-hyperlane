@@ -1,0 +1,57 @@
+#!/bin/bash
+# Exemplo prático de como usar os scripts Safe
+
+echo "=========================================="
+echo "EXEMPLO DE USO DOS SCRIPTS SAFE"
+echo "=========================================="
+echo ""
+
+# Configurações (SUBSTITUA pelos seus valores reais)
+PRIVATE_KEY_OWNER1="0x819b680e3578eac4f79b8fde643046e..."
+PRIVATE_KEY_OWNER2="0x867f9CE9F0D7218b016351CB6122406E6D247a5e..."
+WARP_ROUTE_ADDRESS="0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA"
+NEW_ISM_ADDRESS="0xe4245cCB6427Ba0DC483461bb72318f5DC34d090"
+
+echo "📝 PASSO 1: Codificar a função usando cast"
+echo "-------------------------------------------"
+echo ""
+echo "# Exemplo: Atualizar ISM"
+echo "CALLDATA=\$(cast calldata \"setInterchainSecurityModule(address)\" $NEW_ISM_ADDRESS)"
+echo ""
+echo "# Execute o comando acima para gerar o CALLDATA"
+echo ""
+
+echo "📤 PASSO 2: Criar proposta (Owner 1)"
+echo "-------------------------------------------"
+echo ""
+echo "python3 script/safe-propose-direct.py \\"
+echo "  $PRIVATE_KEY_OWNER1 \\"
+echo "  $WARP_ROUTE_ADDRESS \\"
+echo "  \$CALLDATA"
+echo ""
+echo "# ⚠️  IMPORTANTE: Salve o Safe TX Hash retornado!"
+echo ""
+
+echo "✅ PASSO 3: Confirmar proposta (Owner 2)"
+echo "-------------------------------------------"
+echo ""
+echo "python3 script/safe-confirm.py \\"
+echo "  $PRIVATE_KEY_OWNER2 \\"
+echo "  <SAFE_TX_HASH>"
+echo ""
+echo "# Substitua <SAFE_TX_HASH> pelo hash retornado no passo 2"
+echo ""
+
+echo "🚀 PASSO 4: Executar transação"
+echo "-------------------------------------------"
+echo ""
+echo "Após threshold atingido, execute via interface web:"
+echo "  https://app.safe.global/"
+echo ""
+echo "Ou use o script (requer todas as assinaturas):"
+echo "  python3 script/safe-execute.py <PRIVATE_KEY> <SAFE_TX_HASH>"
+echo ""
+
+echo "=========================================="
+echo "Para mais detalhes, veja: script/SAFE-SCRIPTS-GUIDE.md"
+echo "=========================================="

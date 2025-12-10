@@ -1,10 +1,172 @@
-# Guia de Uso dos Scripts Safe CLI
+# Guia de Uso do Safe CLI e Scripts Python
 
-Este guia explica como usar os scripts Python para gerenciar transações no Safe multisig quando o `safe-cli` não está funcionando ou a interface web não está disponível.
+Este guia explica como instalar e usar o Safe CLI oficial (Node.js) e também os scripts Python alternativos para gerenciar transações no Safe multisig.
 
-## 📋 Pré-requisitos
+## 🎯 Instalação do Safe CLI Oficial (Recomendado)
 
-### 1. Instalar Dependências
+### ⚠️ Por que usar a versão Node.js?
+
+O Safe CLI Python (`safe-cli` via pip) **não funciona mais** porque:
+- O pacote `safe-eth-py` foi removido/descontinuado
+- O Safe CLI Python depende desse pacote
+- Nenhuma versão disponível contém o módulo esperado
+- O repositório foi descontinuado
+
+**✅ Solução: Use o Safe CLI oficial do Node.js**
+
+### 📦 Instalação (Funciona 100%)
+
+#### Passo 1: Remover qualquer instalação antiga (se houver)
+
+```bash
+# Desativar virtualenv Python antigo (se existir)
+deactivate 2>/dev/null
+rm -rf safe-cli-env
+```
+
+#### Passo 2: Instalar a CLI Node.js oficial
+
+```bash
+npm install -g @safe-global/safe-cli
+```
+
+#### Passo 3: Verificar instalação
+
+```bash
+safe --version
+# ou
+safe version
+```
+
+**Saída esperada:**
+```
+safe-cli version 0.1.0
+```
+
+#### Passo 4: Verificar comandos disponíveis
+
+```bash
+safe help
+```
+
+**Saída esperada:**
+```
+Usage: safe [options] [command]
+
+Modern CLI for Safe Smart Account management
+
+Commands:
+  config                  Manage CLI configuration
+  wallet                  Manage wallets and signers
+  account                 Manage Safe accounts
+  tx                      Manage Safe transactions
+  help [command]          display help for command
+```
+
+### 🔧 Comandos Básicos do Safe CLI
+
+#### 1. Listar contas Safe disponíveis
+
+```bash
+safe account list
+```
+
+#### 2. Adicionar um Safe para consulta
+
+```bash
+safe account add --address 0xSEU_SAFE --chain-id 97
+```
+
+**Chain IDs importantes:**
+- BSC Testnet = 97
+- BSC Mainnet = 56
+- Ethereum Sepolia = 11155111
+- Ethereum Mainnet = 1
+
+#### 3. Consultar informações completas do Safe
+
+Este é o comando principal que consulta direto no contrato:
+
+```bash
+safe account info --address 0xSEU_SAFE --chain-id 97
+```
+
+**Retorna:**
+- Owners (proprietários)
+- Threshold (número mínimo de aprovações)
+- Nonce (contador de transações)
+- Versão do contrato
+- Fallback handler
+- Módulos instalados
+- Guard
+- Balance (saldo)
+
+**Formato JSON (para auditoria):**
+```bash
+safe account info --address 0xSEU_SAFE --chain-id 97 --json
+```
+
+#### 4. Consultar owners
+
+```bash
+safe account owners --address 0xSEU_SAFE --chain-id 97
+```
+
+#### 5. Consultar threshold
+
+```bash
+safe account threshold --address 0xSEU_SAFE --chain-id 97
+```
+
+#### 6. Consultar saldo
+
+```bash
+safe account balance --address 0xSEU_SAFE --chain-id 97
+```
+
+#### 7. Listar transações pendentes
+
+```bash
+safe tx list --address 0xSEU_SAFE --chain-id 97
+```
+
+### 📝 Exemplos Práticos com Safe CLI
+
+#### Exemplo: Consultar informações do multisig na BSC Testnet
+
+```bash
+# Substitua 0xSEU_SAFE pelo endereço do seu Safe
+safe account info --chain-id 97 --address 0xSEU_SAFE
+```
+
+#### Exemplo: Listar owners
+
+```bash
+safe account owners --chain-id 97 --address 0xSEU_SAFE
+```
+
+#### Exemplo: Criar uma transação
+
+```bash
+safe transfer --chain-id 97 --safe-address 0xSEU_SAFE --to 0xDEST --value 0
+```
+
+### 💡 Vantagens do Safe CLI Node.js
+
+- ✅ Funciona perfeitamente (versão oficial mantida)
+- ✅ Consulta direto no contrato (transparente e auditável)
+- ✅ Sem dependências Python problemáticas
+- ✅ Comandos simples e intuitivos
+- ✅ Suporte a múltiplas chains
+- ✅ Formato JSON para automação
+
+---
+
+## 📋 Scripts Python (Alternativa)
+
+Se preferir usar scripts Python ou precisar de funcionalidades específicas, você pode usar os scripts Python abaixo. **Nota:** Estes scripts dependem de bibliotecas Python que podem ter problemas de compatibilidade.
+
+### 1. Instalar Dependências Python (Opcional)
 
 ```bash
 # Instalar bibliotecas Python necessárias
@@ -13,6 +175,8 @@ pip3 install safe-eth-py web3 eth-account
 # Verificar instalação
 python3 -c "from safe_eth_py import Safe; print('✅ safe-eth-py instalado')"
 ```
+
+**⚠️ AVISO:** O `safe-eth-py` pode não funcionar corretamente devido a problemas de compatibilidade. Recomendamos usar o Safe CLI Node.js acima.
 
 ### 2. Ter Instalado o `cast` (Foundry)
 
@@ -295,7 +459,27 @@ Consulte a documentação do Hyperlane para os contratos Warp Route:
 
 ## ⚠️ Troubleshooting
 
+### Safe CLI não funciona / Erro de instalação Python
+
+**Problema:** O Safe CLI Python (`safe-cli` via pip) não funciona mais.
+
+**Solução:** Use o Safe CLI oficial do Node.js:
+
+```bash
+# Remover instalação Python antiga
+deactivate 2>/dev/null
+rm -rf safe-cli-env
+
+# Instalar versão Node.js oficial
+npm install -g @safe-global/safe-cli
+
+# Verificar
+safe --version
+```
+
 ### Erro: "ModuleNotFoundError: No module named 'safe_eth_py'"
+
+**Se você está usando scripts Python:**
 
 ```bash
 # Instalar no ambiente correto
@@ -307,13 +491,16 @@ source safe-env/bin/activate
 pip install safe-eth-py web3 eth-account
 ```
 
+**⚠️ Nota:** Mesmo após instalar, o `safe-eth-py` pode não funcionar devido a problemas de compatibilidade. **Recomendamos usar o Safe CLI Node.js** (veja seção de instalação acima).
+
 ### Erro: "Não foi possível conectar ao RPC"
 
 - Verifique se a RPC URL está correta
 - Tente uma RPC alternativa:
   ```bash
-  # Edite o script e altere RPC_URL para:
-  RPC_URL = "https://bsc-testnet.publicnode.com"
+  # Para BSC Testnet, tente:
+  https://bsc-testnet.publicnode.com
+  https://data-seed-prebsc-1-s1.binance.org:8545
   ```
 
 ### Erro: "Erro ao carregar conta"
@@ -323,15 +510,47 @@ pip install safe-eth-py web3 eth-account
 
 ### Erro: "Threshold não atingido"
 
-- Verifique quantos owners já confirmaram
+- Verifique quantos owners já confirmaram usando:
+  ```bash
+  safe account info --address 0xSEU_SAFE --chain-id 97
+  ```
 - Certifique-se de que todos os owners necessários confirmaram
-- Verifique o threshold do Safe: `safe.retrieve_threshold()`
+- Verifique o threshold do Safe:
+  ```bash
+  safe account threshold --address 0xSEU_SAFE --chain-id 97
+  ```
+
+### Comando Safe CLI não encontrado
+
+Se o comando `safe` não for encontrado após instalação:
+
+```bash
+# Verificar se npm está instalado
+npm --version
+
+# Verificar se o caminho global do npm está no PATH
+npm config get prefix
+
+# Adicionar ao PATH se necessário (adicione ao ~/.bashrc ou ~/.zshrc)
+export PATH="$(npm config get prefix)/bin:$PATH"
+```
 
 ---
 
 ## 📝 Checklist de Uso
 
-- [ ] Dependências instaladas (`safe-eth-py`, `web3`, `eth-account`)
+### Para Safe CLI Node.js (Recomendado)
+
+- [ ] Node.js e npm instalados
+- [ ] Safe CLI instalado (`npm install -g @safe-global/safe-cli`)
+- [ ] Safe CLI funcionando (`safe --version`)
+- [ ] Safe adicionado ao CLI (`safe account add`)
+- [ ] Endereço do Safe conhecido
+- [ ] Chain ID correto (97 para BSC Testnet, 56 para BSC Mainnet)
+
+### Para Scripts Python (Alternativa)
+
+- [ ] Dependências Python instaladas (`safe-eth-py`, `web3`, `eth-account`)
 - [ ] `cast` instalado (Foundry)
 - [ ] Chaves privadas dos owners disponíveis
 - [ ] Contas têm BNB suficiente para gas
@@ -346,10 +565,13 @@ pip install safe-eth-py web3 eth-account
 
 ## 🔗 Links Úteis
 
+- **Safe CLI Node.js (Oficial)**: https://www.npmjs.com/package/@safe-global/safe-cli
+- **Safe Interface Web**: https://app.safe.global/
 - **BscScan Testnet**: https://testnet.bscscan.com
-- **Safe Interface**: https://app.safe.global/
+- **BscScan Mainnet**: https://bscscan.com
 - **Hyperlane Docs**: https://docs.hyperlane.xyz/
 - **Foundry (cast)**: https://book.getfoundry.sh/
+- **Node.js**: https://nodejs.org/
 
 ---
 

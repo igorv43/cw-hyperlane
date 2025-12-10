@@ -6,15 +6,21 @@ Script para confirmar propostas no Safe multisig usando safe-eth-py
 import sys
 
 try:
-    from safe_eth_py import Safe
+    from safe_eth.safe import Safe
+    from safe_eth.eth.ethereum_client import EthereumClient
     from eth_account import Account
     from web3 import Web3
 except ImportError:
-    print("❌ Bibliotecas necessárias não instaladas!")
-    print("")
-    print("Instale com:")
-    print("  pip install safe-eth-py web3 eth-account")
-    sys.exit(1)
+    # Tentar importação alternativa
+    try:
+        from safe_eth_py import Safe
+        from safe_eth_py.eth.ethereum_client import EthereumClient
+    except ImportError:
+        print("❌ Bibliotecas necessárias não instaladas!")
+        print("")
+        print("Instale com:")
+        print("  pip install safe-eth-py web3 eth-account")
+        sys.exit(1)
 
 # Configurações
 SAFE_ADDRESS = "0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"
@@ -31,14 +37,6 @@ def main():
     private_key = sys.argv[1]
     safe_tx_hash = sys.argv[2]
     
-    # Conectar à rede
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    if not w3.is_connected():
-        print(f"❌ Erro: Não foi possível conectar ao RPC: {RPC_URL}")
-        sys.exit(1)
-    
-    print(f"✅ Conectado à BSC Testnet")
-    
     # Criar conta
     try:
         account = Account.from_key(private_key)
@@ -47,12 +45,24 @@ def main():
         print(f"❌ Erro ao carregar conta: {e}")
         sys.exit(1)
     
-    # Criar instância do Safe
+    # Criar EthereumClient (ele cria o Web3 internamente)
     try:
-        safe = Safe(SAFE_ADDRESS, RPC_URL)
+        ethereum_client = EthereumClient(RPC_URL)
+        # Verificar conexão
+        w3 = ethereum_client.w3
+        if not w3.is_connected():
+            print(f"❌ Erro: Não foi possível conectar ao RPC: {RPC_URL}")
+            sys.exit(1)
+        
+        print(f"✅ Conectado à BSC Testnet")
+        
+        # Criar instância do Safe
+        safe = Safe(Web3.to_checksum_address(SAFE_ADDRESS), ethereum_client)
         print(f"✅ Safe carregado: {SAFE_ADDRESS}")
     except Exception as e:
         print(f"❌ Erro ao carregar Safe: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     
     # Verificar threshold
@@ -66,8 +76,16 @@ def main():
     # Verificar owners que já aprovaram
     try:
         tx_hash_bytes = bytes.fromhex(safe_tx_hash.replace("0x", ""))
-        approved_owners = safe.retrieve_owners_who_approved_hash(tx_hash_bytes)
-        print(f"✅ Owners que já aprovaram: {len(approved_owners)}/{threshold}")
+        # Obter todos os owners do Safe
+        owners = safe.retrieve_owners()
+        approved_count = 0
+        approved_owners = []
+        for owner in owners:
+            is_approved = safe.contract.functions.approvedHashes(owner, tx_hash_bytes).call()
+            if is_approved:
+                approved_count += 1
+                approved_owners.append(owner)
+        print(f"✅ Owners que já aprovaram: {approved_count}/{threshold}")
         for owner in approved_owners:
             print(f"   - {owner}")
     except Exception as e:
@@ -77,9 +95,21 @@ def main():
     print("🔐 Confirmando proposta...")
     
     try:
-        # Aprovar hash usando safe-eth-py
+        # Aprovar hash usando o contrato diretamente
         tx_hash_bytes = bytes.fromhex(safe_tx_hash.replace("0x", ""))
-        tx_hash = safe.approve_hash(tx_hash_bytes, account.key)
+        
+        # Construir transação para approveHash
+        approve_tx = safe.contract.functions.approveHash(tx_hash_bytes).build_transaction({
+            'from': account.address,
+            'nonce': w3.eth.get_transaction_count(account.address),
+            'gas': 100000,
+            'gasPrice': w3.eth.gas_price,
+            'chainId': w3.eth.chain_id
+        })
+        
+        # Assinar e enviar
+        signed_txn = w3.eth.account.sign_transaction(approve_tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
         
         print("")
         print("=" * 80)
@@ -100,12 +130,17 @@ def main():
             print("")
             # Verificar novamente quantos aprovaram
             try:
-                approved_owners = safe_contract.functions.getOwnersWhoApprovedTx(tx_hash_bytes).call()
-                print(f"📊 Aprovações atuais: {len(approved_owners)}/{threshold}")
-                if len(approved_owners) >= threshold:
+                owners = safe.retrieve_owners()
+                approved_count = 0
+                for owner in owners:
+                    is_approved = safe.contract.functions.approvedHashes(owner, tx_hash_bytes).call()
+                    if is_approved:
+                        approved_count += 1
+                print(f"📊 Aprovações atuais: {approved_count}/{threshold}")
+                if approved_count >= threshold:
                     print("")
                     print("🎉 THRESHOLD ATINGIDO! A proposta está pronta para execução!")
-                    print("   Execute com: python3 safe-execute.py <PRIVATE_KEY> <SAFE_TX_HASH>")
+                    print("   Execute via interface web: https://app.safe.global/")
             except:
                 pass
         else:

@@ -8,15 +8,21 @@ import sys
 import os
 
 try:
-    from safe_eth_py import Safe
+    from safe_eth.safe import Safe
+    from safe_eth.eth.ethereum_client import EthereumClient
     from eth_account import Account
     from web3 import Web3
 except ImportError:
-    print("❌ Bibliotecas necessárias não instaladas!")
-    print("")
-    print("Instale com:")
-    print("  pip install safe-eth-py web3 eth-account")
-    sys.exit(1)
+    # Tentar importação alternativa
+    try:
+        from safe_eth_py import Safe
+        from safe_eth_py.eth.ethereum_client import EthereumClient
+    except ImportError:
+        print("❌ Bibliotecas necessárias não instaladas!")
+        print("")
+        print("Instale com:")
+        print("  pip install safe-eth-py web3 eth-account")
+        sys.exit(1)
 
 # Configurações
 SAFE_ADDRESS = "0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"
@@ -34,16 +40,6 @@ def main():
     to_address = sys.argv[2]
     calldata = sys.argv[3]
     
-    # Conectar à rede
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    if not w3.is_connected():
-        print(f"❌ Erro: Não foi possível conectar ao RPC: {RPC_URL}")
-        sys.exit(1)
-    
-    print(f"✅ Conectado à BSC Testnet")
-    print(f"   Chain ID: {w3.eth.chain_id}")
-    print("")
-    
     # Criar conta
     try:
         account = Account.from_key(private_key)
@@ -52,12 +48,26 @@ def main():
         print(f"❌ Erro ao carregar conta: {e}")
         sys.exit(1)
     
-    # Criar instância do Safe
+    # Criar EthereumClient (ele cria o Web3 internamente)
     try:
-        safe = Safe(SAFE_ADDRESS, RPC_URL)
+        ethereum_client = EthereumClient(RPC_URL)
+        # Verificar conexão
+        w3 = ethereum_client.w3
+        if not w3.is_connected():
+            print(f"❌ Erro: Não foi possível conectar ao RPC: {RPC_URL}")
+            sys.exit(1)
+        
+        print(f"✅ Conectado à BSC Testnet")
+        print(f"   Chain ID: {w3.eth.chain_id}")
+        print("")
+        
+        # Criar instância do Safe
+        safe = Safe(Web3.to_checksum_address(SAFE_ADDRESS), ethereum_client)
         print(f"✅ Safe carregado: {SAFE_ADDRESS}")
     except Exception as e:
         print(f"❌ Erro ao carregar Safe: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     
     # Preparar transação
@@ -98,9 +108,22 @@ def main():
         print("✅ Transação assinada!")
         print("")
         
-        # Aprovar hash (propor)
+        # Aprovar hash (propor) usando o contrato diretamente
         print("📤 Aprovando hash (criando proposta)...")
-        tx_hash = safe.approve_hash(safe_tx.safe_tx_hash, account.key)
+        tx_hash_bytes = safe_tx.safe_tx_hash
+        
+        # Construir transação para approveHash
+        approve_tx = safe.contract.functions.approveHash(tx_hash_bytes).build_transaction({
+            'from': account.address,
+            'nonce': w3.eth.get_transaction_count(account.address),
+            'gas': 100000,
+            'gasPrice': w3.eth.gas_price,
+            'chainId': w3.eth.chain_id
+        })
+        
+        # Assinar e enviar
+        signed_txn = w3.eth.account.sign_transaction(approve_tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
         
         print("")
         print("=" * 80)

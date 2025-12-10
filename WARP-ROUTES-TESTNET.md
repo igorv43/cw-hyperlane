@@ -776,11 +776,44 @@ Safe (formerly Gnosis Safe) is a smart contract wallet that requires multiple si
 
 ### Step 1: Install Safe CLI
 
+**⚠️ IMPORTANTE:** O Safe CLI Python (`pip install safe-cli`) **não funciona mais** porque o pacote `safe-eth-py` foi removido/descontinuado.
+
+**✅ Use o Safe CLI oficial do Node.js:**
+
 ```bash
-pip install safe-cli
+# Remover qualquer instalação Python antiga (se existir)
+deactivate 2>/dev/null
+rm -rf safe-cli-env
+
+# Instalar Safe CLI oficial do Node.js
+npm install -g @safe-global/safe-cli
+
+# Verificar instalação
+safe --version
 ```
 
-**Note**: If you encounter dependency warnings, they are usually safe to ignore. The CLI will still function correctly.
+**Saída esperada:**
+```
+safe-cli version 0.1.0
+```
+
+**Comandos básicos:**
+```bash
+# Consultar informações do Safe
+safe account info --address 0xSEU_SAFE --chain-id 97
+
+# Listar owners
+safe account owners --address 0xSEU_SAFE --chain-id 97
+
+# Listar transações pendentes
+safe tx list --address 0xSEU_SAFE --chain-id 97
+```
+
+**Chain IDs:**
+- BSC Testnet = 97
+- BSC Mainnet = 56
+
+Para mais detalhes sobre comandos do Safe CLI, consulte o [Guia Completo do Safe CLI](script/SAFE-SCRIPTS-GUIDE.md#-instalação-do-safe-cli-oficial-recomendado).
 
 ### Step 2: Prepare Owner Addresses
 
@@ -917,7 +950,15 @@ https://safe-testnet.safe.global/
 
 Once your Safe multisig is deployed and set as the owner of your warp routes, all governance operations must be executed through the Safe. This ensures that multiple signatures are required for critical changes.
 
-**⚠️ IMPORTANT**: The commands below are based on Safe CLI documentation. Please verify the exact syntax with the latest Safe CLI documentation as syntax may vary by version.
+**⚠️ IMPORTANT**: 
+- O Safe CLI Node.js (`@safe-global/safe-cli`) tem uma sintaxe diferente do Safe CLI Python antigo
+- Os comandos abaixo são exemplos baseados na versão Python antiga (que não funciona mais)
+- **Recomendação:** Use os scripts Python fornecidos neste repositório (veja seção abaixo) ou consulte a documentação oficial do Safe CLI Node.js
+- Para consultar informações do Safe, use: `safe account info --address 0xSEU_SAFE --chain-id 97`
+
+**Para operações de governança, consulte:**
+- [Guia Completo do Safe CLI](script/SAFE-SCRIPTS-GUIDE.md) - Instruções detalhadas sobre instalação e uso
+- [Scripts Python](script/SAFE-SCRIPTS-GUIDE.md#-scripts-python-alternativa) - Alternativa funcional para criar propostas, confirmar e executar transações
 
 #### Understanding the Safe Transaction Flow
 
@@ -1071,7 +1112,7 @@ safe-cli call \
 
 ### Using Python Scripts (Alternative to Safe CLI)
 
-**⚠️ IMPORTANT**: If `safe-cli` is not working (e.g., ImportError with EtherscanClient), you can use Python scripts directly with `safe-eth-py` library.
+**⚠️ IMPORTANT**: O Safe CLI Python não funciona mais. Use os scripts Python fornecidos neste repositório que funcionam diretamente com `safe-eth-py` library.
 
 #### Prerequisites
 

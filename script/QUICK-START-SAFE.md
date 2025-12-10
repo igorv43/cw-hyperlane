@@ -11,16 +11,23 @@ npm install -g @safe-global/safe-cli
 # Verificar instalação
 safe --version
 
-# Consultar informações do Safe
-safe account info --address 0xSEU_SAFE --chain-id 97
+# Consultar informações do Safe (formato EIP-3770: shortName:address)
+safe account info bnb:0xSEU_SAFE
 
 # Listar transações pendentes
-safe tx list --address 0xSEU_SAFE --chain-id 97
+safe tx list bnb:0xSEU_SAFE
+
+# Ver status de uma transação
+safe tx status <SAFE_TX_HASH>
 ```
 
-**Chain IDs:**
-- BSC Testnet = 97
-- BSC Mainnet = 56
+**⚠️ IMPORTANTE:** O Safe CLI usa formato EIP-3770 (`shortName:address`), não `--address` ou `--chain-id`.
+
+**ShortNames comuns:**
+- BSC Mainnet (56): `bnb`
+- BSC Testnet (97): pode precisar ser adicionada (`safe config chains add`)
+- Ethereum Mainnet (1): `eth`
+- Sepolia Testnet (11155111): `sep`
 
 Para mais detalhes, consulte o [Guia Completo do Safe CLI](SAFE-SCRIPTS-GUIDE.md#-instalação-do-safe-cli-oficial-recomendado).
 

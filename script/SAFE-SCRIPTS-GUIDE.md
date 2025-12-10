@@ -65,91 +65,144 @@ Commands:
 
 ### 🔧 Comandos Básicos do Safe CLI
 
+**⚠️ IMPORTANTE:** O Safe CLI usa o formato **EIP-3770**: `shortName:address`
+
+O formato é: `shortName:0xENDEREÇO` (sem `--address` ou `--chain-id`)
+
 #### 1. Listar contas Safe disponíveis
 
 ```bash
 safe account list
 ```
 
-#### 2. Adicionar um Safe para consulta
+#### 2. Abrir/Adicionar um Safe existente
 
 ```bash
-safe account add --address 0xSEU_SAFE --chain-id 97
+safe account open 0xSEU_SAFE --name "Nome do Safe"
 ```
 
-**Chain IDs importantes:**
-- BSC Testnet = 97
-- BSC Mainnet = 56
-- Ethereum Sepolia = 11155111
-- Ethereum Mainnet = 1
+**Nota:** O Safe CLI detecta automaticamente a chain baseado no endereço ou você pode usar o formato EIP-3770.
 
 #### 3. Consultar informações completas do Safe
 
-Este é o comando principal que consulta direto no contrato:
-
+**Formato correto (EIP-3770):**
 ```bash
-safe account info --address 0xSEU_SAFE --chain-id 97
+safe account info shortName:0xSEU_SAFE
+```
+
+**Exemplos:**
+```bash
+# BSC Mainnet (chain ID 56)
+safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+
+# Ethereum Mainnet
+safe account info eth:0xSEU_SAFE
+
+# Sepolia Testnet
+safe account info sep:0xSEU_SAFE
 ```
 
 **Retorna:**
+- Address (endereço)
+- Chain (rede)
+- Status (Deployed/Not deployed)
+- Version (versão do contrato)
+- Nonce (contador de transações)
 - Owners (proprietários)
 - Threshold (número mínimo de aprovações)
-- Nonce (contador de transações)
-- Versão do contrato
-- Fallback handler
-- Módulos instalados
-- Guard
-- Balance (saldo)
+- Explorer (link para o block explorer)
 
 **Formato JSON (para auditoria):**
 ```bash
-safe account info --address 0xSEU_SAFE --chain-id 97 --json
+safe account info bnb:0xSEU_SAFE --json
 ```
 
-#### 4. Consultar owners
+#### 4. Listar transações
 
 ```bash
-safe account owners --address 0xSEU_SAFE --chain-id 97
+# Listar todas as transações
+safe tx list
+
+# Listar transações de um Safe específico
+safe tx list bnb:0xSEU_SAFE
 ```
 
-#### 5. Consultar threshold
+#### 5. Ver status de uma transação
 
 ```bash
-safe account threshold --address 0xSEU_SAFE --chain-id 97
+safe tx status <SAFE_TX_HASH>
 ```
 
-#### 6. Consultar saldo
+#### 6. Gerenciar owners
 
 ```bash
-safe account balance --address 0xSEU_SAFE --chain-id 97
+# Adicionar owner
+safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
+
+# Remover owner
+safe account remove-owner bnb:0xSEU_SAFE 0xOWNER_REMOVIDO
+
+# Alterar threshold
+safe account change-threshold bnb:0xSEU_SAFE
 ```
 
-#### 7. Listar transações pendentes
+#### 7. Gerenciar transações
 
 ```bash
-safe tx list --address 0xSEU_SAFE --chain-id 97
+# Criar transação
+safe tx create
+
+# Assinar transação
+safe tx sign <SAFE_TX_HASH>
+
+# Executar transação
+safe tx execute <SAFE_TX_HASH>
+```
+
+#### 8. Configurar chains
+
+```bash
+# Listar chains configuradas
+safe config chains list
+
+# Adicionar nova chain
+safe config chains add
+
+# Ver configuração atual
+safe config show
 ```
 
 ### 📝 Exemplos Práticos com Safe CLI
 
-#### Exemplo: Consultar informações do multisig na BSC Testnet
+#### Exemplo: Consultar informações do multisig na BSC Mainnet
 
 ```bash
-# Substitua 0xSEU_SAFE pelo endereço do seu Safe
-safe account info --chain-id 97 --address 0xSEU_SAFE
+# Formato EIP-3770: shortName:address
+safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 ```
 
-#### Exemplo: Listar owners
+#### Exemplo: Listar transações de um Safe
 
 ```bash
-safe account owners --chain-id 97 --address 0xSEU_SAFE
+safe tx list bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 ```
 
-#### Exemplo: Criar uma transação
+#### Exemplo: Ver status de uma transação
 
 ```bash
-safe transfer --chain-id 97 --safe-address 0xSEU_SAFE --to 0xDEST --value 0
+safe tx status 0x73b17378c1d8d5a48dd32dc483faa17aa6e23538ff5e68473f634b91cfe49367
 ```
+
+#### Exemplo: Adicionar um owner
+
+```bash
+safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
+```
+
+**⚠️ Nota sobre BSC Testnet (Chain ID 97):**
+- A BSC Testnet pode não estar configurada por padrão
+- Você precisará adicioná-la usando `safe config chains add`
+- Ou usar o formato EIP-3770 se já estiver configurada (ex: `bnbt:0xSEU_SAFE`)
 
 ### 💡 Vantagens do Safe CLI Node.js
 
@@ -512,13 +565,43 @@ pip install safe-eth-py web3 eth-account
 
 - Verifique quantos owners já confirmaram usando:
   ```bash
-  safe account info --address 0xSEU_SAFE --chain-id 97
+  safe account info bnb:0xSEU_SAFE
   ```
 - Certifique-se de que todos os owners necessários confirmaram
-- Verifique o threshold do Safe:
+- Verifique o status da transação:
   ```bash
-  safe account threshold --address 0xSEU_SAFE --chain-id 97
+  safe tx status <SAFE_TX_HASH>
   ```
+
+### Erro: "unknown option '--address'"
+
+**Problema:** O Safe CLI não usa `--address` ou `--chain-id` como opções.
+
+**Solução:** Use o formato EIP-3770: `shortName:address`
+
+```bash
+# ❌ ERRADO
+safe account info --address 0xSEU_SAFE --chain-id 97
+
+# ✅ CORRETO
+safe account info bnb:0xSEU_SAFE
+```
+
+### Como descobrir o shortName de uma chain
+
+```bash
+# Listar todas as chains configuradas
+safe config chains list
+
+# Ver configuração completa
+safe config show
+```
+
+Os shortNames comuns:
+- BSC Mainnet (56): `bnb`
+- Ethereum Mainnet (1): `eth`
+- Sepolia Testnet (11155111): `sep`
+- BSC Testnet (97): pode precisar ser adicionada manualmente
 
 ### Comando Safe CLI não encontrado
 

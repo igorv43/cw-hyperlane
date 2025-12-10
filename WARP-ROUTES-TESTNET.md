@@ -956,8 +956,21 @@ Once your Safe multisig is deployed and set as the owner of your warp routes, al
 - **Recomendação:** Use os scripts Python fornecidos neste repositório (veja seção abaixo) ou consulte a documentação oficial do Safe CLI Node.js
 - Para consultar informações do Safe, use: `safe account info --address 0xSEU_SAFE --chain-id 97`
 
+**⚠️ IMPORTANTE - Formato Correto dos Comandos:**
+
+O Safe CLI Node.js usa o formato **EIP-3770**: `shortName:address` (sem `--address` ou `--chain-id`)
+
+**Exemplos corretos:**
+```bash
+# ✅ CORRETO - Consultar informações
+safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+
+# ❌ ERRADO - Não funciona
+safe account info --address 0xSEU_SAFE --chain-id 97
+```
+
 **Para operações de governança, consulte:**
-- [Guia Completo do Safe CLI](script/SAFE-SCRIPTS-GUIDE.md) - Instruções detalhadas sobre instalação e uso
+- [Guia Completo do Safe CLI](script/SAFE-SCRIPTS-GUIDE.md) - Instruções detalhadas sobre instalação e uso com comandos corretos
 - [Scripts Python](script/SAFE-SCRIPTS-GUIDE.md#-scripts-python-alternativa) - Alternativa funcional para criar propostas, confirmar e executar transações
 
 #### Understanding the Safe Transaction Flow

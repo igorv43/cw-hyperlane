@@ -1,63 +1,63 @@
-# Guia de Uso do Safe CLI e Scripts Python
+# Safe CLI and Python Scripts Usage Guide
 
-Este guia explica como instalar e usar o Safe CLI oficial (Node.js) e também os scripts Python alternativos para gerenciar transações no Safe multisig.
+This guide explains how to install and use the official Safe CLI (Node.js) and also the alternative Python scripts to manage transactions in Safe multisig.
 
-## 🚀 Resumo Rápido - Criar e Executar Transação
+## 🚀 Quick Summary - Create and Execute Transaction
 
-1. **Instalar:** `npm install -g @safe-global/safe-cli`
-2. **Configurar chain:** `safe config chains add` (Chain ID: 97, Short name: `tbnb`)
-3. **Importar wallet:** `safe wallet import --private-key 0xKEY --name "Wallet"`
-4. **Abrir Safe:** `safe account open tbnb:0xSEU_SAFE --name "Safe"`
-5. **Criar transação:** `safe tx create` (forneça to, value, data)
-6. **Assinar:** Escolha "Yes" quando perguntado
-7. **Executar:** Se der erro GS013, use `cast` diretamente (veja seção [Erro GS013](#erro-gs013-ao-executar-transação))
+1. **Install:** `npm install -g @safe-global/safe-cli`
+2. **Configure chain:** `safe config chains add` (Chain ID: 97, Short name: `tbnb`)
+3. **Import wallet:** `safe wallet import --private-key 0xKEY --name "Wallet"`
+4. **Open Safe:** `safe account open tbnb:0xYOUR_SAFE --name "Safe"`
+5. **Create transaction:** `safe tx create` (provide to, value, data)
+6. **Sign:** Choose "Yes" when asked
+7. **Execute:** If you get GS013 error, use `cast` directly (see section [GS013 Error](#gs013-error-when-executing-transaction))
 
-**⚠️ IMPORTANTE:** 
-- Para BSC Testnet, você pode precisar executar via `cast` após aprovar o hash on-chain devido a limitações do Safe CLI sem Safe Transaction Service configurado.
-- **Para atualizar ISM do Warp Route:** O ISM atual é imutável. Você precisa criar um novo ISM via factory e atualizar o Warp Route (veja [Exemplo 1: Atualizar ISM](#exemplo-1-atualizar-ism-de-um-warp-route)).
+**⚠️ IMPORTANT:** 
+- For BSC Testnet, you may need to execute via `cast` after approving the hash on-chain due to Safe CLI limitations without Safe Transaction Service configured.
+- **To update Warp Route ISM:** The current ISM is immutable. You need to create a new ISM via factory and update the Warp Route (see [Example 1: Update ISM](#example-1-update-warp-route-ism)).
 
-## 🎯 Instalação do Safe CLI Oficial (Recomendado)
+## 🎯 Official Safe CLI Installation (Recommended)
 
-### ⚠️ Por que usar a versão Node.js?
+### ⚠️ Why use the Node.js version?
 
-O Safe CLI Python (`safe-cli` via pip) **não funciona mais** porque:
-- O pacote `safe-eth-py` foi removido/descontinuado
-- O Safe CLI Python depende desse pacote
-- Nenhuma versão disponível contém o módulo esperado
-- O repositório foi descontinuado
+The Python Safe CLI (`safe-cli` via pip) **no longer works** because:
+- The `safe-eth-py` package was removed/discontinued
+- The Python Safe CLI depends on this package
+- No available version contains the expected module
+- The repository was discontinued
 
-**✅ Solução: Use o Safe CLI oficial do Node.js**
+**✅ Solution: Use the official Node.js Safe CLI**
 
-### 📦 Instalação (Funciona 100%)
+### 📦 Installation (100% Working)
 
-#### Passo 1: Remover qualquer instalação antiga (se houver)
+#### Step 1: Remove any old installation (if any)
 
 ```bash
-# Desativar virtualenv Python antigo (se existir)
+# Deactivate old Python virtualenv (if exists)
 deactivate 2>/dev/null
 rm -rf safe-cli-env
 ```
 
-#### Passo 2: Instalar a CLI Node.js oficial
+#### Step 2: Install the official Node.js CLI
 
 ```bash
 npm install -g @safe-global/safe-cli
 ```
 
-#### Passo 3: Verificar instalação
+#### Step 3: Verify installation
 
 ```bash
 safe --version
-# ou
+# or
 safe version
 ```
 
-**Saída esperada:**
+**Expected output:**
 ```
 safe-cli version 0.1.0
 ```
 
-#### Passo 4: Verificar comandos disponíveis
+#### Step 4: Check available commands
 
 ```bash
 safe help
@@ -77,31 +77,31 @@ Commands:
   help [command]          display help for command
 ```
 
-### 🔧 Comandos Básicos do Safe CLI
+### 🔧 Basic Safe CLI Commands
 
-**⚠️ IMPORTANTE:** O Safe CLI usa o formato **EIP-3770**: `shortName:address`
+**⚠️ IMPORTANT:** The Safe CLI uses the **EIP-3770** format: `shortName:address`
 
-O formato é: `shortName:0xENDEREÇO` (sem `--address` ou `--chain-id`)
+The format is: `shortName:0xADDRESS` (without `--address` or `--chain-id`)
 
-#### 1. Listar contas Safe disponíveis
+#### 1. List available Safe accounts
 
 ```bash
 safe account list
 ```
 
-#### 2. Abrir/Adicionar um Safe existente
+#### 2. Open/Add an existing Safe
 
-**Formato EIP-3770 (recomendado):**
+**EIP-3770 format (recommended):**
 ```bash
-safe account open shortName:0xSEU_SAFE --name "Nome do Safe"
+safe account open shortName:0xYOUR_SAFE --name "Safe Name"
 ```
 
-**Exemplo para BSC Testnet:**
+**Example for BSC Testnet:**
 ```bash
 safe account open tbnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee --name "BSC Testnet Safe"
 ```
 
-**Saída esperada:**
+**Expected output:**
 ```
 ✓ Safe Added to Workspace!
 
@@ -119,247 +119,249 @@ Safe Information:
 Safe ready to use
 ```
 
-**Nota:** Use o formato EIP-3770 (`shortName:address`) para especificar a chain corretamente.
+**Note:** Use the EIP-3770 format (`shortName:address`) to specify the chain correctly.
 
-#### 3. Consultar informações completas do Safe
+#### 3. Query complete Safe information
 
-**Formato correto (EIP-3770):**
+**Correct format (EIP-3770):**
 ```bash
-safe account info shortName:0xSEU_SAFE
+safe account info shortName:0xYOUR_SAFE
 ```
 
-**Exemplos:**
+**Examples:**
 ```bash
 # BSC Mainnet (chain ID 56)
 safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 
-# BSC Testnet (chain ID 97) - após adicionar a chain
-safe account info tbnb:0xSEU_SAFE
+# BSC Testnet (chain ID 97) - after adding the chain
+safe account info tbnb:0xYOUR_SAFE
 
 # Ethereum Mainnet
-safe account info eth:0xSEU_SAFE
+safe account info eth:0xYOUR_SAFE
 
 # Sepolia Testnet
-safe account info sep:0xSEU_SAFE
+safe account info sep:0xYOUR_SAFE
 ```
 
-**Retorna:**
-- Address (endereço)
-- Chain (rede)
+**Returns:**
+- Address
+- Chain
 - Status (Deployed/Not deployed)
-- Version (versão do contrato)
-- Nonce (contador de transações)
-- Owners (proprietários)
-- Threshold (número mínimo de aprovações)
-- Explorer (link para o block explorer)
+- Version (contract version)
+- Nonce (transaction counter)
+- Owners
+- Threshold (minimum number of approvals)
+- Explorer (link to block explorer)
 
-**Formato JSON (para auditoria):**
+**JSON format (for auditing):**
 ```bash
-safe account info bnb:0xSEU_SAFE --json
+safe account info bnb:0xYOUR_SAFE --json
 ```
 
-#### 4. Listar transações
+#### 4. List transactions
 
 ```bash
-# Listar todas as transações
+# List all transactions
 safe tx list
 
-# Listar transações de um Safe específico
-safe tx list bnb:0xSEU_SAFE
+# List transactions from a specific Safe
+safe tx list bnb:0xYOUR_SAFE
 ```
 
-#### 5. Ver status de uma transação
+#### 5. View transaction status
 
 ```bash
 safe tx status <SAFE_TX_HASH>
 ```
 
-#### 6. Gerenciar owners
+#### 6. Manage owners
 
 ```bash
-# Adicionar owner
-safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
+# Add owner
+safe account add-owner bnb:0xYOUR_SAFE 0xNEW_OWNER --threshold 2
 
-# Remover owner
-safe account remove-owner bnb:0xSEU_SAFE 0xOWNER_REMOVIDO
+# Remove owner
+safe account remove-owner bnb:0xYOUR_SAFE 0xOWNER_TO_REMOVE
 
-# Alterar threshold
-safe account change-threshold bnb:0xSEU_SAFE
+# Change threshold
+safe account change-threshold bnb:0xYOUR_SAFE
 ```
 
-#### 7. Gerenciar transações
+#### 7. Manage transactions
 
-**⚠️ IMPORTANTE:** Antes de criar transações, você precisa:
-1. Ter uma wallet importada: `safe wallet import --private-key 0xKEY --name "Wallet"`
-2. Ter um Safe aberto: `safe account open tbnb:0xSEU_SAFE --name "Safe"`
+**⚠️ IMPORTANT:** Before creating transactions, you need:
+1. Have a wallet imported: `safe wallet import --private-key 0xKEY --name "Wallet"`
+2. Have a Safe opened: `safe account open tbnb:0xYOUR_SAFE --name "Safe"`
 
 ```bash
-# Criar transação (interativo)
+# Create transaction (interactive)
 safe tx create
 
-# Assinar transação
+# Sign transaction
 safe tx sign <SAFE_TX_HASH>
 
-# Executar transação
+# Execute transaction
 safe tx execute <SAFE_TX_HASH>
 
-# Listar transações do Safe
-safe tx list tbnb:0xSEU_SAFE
+# List Safe transactions
+safe tx list tbnb:0xYOUR_SAFE
 
-# Ver status de uma transação
+# View transaction status
 safe tx status <SAFE_TX_HASH>
 ```
 
-### 📝 Processo Completo: Criar e Executar Transação
+### 📝 Complete Process: Create and Execute Transaction
 
-#### Passo 1: Importar Wallet
-
-```bash
-safe wallet import --private-key 0xSUA_PRIVATE_KEY --name "Minha Wallet"
-```
-
-#### Passo 2: Abrir Safe
+#### Step 1: Import Wallet
 
 ```bash
-safe account open tbnb:0xSEU_SAFE --name "BSC Testnet Safe"
+safe wallet import --private-key 0xYOUR_PRIVATE_KEY --name "My Wallet"
 ```
 
-#### Passo 3: Criar Transação
+#### Step 2: Open Safe
+
+```bash
+safe account open tbnb:0xYOUR_SAFE --name "BSC Testnet Safe"
+```
+
+#### Step 3: Create Transaction
 
 ```bash
 safe tx create
 ```
 
-O CLI vai abrir um assistente interativo. Siga os passos:
+The CLI will open an interactive assistant. Follow the steps:
 
 **3.1. Select Safe to create transaction for**
-- O CLI mostrará os Safes disponíveis
-- Selecione o Safe desejado (ex: `BSC Testnet Safe (tbnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee)`)
-- Pressione Enter
+- The CLI will show available Safes
+- Select the desired Safe (e.g., `BSC Testnet Safe (tbnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee)`)
+- Press Enter
 
 **3.2. To address (supports EIP-3770 format: shortName:address)**
-- Informe o endereço do contrato destino
-- Use formato EIP-3770: `tbnb:0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA`
-- Pressione Enter
+- Enter the destination contract address
+- Use EIP-3770 format: `tbnb:0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA`
+- Press Enter
 
-**Nota:** Se o contrato for detectado, o CLI tentará buscar o ABI automaticamente. Se não encontrar, continuará com entrada manual.
+**Note:** If the contract is detected, the CLI will try to fetch the ABI automatically. If not found, it will continue with manual input.
 
 **3.3. Value in wei (0 for token transfer)**
-- Para chamadas de função, geralmente é `0`
-- Digite `0` e pressione Enter
+- For function calls, it's usually `0`
+- Type `0` and press Enter
 
 **3.4. Transaction data (hex)**
-- Cole o calldata gerado com `cast`
-- Exemplo: `0x46c9aba8000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000242d8a855a8c932dec51f7999ae7d1e48b10c95e000000000000000000000000f620f5e3d25a3ae848fec74bccae5de3edcd87960000000000000000000000001f030345963c54ff8229720dd3a711c15c554aeb`
-- Pressione Enter
+- Paste the calldata generated with `cast`
+- Example: `0x46c9aba8000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000242d8a855a8c932dec51f7999ae7d1e48b10c95e000000000000000000000000f620f5e3d25a3ae848fec74bccae5de3edcd87960000000000000000000000001f030345963c54ff8229720dd3a711c15c554aeb`
+- Press Enter
 
-**Gerar calldata com cast (antes de criar a transação):**
+**Generate calldata with cast (before creating the transaction):**
 ```bash
-# Exemplo: Atualizar ISM
-cast calldata "setInterchainSecurityModule(address)" 0xNOVO_ISM
+# Example: Update ISM
+cast calldata "setInterchainSecurityModule(address)" 0xNEW_ISM
 
-# Exemplo: Pausar contrato
+# Example: Pause contract
 cast calldata "pause()"
 
-# Exemplo: Adicionar validadores (Hyperlane ISM Multisig)
-# Assinatura correta: setValidators(uint32 domain, uint8 threshold, address[] validators)
+# Example: Add validators (Hyperlane ISM Multisig)
+# Correct signature: setValidators(uint32 domain, uint8 threshold, address[] validators)
 cast calldata "setValidators(uint32,uint8,address[])" 97 2 "[0xADDR1,0xADDR2,0xADDR3]"
-# Parâmetros: domain (97 para BSC Testnet), threshold (2), validators (array)
+# Parameters: domain (97 for BSC Testnet), threshold (2), validators (array)
 ```
 
 **3.5. Operation type**
-- Escolha entre:
-  - `Call` (Standard transaction call) - **Recomendado para a maioria dos casos**
-  - `DelegateCall` - Use apenas se souber o que está fazendo
-- Use as setas para selecionar e pressione Enter
+- Choose between:
+  - `Call` (Standard transaction call) - **Recommended for most cases**
+  - `DelegateCall` - Use only if you know what you're doing
+- Use arrows to select and press Enter
 
 **3.6. Transaction nonce (leave empty for default)**
-- Deixe vazio e pressione Enter (o CLI usará o nonce atual automaticamente)
-- Ou informe um nonce específico se necessário
+- Leave empty and press Enter (the CLI will use the current nonce automatically)
+- Or enter a specific nonce if needed
 
-**Saída esperada:**
+**Expected output:**
 ```
 ✓ Transaction created successfully!
 
   Safe TX Hash: 0x90a0006f32b660ddeaa3f984010a59ded306529fb57e9acec2706a29d0301d08
 ```
 
-**⚠️ IMPORTANTE:** Salve o **Safe TX Hash** - você precisará dele para os próximos passos!
+**⚠️ IMPORTANT:** Save the **Safe TX Hash** - you'll need it for the next steps!
 
-#### Passo 4: Assinar Transação
+#### Step 4: Sign Transaction
 
-Após criar a transação, o CLI perguntará:
+After creating the transaction, the CLI will ask:
 
 **"Would you like to sign this transaction now?"**
-- Escolha **Yes** (use as setas e pressione Enter)
+- Choose **Yes** (use arrows and press Enter)
 
-O CLI abrirá a tela de assinatura:
+The CLI will open the signing screen:
 
 **4.1. Enter wallet password**
-- Se você definiu `SAFE_WALLET_PASSWORD`, o CLI usará automaticamente
-- Caso contrário, digite a senha da wallet e pressione Enter
-- A senha não será exibida na tela (aparecerá como `▪▪▪▪▪▪▪▪▪▪▪`)
+- If you set `SAFE_WALLET_PASSWORD`, the CLI will use it automatically
+- Otherwise, type the wallet password and press Enter
+- The password will not be displayed on screen (will appear as `▪▪▪▪▪▪▪▪▪▪▪`)
 
-**Para evitar digitar a senha toda vez, defina a variável de ambiente:**
+**To avoid typing the password every time, set the environment variable:**
 ```bash
-export SAFE_WALLET_PASSWORD="sua_senha"
+export SAFE_WALLET_PASSWORD="your_password"
 ```
 
-**Saída esperada:**
+**Expected output:**
 ```
 ✓ Signature added (1/1 required)
 
 ✓ Transaction is ready to execute!
 ```
 
-**Nota:** Se o threshold for maior que 1, você precisará que outros owners também assinem a transação.
+**Note:** If the threshold is greater than 1, you'll need other owners to also sign the transaction.
 
-#### Passo 5: Executar Transação
+#### Step 5: Execute Transaction
 
-Após assinar, o CLI perguntará:
+After signing, the CLI will ask:
 
 **"What would you like to do?"**
-- **Execute transaction on-chain (Recommended)** - Tenta executar imediatamente
-- **Push to Safe Transaction Service** - Apenas envia para o serviço (não executa)
-- **Skip for now** - Não faz nada agora
+- **Execute transaction on-chain (Recommended)** - Tries to execute immediately
+- **Push to Safe Transaction Service** - Only sends to the service (doesn't execute)
+- **Skip for now** - Doesn't do anything now
 
-Escolha **Execute transaction on-chain**.
+Choose **Execute transaction on-chain**.
 
-O CLI mostrará os detalhes da transação e perguntará:
+The CLI will show the transaction details and ask:
 
 **"Execute this transaction on-chain?"**
-- Escolha **Yes**
+- Choose **Yes**
 
-Você precisará informar a senha da wallet novamente (ou será usada automaticamente se `SAFE_WALLET_PASSWORD` estiver definida).
+You'll need to enter the wallet password again (or it will be used automatically if `SAFE_WALLET_PASSWORD` is set).
 
-**⚠️ PROBLEMA COMUM:** O Safe CLI pode falhar com erro **GS013** ao executar transações na BSC Testnet quando o Safe Transaction Service não está configurado corretamente ou quando há problemas com o formato das assinaturas.
+**⚠️ COMMON PROBLEM:** The Safe CLI may fail with **GS013** error when executing transactions on BSC Testnet when the Safe Transaction Service is not configured correctly or when there are issues with signature formatting.
 
-**Se o erro GS013 ocorrer, use a solução abaixo:**
+**If the GS013 error occurs, use the solution below:**
 
-**Solução:** Execute diretamente via `cast` após aprovar o hash on-chain:
+**Solution:** Execute directly via `cast` after approving the hash on-chain:
 
-##### 5.1. Aprovar Hash On-Chain
+##### 5.1. Approve Hash On-Chain
 
 ```bash
-cast send 0xSEU_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
-  --private-key 0xSUA_PRIVATE_KEY \
+cast send 0xYOUR_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
+  --private-key 0xYOUR_PRIVATE_KEY \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
+  --gas-price 100000000
+```
+
+##### 5.2. Verify Approval
+
+```bash
+cast call 0xYOUR_SAFE "approvedHashes(address,bytes32)(uint256)" \
+  0xYOUR_ADDRESS 0xSAFE_TX_HASH \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 ```
 
-##### 5.2. Verificar Aprovação
+Should return `1` if approved.
+
+##### 5.3. Execute Transaction via Cast
 
 ```bash
-cast call 0xSEU_SAFE "approvedHashes(address,bytes32)(uint256)" \
-  0xSEU_ENDERECO 0xSAFE_TX_HASH \
-  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-```
-
-Deve retornar `1` se aprovado.
-
-##### 5.3. Executar Transação via Cast
-
-```bash
-cast send 0xSEU_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
+cast send 0xYOUR_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
   0xTO_ADDRESS \
   0 \
   0xCALLDATA \
@@ -369,44 +371,47 @@ cast send 0xSEU_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint25
   100000000 \
   0x0000000000000000000000000000000000000000 \
   0x0000000000000000000000000000000000000000 \
-  0x000000000000000000000000SEU_ENDERECO000000000000000000000000000000000000000000000000000000000000000001 \
-  --private-key 0xSUA_PRIVATE_KEY \
+  0x000000000000000000000000YOUR_ADDRESS000000000000000000000000000000000000000000000000000000000000000001 \
+  --private-key 0xYOUR_PRIVATE_KEY \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
   --gas-price 100000000
 ```
 
-**Parâmetros importantes:**
-- `safeTxGas`: `200000` (ou maior se necessário)
-- `gasPrice`: `100000000` (ou o mínimo da rede)
-- `signatures`: Formato `0x000000000000000000000000SEU_ENDERECO000000000000000000000000000000000000000000000000000000000000000001`
-  - Address do owner (20 bytes)
-  - `v = 0x01` (1 byte) quando hash foi aprovado via `approveHash`
-  - `r` e `s` = zeros (64 bytes)
+**Important parameters:**
+- `safeTxGas`: `200000` (or higher if needed)
+- `gasPrice`: `100000000` (or the network minimum)
+- `signatures`: Format `0x000000000000000000000000YOUR_ADDRESS000000000000000000000000000000000000000000000000000000000000000001`
+  - Owner address (20 bytes)
+  - `v = 0x01` (1 byte) when hash was approved via `approveHash`
+  - `r` and `s` = zeros (64 bytes)
 
-**⚠️ IMPORTANTE - Problemas Comuns:**
+**⚠️ IMPORTANT - Common Problems:**
 
-1. **Erro "execution reverted" após execução bem-sucedida do Safe:**
-   - Verifique se o Safe é o **owner** do contrato destino
-   - Se não for, transfira a ownership primeiro: `cast send CONTRATO "transferOwnership(address)" 0xSEU_SAFE --private-key 0xKEY --rpc-url URL`
+1. **"execution reverted" error after successful Safe execution:**
+   - Verify if the Safe is the **owner** of the destination contract
+   - If not, transfer ownership first: `cast send CONTRACT "transferOwnership(address)" 0xYOUR_SAFE --private-key 0xKEY --rpc-url URL`
 
-2. **Assinatura incorreta da função:**
-   - Para Hyperlane ISM Multisig, use: `setValidators(uint32,uint8,address[])`
-   - **NÃO** use: `setValidators(address[],uint8)` (assinatura incorreta)
-   - Parâmetros corretos: `domain` (uint32), `threshold` (uint8), `validators` (address[])
+2. **Incorrect function signature:**
+   - For Hyperlane ISM Multisig, use: `setValidators(uint32,uint8,address[])`
+   - **DO NOT** use: `setValidators(address[],uint8)` (incorrect signature)
+   - Correct parameters: `domain` (uint32), `threshold` (uint8), `validators` (address[])
 
-3. **Erro de gas price no cast:**
-   - Use `--legacy` quando usar `--gas-price` para evitar conflitos com EIP-1559
+3. **Gas price error in cast:**
+   - Use `--legacy` when using `--gas-price` to avoid conflicts with EIP-1559
 
-**Exemplo completo:**
+**Complete example:**
 ```bash
-# 1. Aprovar hash
+# 1. Approve hash
 cast send 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
   "approveHash(bytes32)" 0x90a0006f32b660ddeaa3f984010a59ded306529fb57e9acec2706a29d0301d08 \
-  --private-key 0xSUA_PRIVATE_KEY \
-  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+  --private-key 0xYOUR_PRIVATE_KEY \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
+  --gas-price 100000000
 
-# 2. Executar (exemplo com setValidators correto para Hyperlane ISM Multisig)
-# Calldata correto: setValidators(uint32,uint8,address[])
+# 2. Execute (example with correct setValidators for Hyperlane ISM Multisig)
+# Correct calldata: setValidators(uint32,uint8,address[])
 cast send 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
   "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
   0x63B2f9C469F422De8069Ef6FE382672F16a367d3 \
@@ -419,97 +424,97 @@ cast send 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
   0x0000000000000000000000000000000000000000 \
   0x0000000000000000000000000000000000000000 \
   0x0000000000000000000000008BD456605473ad4727ACfDCA0040a0dBD4be2DEA000000000000000000000000000000000000000000000000000000000000000001 \
-  --private-key 0xSUA_PRIVATE_KEY \
+  --private-key 0xYOUR_PRIVATE_KEY \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
   --legacy \
   --gas-price 100000000
 ```
 
-#### 8. Configurar chains
+#### 8. Configure chains
 
 ```bash
-# Listar chains configuradas
+# List configured chains
 safe config chains list
 
-# Adicionar nova chain
+# Add new chain
 safe config chains add
 
-# Ver configuração atual
+# View current configuration
 safe config show
 ```
 
-### 📝 Exemplos Práticos com Safe CLI
+### 📝 Practical Examples with Safe CLI
 
-#### Exemplo: Consultar informações do multisig na BSC Mainnet
+#### Example: Query multisig information on BSC Mainnet
 
 ```bash
-# Formato EIP-3770: shortName:address
+# EIP-3770 format: shortName:address
 safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 ```
 
-#### Exemplo: Listar transações de um Safe
+#### Example: List transactions from a Safe
 
 ```bash
 safe tx list bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 ```
 
-#### Exemplo: Ver status de uma transação
+#### Example: View transaction status
 
 ```bash
 safe tx status 0x73b17378c1d8d5a48dd32dc483faa17aa6e23538ff5e68473f634b91cfe49367
 ```
 
-#### Exemplo: Adicionar um owner
+#### Example: Add an owner
 
 ```bash
-safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
+safe account add-owner bnb:0xYOUR_SAFE 0xNEW_OWNER --threshold 2
 ```
 
-**⚠️ Nota sobre BSC Testnet (Chain ID 97):**
-- A BSC Testnet pode não estar configurada por padrão
-- Você precisará adicioná-la usando `safe config chains add` (veja seção [Configurar Chains](#-configurar-chains-adicionar-bsc-testnet))
-- Após adicionar, use o short name escolhido no formato EIP-3770 (ex: `tbnb:0xSEU_SAFE`)
+**⚠️ Note about BSC Testnet (Chain ID 97):**
+- BSC Testnet may not be configured by default
+- You'll need to add it using `safe config chains add` (see section [Configure Chains](#-configure-chains-add-bsc-testnet))
+- After adding, use the chosen short name in EIP-3770 format (e.g., `tbnb:0xYOUR_SAFE`)
 
-### 💡 Vantagens do Safe CLI Node.js
+### 💡 Advantages of Node.js Safe CLI
 
-- ✅ Funciona perfeitamente (versão oficial mantida)
-- ✅ Consulta direto no contrato (transparente e auditável)
-- ✅ Sem dependências Python problemáticas
-- ✅ Comandos simples e intuitivos
-- ✅ Suporte a múltiplas chains
-- ✅ Formato JSON para automação
+- ✅ Works perfectly (officially maintained version)
+- ✅ Queries contract directly (transparent and auditable)
+- ✅ No problematic Python dependencies
+- ✅ Simple and intuitive commands
+- ✅ Support for multiple chains
+- ✅ JSON format for automation
 
-### ⚙️ Configurar Chains (Adicionar BSC Testnet)
+### ⚙️ Configure Chains (Add BSC Testnet)
 
-Por padrão, o Safe CLI vem com várias chains configuradas, mas pode não incluir a BSC Testnet (Chain ID 97). Para adicionar:
+By default, the Safe CLI comes with several chains configured, but may not include BSC Testnet (Chain ID 97). To add:
 
-#### Listar chains configuradas
+#### List configured chains
 
 ```bash
 safe config chains list
 ```
 
-#### Adicionar BSC Testnet
+#### Add BSC Testnet
 
-Execute o comando interativo:
+Run the interactive command:
 
 ```bash
 safe config chains add
 ```
 
-**Valores para BSC Testnet:**
+**Values for BSC Testnet:**
 
-Quando solicitado, informe:
+When prompted, enter:
 
 - **Chain ID:** `97`
 - **Chain name:** `BSC Testnet`
-- **Short name (EIP-3770):** `tbnb` (ou outro nome de sua preferência, ex: `bsc-testnet`)
+- **Short name (EIP-3770):** `tbnb` (or another name of your preference, e.g., `bsc-testnet`)
 - **RPC URL:** `https://data-seed-prebsc-1-s1.binance.org:8545`
 - **Block explorer URL (optional):** `https://testnet.bscscan.com`
 - **Native currency symbol:** `BNB`
-- **Safe Transaction Service URL (optional):** `https://safe-transaction-bsc.safe.global` (use o do BSC Mainnet, mas pode não funcionar para testnet)
+- **Safe Transaction Service URL (optional):** `https://safe-transaction-bsc.safe.global` (use BSC Mainnet's, but may not work for testnet)
 
-**Exemplo de saída:**
+**Example output:**
 ```
 ✓ Chain Added Successfully!
 
@@ -519,340 +524,340 @@ Chain ID:  97
 Chain configuration saved
 ```
 
-**Após adicionar, você pode usar:**
+**After adding, you can use:**
 ```bash
-# Abrir Safe na BSC Testnet
-safe account open tbnb:0xSEU_SAFE --name "BSC Testnet Safe"
+# Open Safe on BSC Testnet
+safe account open tbnb:0xYOUR_SAFE --name "BSC Testnet Safe"
 
-# Consultar Safe na BSC Testnet
-safe account info tbnb:0xSEU_SAFE
+# Query Safe on BSC Testnet
+safe account info tbnb:0xYOUR_SAFE
 
-# Listar transações
-safe tx list tbnb:0xSEU_SAFE
+# List transactions
+safe tx list tbnb:0xYOUR_SAFE
 ```
 
-**Nota:** O short name que você escolher (ex: `tbnb`) será usado no formato EIP-3770 para identificar a chain.
+**Note:** The short name you choose (e.g., `tbnb`) will be used in EIP-3770 format to identify the chain.
 
-#### Configurar Safe Transaction Service (Opcional)
+#### Configure Safe Transaction Service (Optional)
 
-**⚠️ IMPORTANTE:** O Safe Transaction Service pode não estar disponível para BSC Testnet. Se configurado, você pode usar o URL do BSC Mainnet, mas pode não funcionar corretamente para testnet.
+**⚠️ IMPORTANT:** The Safe Transaction Service may not be available for BSC Testnet. If configured, you can use the BSC Mainnet URL, but it may not work correctly for testnet.
 
-Para adicionar/editar o Transaction Service URL:
+To add/edit the Transaction Service URL:
 
 ```bash
-# Editar configuração das chains
+# Edit chain configuration
 safe config chains edit
 ```
 
-Procure pela chain ID 97 (BSC Testnet) e adicione:
+Look for chain ID 97 (BSC Testnet) and add:
 ```json
 "transactionServiceUrl": "https://safe-transaction-bsc.safe.global"
 ```
 
-**Nota:** Mesmo com o Transaction Service configurado, você pode precisar executar transações diretamente via `cast` devido a limitações com BSC Testnet.
+**Note:** Even with the Transaction Service configured, you may need to execute transactions directly via `cast` due to limitations with BSC Testnet.
 
-#### Verificar configuração
+#### Verify configuration
 
 ```bash
-# Ver todas as chains configuradas
+# View all configured chains
 safe config chains list
 
-# Ver configuração completa
+# View complete configuration
 safe config show
 ```
 
 ---
 
-## 📋 Scripts Python (Alternativa)
+## 📋 Python Scripts (Alternative)
 
-Se preferir usar scripts Python ou precisar de funcionalidades específicas, você pode usar os scripts Python abaixo. **Nota:** Estes scripts dependem de bibliotecas Python que podem ter problemas de compatibilidade.
+If you prefer to use Python scripts or need specific functionality, you can use the Python scripts below. **Note:** These scripts depend on Python libraries that may have compatibility issues.
 
-### 1. Instalar Dependências Python (Opcional)
+### 1. Install Python Dependencies (Optional)
 
 ```bash
-# Instalar bibliotecas Python necessárias
+# Install required Python libraries
 pip3 install safe-eth-py web3 eth-account
 
-# Verificar instalação
-python3 -c "from safe_eth_py import Safe; print('✅ safe-eth-py instalado')"
+# Verify installation
+python3 -c "from safe_eth_py import Safe; print('✅ safe-eth-py installed')"
 ```
 
-**⚠️ AVISO:** O `safe-eth-py` pode não funcionar corretamente devido a problemas de compatibilidade. Recomendamos usar o Safe CLI Node.js acima.
+**⚠️ WARNING:** The `safe-eth-py` may not work correctly due to compatibility issues. We recommend using the Node.js Safe CLI above.
 
-### 2. Ter Instalado o `cast` (Foundry)
+### 2. Have `cast` (Foundry) Installed
 
-Para codificar chamadas de função, você precisa do `cast`:
+To encode function calls, you need `cast`:
 
 ```bash
-# Verificar se cast está instalado
+# Check if cast is installed
 cast --version
 
-# Se não estiver, instale Foundry:
+# If not, install Foundry:
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 ```
 
-## 🔧 Configuração
+## 🔧 Configuration
 
-Os scripts estão configurados para usar:
+The scripts are configured to use:
 - **Safe Address**: `0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee`
 - **RPC URL**: `https://data-seed-prebsc-1-s1.binance.org:8545` (BSC Testnet)
 
-Para alterar, edite as variáveis no início de cada script.
+To change, edit the variables at the beginning of each script.
 
 ---
 
-## 📝 Script 1: `safe-propose-direct.py` - Criar Proposta
+## 📝 Script 1: `safe-propose-direct.py` - Create Proposal
 
-Este script cria uma nova proposta de transação no Safe.
+This script creates a new transaction proposal in the Safe.
 
-### Sintaxe
+### Syntax
 
 ```bash
 python3 script/safe-propose-direct.py <PRIVATE_KEY> <TO_ADDRESS> <CALLDATA>
 ```
 
-### Parâmetros
+### Parameters
 
-- **PRIVATE_KEY**: Chave privada do owner (com `0x`)
-- **TO_ADDRESS**: Endereço do contrato destino (ex: Warp Route)
-- **CALLDATA**: Dados codificados da função (gerado com `cast`)
+- **PRIVATE_KEY**: Owner's private key (with `0x`)
+- **TO_ADDRESS**: Destination contract address (e.g., Warp Route)
+- **CALLDATA**: Encoded function data (generated with `cast`)
 
-### Exemplo Completo
+### Complete Example
 
-#### Passo 1: Codificar a Função
+#### Step 1: Encode the Function
 
-Primeiro, você precisa codificar a chamada da função usando `cast`:
+First, you need to encode the function call using `cast`:
 
 ```bash
-# Exemplo 1: Atualizar ISM
+# Example 1: Update ISM
 CALLDATA=$(cast calldata "setInterchainSecurityModule(address)" 0xe4245cCB6427Ba0DC483461bb72318f5DC34d090)
 
-# Exemplo 2: Adicionar validadores (Hyperlane ISM Multisig)
-# Assinatura correta: setValidators(uint32 domain, uint8 threshold, address[] validators)
+# Example 2: Add validators (Hyperlane ISM Multisig)
+# Correct signature: setValidators(uint32 domain, uint8 threshold, address[] validators)
 CALLDATA=$(cast calldata "setValidators(uint32,uint8,address[])" 97 2 "[0x242d8a855a8c932dec51f7999ae7d1e48b10c95e,0xf620f5e3d25a3ae848fec74bccae5de3edcd8796,0x1f030345963c54ff8229720dd3a711c15c554aeb]")
-# Parâmetros: domain (97 para BSC Testnet), threshold (2), validators (array de 3 endereços)
+# Parameters: domain (97 for BSC Testnet), threshold (2), validators (array of 3 addresses)
 
-# Exemplo 3: Pausar contrato
+# Example 3: Pause contract
 CALLDATA=$(cast calldata "pause()")
 
-# Exemplo 4: Despausar contrato
+# Example 4: Unpause contract
 CALLDATA=$(cast calldata "unpause()")
 ```
 
-#### Passo 2: Criar a Proposta
+#### Step 2: Create the Proposal
 
 ```bash
-# Substitua pelos seus valores reais
+# Replace with your actual values
 python3 script/safe-propose-direct.py \
   0x819b680e3578eac4f79b8fde643046e... \
   0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA \
   $CALLDATA
 ```
 
-### Saída Esperada
+### Expected Output
 
 ```
-✅ Conectado à BSC Testnet
+✅ Connected to BSC Testnet
    Chain ID: 97
 
-✅ Conta: 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA
-✅ Safe carregado: 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+✅ Account: 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA
+✅ Safe loaded: 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 
-📝 Criando proposta de transação...
+📝 Creating transaction proposal...
    To: 0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA
    Value: 0
    Data: 0xa50e0bb4...
 
-✅ Transação Safe criada!
+✅ Safe transaction created!
    Safe TX Hash: 0xabc123def456...
 
-🔐 Assinando transação off-chain...
-✅ Transação assinada!
+🔐 Signing transaction off-chain...
+✅ Transaction signed!
 
-📤 Aprovando hash (criando proposta)...
+📤 Approving hash (creating proposal)...
 ================================================================================
-✅ PROPOSTA CRIADA COM SUCESSO!
+✅ PROPOSAL CREATED SUCCESSFULLY!
 ================================================================================
 TX_HASH: 0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72
 Safe TX Hash: 0xabc123def456...
 
-📋 Compartilhe o Safe TX Hash com os outros owners:
+📋 Share the Safe TX Hash with other owners:
    0xabc123def456...
 
-🔗 Ver no BscScan:
+🔗 View on BscScan:
    https://testnet.bscscan.com/tx/0xf74c6109158ab607d7312a7ddfc7a541d1465fabe25b8ce57018fe7d9201cb72
 
-💡 Próximos passos:
-   1. Outros owners devem confirmar usando:
+💡 Next steps:
+   1. Other owners should confirm using:
       python3 safe-confirm.py <PRIVATE_KEY> <SAFE_TX_HASH>
-   2. Após threshold atingido, execute a transação
+   2. After threshold reached, execute the transaction
 ================================================================================
 ```
 
-**⚠️ IMPORTANTE**: Salve o **Safe TX Hash** - você precisará dele para os próximos passos!
+**⚠️ IMPORTANT:** Save the **Safe TX Hash** - you'll need it for the next steps!
 
 ---
 
-## ✅ Script 2: `safe-confirm.py` - Confirmar Proposta
+## ✅ Script 2: `safe-confirm.py` - Confirm Proposal
 
-Este script permite que outros owners confirmem uma proposta existente.
+This script allows other owners to confirm an existing proposal.
 
-### Sintaxe
+### Syntax
 
 ```bash
 python3 script/safe-confirm.py <PRIVATE_KEY> <SAFE_TX_HASH>
 ```
 
-### Parâmetros
+### Parameters
 
-- **PRIVATE_KEY**: Chave privada do owner que está confirmando (com `0x`)
-- **SAFE_TX_HASH**: O hash da transação Safe retornado pelo script `safe-propose-direct.py`
+- **PRIVATE_KEY**: Private key of the owner confirming (with `0x`)
+- **SAFE_TX_HASH**: The Safe transaction hash returned by the `safe-propose-direct.py` script
 
-### Exemplo Completo
+### Complete Example
 
 ```bash
-# Owner 1 confirma (pode ser o mesmo que criou a proposta)
+# Owner 1 confirms (can be the same one who created the proposal)
 python3 script/safe-confirm.py \
   0x819b680e3578eac4f79b8fde643046e... \
   0xabc123def4567890123456789012345678901234567890123456789012345678
 
-# Owner 2 confirma (se threshold for 2 ou mais)
+# Owner 2 confirms (if threshold is 2 or more)
 python3 script/safe-confirm.py \
   0x867f9CE9F0D7218b016351CB6122406E6D247a5e... \
   0xabc123def4567890123456789012345678901234567890123456789012345678
 ```
 
-### Saída Esperada
+### Expected Output
 
 ```
-✅ Conectado à BSC Testnet
-✅ Conta: 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA
-✅ Safe carregado: 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+✅ Connected to BSC Testnet
+✅ Account: 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA
+✅ Safe loaded: 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
 📊 Threshold: 1
-✅ Owners que já aprovaram: 1/1
+✅ Owners who have already approved: 1/1
    - 0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA
 
-🔐 Confirmando proposta...
+🔐 Confirming proposal...
 ================================================================================
-✅ CONFIRMAÇÃO ENVIADA!
+✅ CONFIRMATION SENT!
 ================================================================================
 TX_HASH: 0x1234567890abcdef...
 
-🔗 Ver no BscScan:
+🔗 View on BscScan:
    https://testnet.bscscan.com/tx/0x1234567890abcdef...
 
-⏳ Aguardando confirmação...
-✅ Confirmação confirmada!
+⏳ Waiting for confirmation...
+✅ Confirmation confirmed!
 
-📊 Aprovações atuais: 2/2
+📊 Current approvals: 2/2
 
-🎉 THRESHOLD ATINGIDO! A proposta está pronta para execução!
-   Execute com: python3 safe-execute.py <PRIVATE_KEY> <SAFE_TX_HASH>
+🎉 THRESHOLD REACHED! The proposal is ready for execution!
+   Execute with: python3 safe-execute.py <PRIVATE_KEY> <SAFE_TX_HASH>
 ================================================================================
 ```
 
 ---
 
-## 🚀 Script 3: `safe-execute.py` - Executar Transação
+## 🚀 Script 3: `safe-execute.py` - Execute Transaction
 
-**⚠️ NOTA**: Executar transações do Safe via script é complexo pois requer coletar todas as assinaturas dos owners. Este script atualmente é apenas um placeholder.
+**⚠️ NOTE**: Executing Safe transactions via script is complex as it requires collecting all owner signatures. This script is currently just a placeholder.
 
-### Opções para Executar
+### Options to Execute
 
-#### Opção 1: Usar Interface Web (Recomendado)
+#### Option 1: Use Web Interface (Recommended)
 
-1. Acesse https://app.safe.global/
-2. Conecte sua wallet (um dos owners)
-3. Vá para "Queue" ou "History"
-4. Encontre a transação pendente
-5. Clique em "Execute"
+1. Access https://app.safe.global/
+2. Connect your wallet (one of the owners)
+3. Go to "Queue" or "History"
+4. Find the pending transaction
+5. Click "Execute"
 
-#### Opção 2: Usar safe-eth-py Diretamente (Avançado)
+#### Option 2: Use safe-eth-py Directly (Advanced)
 
-Você precisaria criar um script customizado que:
-1. Coleta todas as assinaturas dos owners
-2. Constrói a transação com todas as assinaturas
-3. Executa usando `safe_tx.execute()`
+You would need to create a custom script that:
+1. Collects all owner signatures
+2. Builds the transaction with all signatures
+3. Executes using `safe_tx.execute()`
 
 ---
 
-## 📚 Exemplos Práticos Completos
+## 📚 Complete Practical Examples
 
-### Exemplo 1: Atualizar ISM de um Warp Route
+### Example 1: Update Warp Route ISM
 
-#### ⚠️ Por que criar um novo ISM?
+#### ⚠️ Why create a new ISM?
 
-O ISM atual do Warp Route é tipicamente um `StaticMessageIdMultisigIsm` (imutável), criado via `StaticMessageIdMultisigIsmFactory`. Este tipo de contrato:
+The current Warp Route ISM is typically a `StaticMessageIdMultisigIsm` (immutable), created via `StaticMessageIdMultisigIsmFactory`. This type of contract:
 
-- **Não pode ser atualizado**: Os validadores são definidos no deployment e armazenados no metadata do proxy
-- **Não tem função `setValidatorsAndThreshold`**: Tentar chamar essa função resultará em erro
-- **Não tem owner**: Não há função `owner()` porque o contrato é imutável
+- **Cannot be updated**: Validators are defined at deployment and stored in the proxy metadata
+- **Does not have `setValidatorsAndThreshold` function**: Attempting to call this function will result in an error
+- **Does not have owner**: There is no `owner()` function because the contract is immutable
 
-**Solução:** Criar um novo ISM via factory com os novos validadores e atualizar o Warp Route para usar o novo ISM.
+**Solution:** Create a new ISM via factory with the new validators and update the Warp Route to use the new ISM.
 
-#### 📝 Nota sobre Owner do Warp Route
+#### 📝 Note about Warp Route Owner
 
-**Ao fazer deploy do Warp Route:**
-- O `owner` especificado no arquivo de configuração (`warp-config.yaml`) se torna o owner do contrato Warp Route
-- **Recomendação:** Use o endereço do Safe como owner no arquivo de configuração:
+**When deploying the Warp Route:**
+- The `owner` specified in the configuration file (`warp-config.yaml`) becomes the owner of the Warp Route contract
+- **Recommendation:** Use the Safe address as owner in the configuration file:
   ```yaml
   bsctestnet:
-    owner: "0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"  # Endereço do Safe
-    # ... outras configurações ...
+    owner: "0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee"  # Safe address
+    # ... other configurations ...
   ```
-- Isso permite que o Safe gerencie o Warp Route (atualizar ISM, pausar, etc.)
-- **Verificar owner atual:**
+- This allows the Safe to manage the Warp Route (update ISM, pause, etc.)
+- **Verify current owner:**
   ```bash
   cast call 0xWARP_ROUTE_ADDRESS "owner()(address)" --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
   ```
 
-#### Processo Completo
+#### Complete Process
 
-Para atualizar os validadores do ISM, você precisa:
-1. **Criar um novo ISM** via factory com os novos validadores
-2. **Atualizar o Warp Route** para usar o novo ISM
+To update the ISM validators, you need:
+1. **Create a new ISM** via factory with the new validators
+2. **Update the Warp Route** to use the new ISM
 
-#### Passo 1: Criar Novo ISM via Factory
+#### Step 1: Create New ISM via Factory
 
-O factory `StaticMessageIdMultisigIsmFactory` cria contratos ISM imutáveis. Execute diretamente (não via Safe):
+The `StaticMessageIdMultisigIsmFactory` factory creates immutable ISM contracts. Execute directly (not via Safe):
 
 ```bash
-# Criar novo ISM com 3 validadores e threshold 2
+# Create new ISM with 3 validators and threshold 2
 cast send 0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763 \
   "deploy(address[],uint8)" \
   "[0x242d8a855a8c932dec51f7999ae7d1e48b10c95e,0xf620f5e3d25a3ae848fec74bccae5de3edcd8796,0x1f030345963c54ff8229720dd3a711c15c554aeb]" \
   2 \
-  --private-key 0xSUA_PRIVATE_KEY \
+  --private-key 0xYOUR_PRIVATE_KEY \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
   --legacy \
   --gas-price 100000000
 ```
 
-**Saída esperada:**
+**Expected output:**
 ```
 status: 1 (success)
 transactionHash: 0x...
 ```
 
-**Obter o endereço do novo ISM:**
+**Get the new ISM address:**
 ```bash
-# O factory retorna o endereço do novo contrato
+# The factory returns the new contract address
 cast call 0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763 \
   "deploy(address[],uint8)(address)" \
   "[0x242d8a855a8c932dec51f7999ae7d1e48b10c95e,0xf620f5e3d25a3ae848fec74bccae5de3edcd8796,0x1f030345963c54ff8229720dd3a711c15c554aeb]" \
   2 \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-# Retorna: 0xABeCf81b2Bd1E1d700E2f3B2ECcfb04e75dD7aB2 (exemplo)
+# Returns: 0xABeCf81b2Bd1E1d700E2f3B2ECcfb04e75dD7aB2 (example)
 ```
 
-**Verificar se o novo ISM foi criado corretamente:**
+**Verify if the new ISM was created correctly:**
 ```bash
 cast call 0xABeCf81b2Bd1E1d700E2f3B2ECcfb04e75dD7aB2 \
   "validatorsAndThreshold(bytes)(address[],uint8)" \
   0x \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-# Deve retornar os validadores e threshold configurados
+# Should return the configured validators and threshold
 ```
 
 #### Passo 2: Atualizar ISM no Warp Route
@@ -903,13 +908,13 @@ safe tx create
 
 6. **Transaction nonce**: Deixe vazio (ou use o próximo nonce)
 
-7. **Would you like to sign this transaction now?**: Escolha `Yes` e forneça a senha
+7. **Would you like to sign this transaction now?**: Choose `Yes` and provide the password
 
-8. **What would you like to do?**: Escolha `Execute transaction on-chain`
+8. **What would you like to do?**: Choose `Execute transaction on-chain`
 
-9. **Execute this transaction on-chain?**: Escolha `Yes` e forneça a senha novamente
+9. **Execute this transaction on-chain?**: Choose `Yes` and provide the password again
 
-**Saída esperada (sucesso):**
+**Expected output (success):**
 ```
 ✓ Transaction Executed Successfully!
 
@@ -984,16 +989,16 @@ cast send 0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee \
 ```
 
 **Parâmetros importantes:**
-- `to`: `0x63B2f9C469F422De8069Ef6FE382672F16a367d3` (endereço do Warp Route)
-- `data`: `0x0e72cc06000000000000000000000000abecf81b2bd1e1d700e2f3b2eccfb04e75dd7ab2` (calldata de `setInterchainSecurityModule`)
-- `safeTxGas`: `200000` (gas para execução interna)
-- `gasPrice`: `100000000` (preço do gas na BSC Testnet)
-- `signatures`: Formato especial quando hash foi aprovado via `approveHash`
-  - Address do owner: `0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA` (20 bytes)
-  - `v = 0x01` (1 byte) - indica hash aprovado
-  - `r` e `s` = zeros (64 bytes)
+- `to`: `0x63B2f9C469F422De8069Ef6FE382672F16a367d3` (Warp Route address)
+- `data`: `0x0e72cc06000000000000000000000000abecf81b2bd1e1d700e2f3b2eccfb04e75dd7ab2` (calldata for `setInterchainSecurityModule`)
+- `safeTxGas`: `200000` (gas for internal execution)
+- `gasPrice`: `100000000` (gas price on BSC Testnet)
+- `signatures`: Special format when hash was approved via `approveHash`
+  - Owner address: `0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA` (20 bytes)
+  - `v = 0x01` (1 byte) - indicates hash approved
+  - `r` and `s` = zeros (64 bytes)
 
-**Saída esperada:**
+**Expected output:**
 ```
 status: 1 (success)
 transactionHash: 0x...
@@ -1001,310 +1006,313 @@ transactionHash: 0x...
 
 **⚠️ Nota:** A Opção B é necessária quando o Safe CLI falha com erro GS013 na BSC Testnet. A Opção A (Safe CLI) é mais simples e deve ser tentada primeiro.
 
-#### Resumo do Processo
+#### Process Summary
 
-1. ✅ **Criar novo ISM** via factory (execução direta, não via Safe)
-2. ✅ **Verificar novo ISM** (validators e threshold corretos)
-3. ✅ **Atualizar Warp Route** via Safe CLI usando `setInterchainSecurityModule(address)`
-4. ✅ **Verificar atualização** (opcional: verificar o ISM atual do Warp Route)
+1. ✅ **Create new ISM** via factory (direct execution, not via Safe)
+2. ✅ **Verify new ISM** (validators and threshold correct)
+3. ✅ **Update Warp Route** via Safe CLI using `setInterchainSecurityModule(address)`
+4. ✅ **Verify update** (optional: verify current ISM of Warp Route)
 
-### Exemplo 2: Adicionar Validadores
+### Example 2: Add Validators
 
 ```bash
-# 1. Codificar função (Hyperlane ISM Multisig)
-# Assinatura correta: setValidators(uint32 domain, uint8 threshold, address[] validators)
+# 1. Encode function (Hyperlane ISM Multisig)
+# Correct signature: setValidators(uint32 domain, uint8 threshold, address[] validators)
 CALLDATA=$(cast calldata "setValidators(uint32,uint8,address[])" \
   97 \
   2 \
   "[0x242d8a855a8c932dec51f7999ae7d1e48b10c95e,0xf620f5e3d25a3ae848fec74bccae5de3edcd8796]")
-# Parâmetros: domain (97 para BSC Testnet), threshold (2), validators (array)
+# Parameters: domain (97 for BSC Testnet), threshold (2), validators (array)
 
-# 2. Criar proposta
+# 2. Create proposal
 python3 script/safe-propose-direct.py \
   0xOWNER1_PRIVATE_KEY \
   0xWARP_ROUTE_ADDRESS \
   $CALLDATA
 
-# 3. Outros owners confirmam
+# 3. Other owners confirm
 python3 script/safe-confirm.py 0xOWNER2_PRIVATE_KEY <SAFE_TX_HASH>
 ```
 
-### Exemplo 3: Pausar Warp Route
+### Example 3: Pause Warp Route
 
 ```bash
-# 1. Codificar função pause
+# 1. Encode pause function
 CALLDATA=$(cast calldata "pause()")
 
-# 2. Criar proposta
+# 2. Create proposal
 python3 script/safe-propose-direct.py \
   0xOWNER1_PRIVATE_KEY \
   0xWARP_ROUTE_ADDRESS \
   $CALLDATA
 
-# 3. Confirmar e executar
+# 3. Confirm and execute
 ```
 
 ---
 
-## 🔍 Como Descobrir os Métodos do Contrato
+## 🔍 How to Discover Contract Methods
 
-### Método 1: Usar BscScan
+### Method 1: Use BscScan
 
-1. Acesse https://testnet.bscscan.com/address/0xWARP_ROUTE_ADDRESS
-2. Clique na aba "Contract"
-3. Clique em "Read Contract" ou "Write Contract"
-4. Veja as funções disponíveis
+1. Access https://testnet.bscscan.com/address/0xWARP_ROUTE_ADDRESS
+2. Click on the "Contract" tab
+3. Click on "Read Contract" or "Write Contract"
+4. See the available functions
 
-### Método 2: Usar `cast`
+### Method 2: Use `cast`
 
 ```bash
-# Listar funções do contrato (se tiver ABI)
+# List contract functions (if it has ABI)
 cast interface 0xWARP_ROUTE_ADDRESS --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 ```
 
-### Método 3: Verificar Documentação do Hyperlane
+### Method 3: Check Hyperlane Documentation
 
-Consulte a documentação do Hyperlane para os contratos Warp Route:
+Consult the Hyperlane documentation for Warp Route contracts:
 - https://docs.hyperlane.xyz/
 
 ---
 
 ## ⚠️ Troubleshooting
 
-### Safe CLI não funciona / Erro de instalação Python
+### Safe CLI doesn't work / Python installation error
 
-**Problema:** O Safe CLI Python (`safe-cli` via pip) não funciona mais.
+**Problem:** The Python Safe CLI (`safe-cli` via pip) no longer works.
 
-**Solução:** Use o Safe CLI oficial do Node.js:
+**Solution:** Use the official Node.js Safe CLI:
 
 ```bash
-# Remover instalação Python antiga
+# Remove old Python installation
 deactivate 2>/dev/null
 rm -rf safe-cli-env
 
-# Instalar versão Node.js oficial
+# Install official Node.js version
 npm install -g @safe-global/safe-cli
 
-# Verificar
+# Verify
 safe --version
 ```
 
-### Erro: "ModuleNotFoundError: No module named 'safe_eth_py'"
+### Error: "ModuleNotFoundError: No module named 'safe_eth_py'"
 
-**Se você está usando scripts Python:**
+**If you're using Python scripts:**
 
 ```bash
-# Instalar no ambiente correto
+# Install in the correct environment
 pip3 install safe-eth-py web3 eth-account
 
-# Ou em um venv
+# Or in a venv
 python3 -m venv safe-env
 source safe-env/bin/activate
 pip install safe-eth-py web3 eth-account
 ```
 
-**⚠️ Nota:** Mesmo após instalar, o `safe-eth-py` pode não funcionar devido a problemas de compatibilidade. **Recomendamos usar o Safe CLI Node.js** (veja seção de instalação acima).
+**⚠️ Note:** Even after installing, `safe-eth-py` may not work due to compatibility issues. **We recommend using the Node.js Safe CLI** (see installation section above).
 
-### Erro: "Não foi possível conectar ao RPC"
+### Error: "Could not connect to RPC"
 
-- Verifique se a RPC URL está correta
-- Tente uma RPC alternativa:
+- Verify if the RPC URL is correct
+- Try an alternative RPC:
   ```bash
-  # Para BSC Testnet, tente:
+  # For BSC Testnet, try:
   https://bsc-testnet.publicnode.com
   https://data-seed-prebsc-1-s1.binance.org:8545
   ```
 
-### Erro: "Erro ao carregar conta"
+### Error: "Error loading account"
 
-- Verifique se a chave privada está no formato correto (com `0x`)
-- Certifique-se de que a chave privada tem BNB para gas
+- Verify if the private key is in the correct format (with `0x`)
+- Make sure the private key has BNB for gas
 
-### Erro: "Threshold não atingido"
+### Error: "Threshold not reached"
 
-- Verifique quantos owners já confirmaram usando:
+- Check how many owners have already confirmed using:
   ```bash
-  safe account info bnb:0xSEU_SAFE
+  safe account info bnb:0xYOUR_SAFE
   ```
-- Certifique-se de que todos os owners necessários confirmaram
-- Verifique o status da transação:
+- Make sure all required owners have confirmed
+- Check the transaction status:
   ```bash
   safe tx status <SAFE_TX_HASH>
   ```
 
-### Erro: "unknown option '--address'"
+### Error: "unknown option '--address'"
 
-**Problema:** O Safe CLI não usa `--address` ou `--chain-id` como opções.
+**Problem:** The Safe CLI does not use `--address` or `--chain-id` as options.
 
-**Solução:** Use o formato EIP-3770: `shortName:address`
+**Solution:** Use the EIP-3770 format: `shortName:address`
 
 ```bash
-# ❌ ERRADO
-safe account info --address 0xSEU_SAFE --chain-id 97
+# ❌ WRONG
+safe account info --address 0xYOUR_SAFE --chain-id 97
 
-# ✅ CORRETO
-safe account info bnb:0xSEU_SAFE
+# ✅ CORRECT
+safe account info bnb:0xYOUR_SAFE
 ```
 
-### Erro: GS013 ao executar transação
+### Error: GS013 when executing transaction
 
-**Problema:** O Safe CLI falha ao executar transações na BSC Testnet com erro GS013.
+**Problem:** The Safe CLI fails to execute transactions on BSC Testnet with GS013 error.
 
-**Causa:** O Safe CLI não formata as assinaturas corretamente quando o Safe Transaction Service não está disponível para a chain.
+**Cause:** The Safe CLI does not format signatures correctly when the Safe Transaction Service is not available for the chain.
 
-**Solução:** Execute diretamente via `cast` após aprovar o hash on-chain:
+**Solution:** Execute directly via `cast` after approving the hash on-chain:
 
-1. **Aprovar hash on-chain:**
+1. **Approve hash on-chain:**
 ```bash
-cast send 0xSEU_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
-  --private-key 0xSUA_PRIVATE_KEY \
-  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-```
-
-2. **Verificar aprovação:**
-```bash
-cast call 0xSEU_SAFE "approvedHashes(address,bytes32)(uint256)" \
-  0xSEU_ENDERECO <SAFE_TX_HASH> \
-  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-```
-
-3. **Executar via cast com parâmetros corretos:**
-```bash
-cast send 0xSEU_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
-  0xTO_ADDRESS 0 0xCALLDATA 0 200000 0 100000000 \
-  0x0000000000000000000000000000000000000000 \
-  0x0000000000000000000000000000000000000000 \
-  0x000000000000000000000000SEU_ENDERECO000000000000000000000000000000000000000000000000000000000000000001 \
-  --private-key 0xSUA_PRIVATE_KEY \
+cast send 0xYOUR_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
+  --private-key 0xYOUR_PRIVATE_KEY \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
   --gas-price 100000000
 ```
 
-**Parâmetros importantes:**
-- `safeTxGas`: Use `200000` ou maior
-- `gasPrice`: Use `100000000` (ou o mínimo da rede)
-- `signatures`: Formato `address (20 bytes) + v (0x01) + r (32 bytes zeros) + s (32 bytes zeros)`
+2. **Verify approval:**
+```bash
+cast call 0xYOUR_SAFE "approvedHashes(address,bytes32)(uint256)" \
+  0xYOUR_ADDRESS <SAFE_TX_HASH> \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+```
 
-### Erro: GS025 ao executar transação
+3. **Execute via cast with correct parameters:**
+```bash
+cast send 0xYOUR_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
+  0xTO_ADDRESS 0 0xCALLDATA 0 200000 0 100000000 \
+  0x0000000000000000000000000000000000000000 \
+  0x0000000000000000000000000000000000000000 \
+  0x000000000000000000000000YOUR_ADDRESS000000000000000000000000000000000000000000000000000000000000000001 \
+  --private-key 0xYOUR_PRIVATE_KEY \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
+  --gas-price 100000000
+```
 
-**Problema:** `safeTxGas` insuficiente.
+**Important parameters:**
+- `safeTxGas`: Use `200000` or higher
+- `gasPrice`: Use `100000000` (or the network minimum)
+- `signatures`: Format `address (20 bytes) + v (0x01) + r (32 bytes zeros) + s (32 bytes zeros)`
 
-**Solução:** Aumente o valor de `safeTxGas` para `200000` ou maior.
+### Error: GS025 when executing transaction
 
-### Erro: "transaction gas price below minimum"
+**Problem:** Insufficient `safeTxGas`.
 
-**Problema:** Gas price muito baixo.
+**Solution:** Increase the `safeTxGas` value to `200000` or higher.
 
-**Solução:** Especifique um gas price maior:
+### Error: "transaction gas price below minimum"
+
+**Problem:** Gas price too low.
+
+**Solution:** Specify a higher gas price:
 ```bash
 cast send ... --gas-price 100000000
 ```
 
-### Erro: "execution reverted" na chamada interna
+### Error: "execution reverted" in internal call
 
-**Problema:** A transação do Safe foi executada com sucesso, mas a chamada interna ao contrato destino reverteu.
+**Problem:** The Safe transaction was executed successfully, but the internal call to the destination contract reverted.
 
-**Causas possíveis:**
-1. O Safe não é o owner do contrato destino
-2. A função não existe ou tem assinatura diferente
-3. Parâmetros inválidos (ex: threshold maior que número de validadores)
-4. Alguma validação falhou dentro da função
+**Possible causes:**
+1. The Safe is not the owner of the destination contract
+2. The function does not exist or has a different signature
+3. Invalid parameters (e.g., threshold greater than number of validators)
+4. Some validation failed within the function
 
-**Como verificar:**
+**How to verify:**
 
-1. **Verificar se o Safe é o owner:**
+1. **Verify if the Safe is the owner:**
 ```bash
-# Tentar diferentes variações da função owner
-cast call 0xCONTRATO "owner()" --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-cast call 0xCONTRATO "getOwner()" --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
-cast call 0xCONTRATO "owner(address)" 0xSEU_SAFE --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+# Try different variations of the owner function
+cast call 0xCONTRACT "owner()" --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+cast call 0xCONTRACT "getOwner()" --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+cast call 0xCONTRACT "owner(address)" 0xYOUR_SAFE --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 ```
 
-2. **Verificar se a função existe:**
+2. **Verify if the function exists:**
 ```bash
-# Verificar o código do contrato no BscScan
-# https://testnet.bscscan.com/address/0xCONTRATO#code
+# Check the contract code on BscScan
+# https://testnet.bscscan.com/address/0xCONTRACT#code
 ```
 
-3. **Verificar os parâmetros:**
-- Threshold não pode ser maior que o número de validadores
-- Endereços devem ser válidos
-- Função deve existir no contrato
+3. **Verify the parameters:**
+- Threshold cannot be greater than the number of validators
+- Addresses must be valid
+- Function must exist in the contract
 
-**Solução:**
-- Verifique no BscScan se o Safe é o owner do contrato
-- Confirme que a função existe e tem a assinatura correta
-- Verifique se os parâmetros estão corretos
-- Se necessário, transfira a ownership para o Safe primeiro
+**Solution:**
+- Check on BscScan if the Safe is the owner of the contract
+- Confirm that the function exists and has the correct signature
+- Verify if the parameters are correct
+- If necessary, transfer ownership to the Safe first
 
-### Como descobrir o shortName de uma chain
+### How to find the shortName of a chain
 
 ```bash
-# Listar todas as chains configuradas
+# List all configured chains
 safe config chains list
 
-# Ver configuração completa
+# View complete configuration
 safe config show
 ```
 
-Os shortNames comuns:
+Common shortNames:
 - BSC Mainnet (56): `bnb`
-- BSC Testnet (97): `tbnb` (ou outro nome que você escolher ao adicionar)
+- BSC Testnet (97): `tbnb` (or another name you choose when adding)
 - Ethereum Mainnet (1): `eth`
 - Sepolia Testnet (11155111): `sep`
 
-**Para adicionar BSC Testnet, veja a seção [Configurar Chains](#-configurar-chains-adicionar-bsc-testnet)**
+**To add BSC Testnet, see the [Configure Chains](#-configure-chains-add-bsc-testnet) section**
 
-### Comando Safe CLI não encontrado
+### Safe CLI command not found
 
-Se o comando `safe` não for encontrado após instalação:
+If the `safe` command is not found after installation:
 
 ```bash
-# Verificar se npm está instalado
+# Check if npm is installed
 npm --version
 
-# Verificar se o caminho global do npm está no PATH
+# Check if npm global path is in PATH
 npm config get prefix
 
-# Adicionar ao PATH se necessário (adicione ao ~/.bashrc ou ~/.zshrc)
+# Add to PATH if necessary (add to ~/.bashrc or ~/.zshrc)
 export PATH="$(npm config get prefix)/bin:$PATH"
 ```
 
 ---
 
-## 📝 Checklist de Uso
+## 📝 Usage Checklist
 
-### Para Safe CLI Node.js (Recomendado)
+### For Node.js Safe CLI (Recommended)
 
-- [ ] Node.js e npm instalados
-- [ ] Safe CLI instalado (`npm install -g @safe-global/safe-cli`)
-- [ ] Safe CLI funcionando (`safe --version`)
-- [ ] Chain BSC Testnet configurada (`safe config chains add`)
-- [ ] Wallet importada (`safe wallet import`)
-- [ ] Safe aberto no CLI (`safe account open`)
-- [ ] Endereço do Safe conhecido
-- [ ] Chain ID correto (97 para BSC Testnet, 56 para BSC Mainnet)
-- [ ] `cast` instalado (Foundry) para gerar calldata e executar quando necessário
+- [ ] Node.js and npm installed
+- [ ] Safe CLI installed (`npm install -g @safe-global/safe-cli`)
+- [ ] Safe CLI working (`safe --version`)
+- [ ] BSC Testnet chain configured (`safe config chains add`)
+- [ ] Wallet imported (`safe wallet import`)
+- [ ] Safe opened in CLI (`safe account open`)
+- [ ] Safe address known
+- [ ] Correct Chain ID (97 for BSC Testnet, 56 for BSC Mainnet)
+- [ ] `cast` installed (Foundry) to generate calldata and execute when needed
 
-### Para Scripts Python (Alternativa)
+### For Python Scripts (Alternative)
 
-- [ ] Dependências Python instaladas (`safe-eth-py`, `web3`, `eth-account`)
-- [ ] `cast` instalado (Foundry)
-- [ ] Chaves privadas dos owners disponíveis
-- [ ] Contas têm BNB suficiente para gas
-- [ ] Endereço do contrato destino conhecido
-- [ ] Função a ser chamada identificada
-- [ ] Calldata gerado com `cast`
-- [ ] Safe TX Hash salvo após criar proposta
-- [ ] Todos os owners confirmaram (threshold atingido)
-- [ ] Transação executada (via web ou script)
+- [ ] Python dependencies installed (`safe-eth-py`, `web3`, `eth-account`)
+- [ ] `cast` installed (Foundry)
+- [ ] Owner private keys available
+- [ ] Accounts have sufficient BNB for gas
+- [ ] Destination contract address known
+- [ ] Function to be called identified
+- [ ] Calldata generated with `cast`
+- [ ] Safe TX Hash saved after creating proposal
+- [ ] All owners confirmed (threshold reached)
+- [ ] Transaction executed (via web or script)
 
 ---
 
-## 🔗 Links Úteis
+## 🔗 Useful Links
 
-- **Safe CLI Node.js (Oficial)**: https://www.npmjs.com/package/@safe-global/safe-cli
-- **Safe Interface Web**: https://app.safe.global/
+- **Safe CLI Node.js (Official)**: https://www.npmjs.com/package/@safe-global/safe-cli
+- **Safe Web Interface**: https://app.safe.global/
 - **BscScan Testnet**: https://testnet.bscscan.com
 - **BscScan Mainnet**: https://bscscan.com
 - **Hyperlane Docs**: https://docs.hyperlane.xyz/
@@ -1313,62 +1321,65 @@ export PATH="$(npm config get prefix)/bin:$PATH"
 
 ---
 
-## 💡 Dicas
+## 💡 Tips
 
-1. **Sempre teste em testnet primeiro** antes de usar em mainnet
-2. **Salve o Safe TX Hash** - você precisará dele para confirmar e executar
-3. **Verifique o threshold** do Safe antes de criar propostas
-4. **Use um gerenciador de senhas** para armazenar chaves privadas com segurança
-5. **Verifique o saldo de BNB** antes de criar propostas (precisa de gas)
-6. **Confirme os nomes das funções** no contrato antes de codificar
-7. **Para BSC Testnet**, esteja preparado para executar via `cast` se o Safe CLI falhar com GS013
+1. **Always test on testnet first** before using on mainnet
+2. **Save the Safe TX Hash** - you'll need it to confirm and execute
+3. **Check the Safe threshold** before creating proposals
+4. **Use a password manager** to store private keys securely
+5. **Check BNB balance** before creating proposals (needs gas)
+6. **Confirm function names** in the contract before encoding
+7. **For BSC Testnet**, be prepared to execute via `cast` if Safe CLI fails with GS013
 
-## 📋 Fluxo Completo Resumido
+## 📋 Complete Flow Summary
 
-### Setup Inicial (Uma vez)
+### Initial Setup (Once)
 
 ```bash
-# 1. Instalar Safe CLI
+# 1. Install Safe CLI
 npm install -g @safe-global/safe-cli
 
-# 2. Adicionar BSC Testnet
+# 2. Add BSC Testnet
 safe config chains add
-# Informe: Chain ID: 97, Name: BSC Testnet, Short name: tbnb, RPC: https://data-seed-prebsc-1-s1.binance.org:8545
+# Enter: Chain ID: 97, Name: BSC Testnet, Short name: tbnb, RPC: https://data-seed-prebsc-1-s1.binance.org:8545
 
-# 3. Importar wallet
-safe wallet import --private-key 0xSUA_PRIVATE_KEY --name "Minha Wallet"
+# 3. Import wallet
+safe wallet import --private-key 0xYOUR_PRIVATE_KEY --name "My Wallet"
 
-# 4. Abrir Safe
-safe account open tbnb:0xSEU_SAFE --name "BSC Testnet Safe"
+# 4. Open Safe
+safe account open tbnb:0xYOUR_SAFE --name "BSC Testnet Safe"
 ```
 
-### Criar e Executar Transação
+### Create and Execute Transaction
 
 ```bash
-# 1. Gerar calldata
-CALLDATA=$(cast calldata "nomeFuncao(tipo)" parametro)
+# 1. Generate calldata
+CALLDATA=$(cast calldata "functionName(type)" parameter)
 
-# 2. Criar transação
+# 2. Create transaction
 safe tx create
-# Informe: to (tbnb:0xENDEREÇO), value (0), data ($CALLDATA), operation (Call), nonce (vazio)
+# Enter: to (tbnb:0xADDRESS), value (0), data ($CALLDATA), operation (Call), nonce (empty)
 
-# 3. Assinar (quando perguntado, escolha Yes)
-# Defina senha: export SAFE_WALLET_PASSWORD="sua_senha"
+# 3. Sign (when asked, choose Yes)
+# Set password: export SAFE_WALLET_PASSWORD="your_password"
 
-# 4. Se executar falhar com GS013, execute via cast:
-# 4.1. Aprovar hash on-chain
-cast send 0xSEU_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
-  --private-key 0xSUA_PRIVATE_KEY \
-  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
+# 4. If execution fails with GS013, execute via cast:
+# 4.1. Approve hash on-chain
+cast send 0xYOUR_SAFE "approveHash(bytes32)" <SAFE_TX_HASH> \
+  --private-key 0xYOUR_PRIVATE_KEY \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
+  --gas-price 100000000
 
-# 4.2. Executar transação
-cast send 0xSEU_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
+# 4.2. Execute transaction
+cast send 0xYOUR_SAFE "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" \
   0xTO_ADDRESS 0 0xCALLDATA 0 200000 0 100000000 \
   0x0000000000000000000000000000000000000000 \
   0x0000000000000000000000000000000000000000 \
-  0x000000000000000000000000SEU_ENDERECO000000000000000000000000000000000000000000000000000000000000000001 \
-  --private-key 0xSUA_PRIVATE_KEY \
+  0x000000000000000000000000YOUR_ADDRESS000000000000000000000000000000000000000000000000000000000000000001 \
+  --private-key 0xYOUR_PRIVATE_KEY \
   --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --legacy \
   --gas-price 100000000
 ```
 

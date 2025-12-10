@@ -25,9 +25,20 @@ safe tx status <SAFE_TX_HASH>
 
 **ShortNames comuns:**
 - BSC Mainnet (56): `bnb`
-- BSC Testnet (97): pode precisar ser adicionada (`safe config chains add`)
+- BSC Testnet (97): `tbnb` (adicionar com `safe config chains add`)
 - Ethereum Mainnet (1): `eth`
 - Sepolia Testnet (11155111): `sep`
+
+**Adicionar BSC Testnet:**
+```bash
+safe config chains add
+# Informe: Chain ID: 97, Name: BSC Testnet, Short name: tbnb, RPC: https://data-seed-prebsc-1-s1.binance.org:8545
+```
+
+**Abrir Safe na BSC Testnet:**
+```bash
+safe account open tbnb:0xSEU_SAFE --name "BSC Testnet Safe"
+```
 
 Para mais detalhes, consulte o [Guia Completo do Safe CLI](SAFE-SCRIPTS-GUIDE.md#-instalação-do-safe-cli-oficial-recomendado).
 

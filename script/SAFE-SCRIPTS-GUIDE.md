@@ -77,11 +77,35 @@ safe account list
 
 #### 2. Abrir/Adicionar um Safe existente
 
+**Formato EIP-3770 (recomendado):**
 ```bash
-safe account open 0xSEU_SAFE --name "Nome do Safe"
+safe account open shortName:0xSEU_SAFE --name "Nome do Safe"
 ```
 
-**Nota:** O Safe CLI detecta automaticamente a chain baseado no endereço ou você pode usar o formato EIP-3770.
+**Exemplo para BSC Testnet:**
+```bash
+safe account open tbnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee --name "BSC Testnet Safe"
+```
+
+**Saída esperada:**
+```
+✓ Safe Added to Workspace!
+
+Name:  BSC Testnet Safe
+
+Safe Information:
+  Address:  0xa047...f5ee
+  Chain:    BSC Testnet
+  Version:  1.4.1
+  Owners:   2
+  Threshold: 1 / 2
+  Nonce:    0
+  Balance:  0.0200 BNB
+
+Safe ready to use
+```
+
+**Nota:** Use o formato EIP-3770 (`shortName:address`) para especificar a chain corretamente.
 
 #### 3. Consultar informações completas do Safe
 
@@ -94,6 +118,9 @@ safe account info shortName:0xSEU_SAFE
 ```bash
 # BSC Mainnet (chain ID 56)
 safe account info bnb:0xa047DCd69249fd082B4797c29e5D80781Cb7f5ee
+
+# BSC Testnet (chain ID 97) - após adicionar a chain
+safe account info tbnb:0xSEU_SAFE
 
 # Ethereum Mainnet
 safe account info eth:0xSEU_SAFE
@@ -148,8 +175,12 @@ safe account change-threshold bnb:0xSEU_SAFE
 
 #### 7. Gerenciar transações
 
+**⚠️ IMPORTANTE:** Antes de criar transações, você precisa:
+1. Ter uma wallet importada: `safe wallet import --private-key 0xKEY --name "Wallet"`
+2. Ter um Safe aberto: `safe account open tbnb:0xSEU_SAFE --name "Safe"`
+
 ```bash
-# Criar transação
+# Criar transação (interativo)
 safe tx create
 
 # Assinar transação
@@ -157,6 +188,12 @@ safe tx sign <SAFE_TX_HASH>
 
 # Executar transação
 safe tx execute <SAFE_TX_HASH>
+
+# Listar transações do Safe
+safe tx list tbnb:0xSEU_SAFE
+
+# Ver status de uma transação
+safe tx status <SAFE_TX_HASH>
 ```
 
 #### 8. Configurar chains
@@ -201,8 +238,8 @@ safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
 
 **⚠️ Nota sobre BSC Testnet (Chain ID 97):**
 - A BSC Testnet pode não estar configurada por padrão
-- Você precisará adicioná-la usando `safe config chains add`
-- Ou usar o formato EIP-3770 se já estiver configurada (ex: `bnbt:0xSEU_SAFE`)
+- Você precisará adicioná-la usando `safe config chains add` (veja seção [Configurar Chains](#-configurar-chains-adicionar-bsc-testnet))
+- Após adicionar, use o short name escolhido no formato EIP-3770 (ex: `tbnb:0xSEU_SAFE`)
 
 ### 💡 Vantagens do Safe CLI Node.js
 
@@ -212,6 +249,70 @@ safe account add-owner bnb:0xSEU_SAFE 0xNOVO_OWNER --threshold 2
 - ✅ Comandos simples e intuitivos
 - ✅ Suporte a múltiplas chains
 - ✅ Formato JSON para automação
+
+### ⚙️ Configurar Chains (Adicionar BSC Testnet)
+
+Por padrão, o Safe CLI vem com várias chains configuradas, mas pode não incluir a BSC Testnet (Chain ID 97). Para adicionar:
+
+#### Listar chains configuradas
+
+```bash
+safe config chains list
+```
+
+#### Adicionar BSC Testnet
+
+Execute o comando interativo:
+
+```bash
+safe config chains add
+```
+
+**Valores para BSC Testnet:**
+
+Quando solicitado, informe:
+
+- **Chain ID:** `97`
+- **Chain name:** `BSC Testnet`
+- **Short name (EIP-3770):** `tbnb` (ou outro nome de sua preferência, ex: `bsc-testnet`)
+- **RPC URL:** `https://data-seed-prebsc-1-s1.binance.org:8545`
+- **Block explorer URL (optional):** `https://testnet.bscscan.com`
+- **Native currency symbol:** `BNB`
+- **Safe Transaction Service URL (optional):** `https://safe-transaction-bsc-testnet.safe.global` (ou deixe vazio)
+
+**Exemplo de saída:**
+```
+✓ Chain Added Successfully!
+
+Name:      BSC Testnet
+Chain ID:  97
+
+Chain configuration saved
+```
+
+**Após adicionar, você pode usar:**
+```bash
+# Abrir Safe na BSC Testnet
+safe account open tbnb:0xSEU_SAFE --name "BSC Testnet Safe"
+
+# Consultar Safe na BSC Testnet
+safe account info tbnb:0xSEU_SAFE
+
+# Listar transações
+safe tx list tbnb:0xSEU_SAFE
+```
+
+**Nota:** O short name que você escolher (ex: `tbnb`) será usado no formato EIP-3770 para identificar a chain.
+
+#### Verificar configuração
+
+```bash
+# Ver todas as chains configuradas
+safe config chains list
+
+# Ver configuração completa
+safe config show
+```
 
 ---
 
@@ -599,9 +700,11 @@ safe config show
 
 Os shortNames comuns:
 - BSC Mainnet (56): `bnb`
+- BSC Testnet (97): `tbnb` (ou outro nome que você escolher ao adicionar)
 - Ethereum Mainnet (1): `eth`
 - Sepolia Testnet (11155111): `sep`
-- BSC Testnet (97): pode precisar ser adicionada manualmente
+
+**Para adicionar BSC Testnet, veja a seção [Configurar Chains](#-configurar-chains-adicionar-bsc-testnet)**
 
 ### Comando Safe CLI não encontrado
 

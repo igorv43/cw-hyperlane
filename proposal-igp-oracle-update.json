@@ -1,0 +1,26 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+      "msg": {
+        "set_remote_gas_data_configs": {
+          "configs": [
+            {
+              "remote_domain": 97,
+              "token_exchange_rate": "14794529576536",
+              "gas_price": "100000000"
+            }
+          ]
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Update IGP Oracle exchange rate for BSC Testnet domain 97. Fixes gas cost from $1512 to $0.0045 per transfer.",
+  "deposit": "500000uluna",
+  "title": "Update IGP Oracle Exchange Rate for BSC Testnet",
+  "summary": "Update IGP Oracle: gas_price to 0.1 Gwei (100M wei, verified via RPC) and token_exchange_rate to 14794529576536 for BSC Testnet (domain 97). Fixes gas cost calculation.",
+  "expedited": false
+}

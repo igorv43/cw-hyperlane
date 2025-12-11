@@ -413,6 +413,24 @@ hyperlane warp link \
 
 #### Test Transfer: Terra Classic → BSC
 
+**Using terrad CLI (Direct Command for Native uluna):**
+
+```bash
+terrad tx wasm execute terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8 \
+  '{"transfer_remote":{"dest_domain":97,"recipient":"00000000000000000000000063b2f9c469f422de8069ef6fe382672f16a367d3","amount":"1"}}' \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id "rebel-2" \
+  --node "https://rpc.luncblaze.com:443" \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --fees 12000000uluna \
+  --amount 283215uluna \
+  --yes
+```
+
+**Using yarn cw-hpl warp transfer:**
+
 ```bash
 # Transfer TAZ tokens from Terra Classic to BSC
 yarn cw-hpl warp transfer \
@@ -658,6 +676,52 @@ terrad query wasm contract $TERRA_WARP_ADDRESS \
 ## Testing Warp Route
 
 ### Test Transfer: Terra Classic → BSC Testnet
+
+#### Method 1: Using terrad CLI (Direct Command)
+
+**⚠️ Important:** The warp route hook requires an additional fee payment of `283215 uluna` for cross-chain gas. You must include this in the `--amount` parameter.
+
+```bash
+terrad tx wasm execute terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8 \
+  '{"transfer_remote":{"dest_domain":97,"recipient":"00000000000000000000000063b2f9c469f422de8069ef6fe382672f16a367d3","amount":"1"}}' \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id "rebel-2" \
+  --node "https://rpc.luncblaze.com:443" \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --fees 12000000uluna \
+  --amount 283215uluna \
+  --yes
+```
+
+**Parameters:**
+- `terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8`: Terra Classic warp route address
+- `dest_domain: 97`: BSC Testnet domain ID
+- `recipient`: BSC address in 32-byte hex format (64 characters, left-padded with zeros)
+  - Original: `0x63B2f9C469F422De8069Ef6FE382672F16a367d3`
+  - Converted: `00000000000000000000000063b2f9c469f422de8069ef6fe382672f16a367d3`
+- `amount: "1"`: Amount to transfer (in uluna, 1 = 0.000001 LUNC)
+- `--amount 283215uluna`: Hook fee required for cross-chain gas payment
+- `--fees 12000000uluna`: Transaction fees (12 LUNC)
+
+**Note:** For larger transfers, calculate the total amount:
+- Transfer amount: `1000000 uluna` (1 LUNC)
+- Hook fee: `283215 uluna`
+- Total: `--amount 1283215uluna`
+
+**Address Conversion:**
+The recipient address must be converted to 32-byte hex format. You can use this command:
+```bash
+node -e "
+const addr = '0x63B2f9C469F422De8069Ef6FE382672F16a367d3';
+const hex = addr.replace('0x', '').toLowerCase();
+const padded = hex.padStart(64, '0');
+console.log('Recipient format:', padded);
+"
+```
+
+#### Method 2: Using yarn cw-hpl warp transfer
 
 ```bash
 # Transfer LUNC from Terra Classic to BSC

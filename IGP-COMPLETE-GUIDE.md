@@ -289,8 +289,22 @@ terrad query wasm contract-state smart ${IGP} \
 
 ### 1. Atualizar IGP Oracle (Exchange Rate e Gas Price)
 
+#### Opção A: Atualização Direta (Sem Governança)
+
 **Pré-requisito:** Você deve ser o owner do contrato IGP Oracle.
 
+**Verificar se você é o owner:**
+```bash
+IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+
+terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"ownable":{"get_owner":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --output json | jq -r '.data.owner'
+```
+
+**Comando para atualizar diretamente:**
 ```bash
 IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
 KEY_NAME="hypelane-val-testnet"  # Ajuste para sua key name
@@ -311,10 +325,97 @@ terrad tx wasm execute ${IGP_ORACLE} \
   --yes
 ```
 
+#### Opção B: Atualização Via Governança
+
+**Use esta opção quando:**
+- O owner do contrato é o módulo de governança (`terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`)
+- Você precisa de aprovação da comunidade
+- Múltiplas assinaturas são necessárias
+
+**1. Criar arquivo de proposta JSON:**
+
+```bash
+cat > proposal-igp-oracle-update.json << EOF
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+      "msg": {
+        "set_remote_gas_data_configs": {
+          "configs": [
+            {
+              "remote_domain": 97,
+              "token_exchange_rate": "177534",
+              "gas_price": "100000000"
+            }
+          ]
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Update IGP Oracle exchange_rate and gas_price for BSC Testnet",
+  "deposit": "500000uluna",
+  "title": "Update IGP Oracle Configuration",
+  "summary": "Update exchange_rate to 177534 (gas_limit 200k, 20% margin) and gas_price to 0.1 Gwei for BSC Testnet"
+}
+EOF
+```
+
+**2. Submeter a proposta:**
+
+```bash
+terrad tx gov submit-proposal proposal-igp-oracle-update.json \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
+  --yes
+```
+
+**3. Verificar status da proposta:**
+
+```bash
+# Obter o ID da proposta (do output do comando anterior)
+PROPOSAL_ID="1"  # Substitua pelo ID real
+
+terrad query gov proposal ${PROPOSAL_ID} \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --output json | jq '.status'
+```
+
+**4. Votar na proposta (se necessário):**
+
+```bash
+# Voto "Yes"
+terrad tx gov vote ${PROPOSAL_ID} yes \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
+  --yes
+```
+
+**Nota sobre o depósito:**
+- `500000uluna` (0.5 LUNC): Entra em período de depósito (precisa atingir 1 LUNC mínimo)
+- `10000000uluna` (10 LUNC): Vai direto para votação (se for o depósito mínimo)
+
 ### 2. Atualizar Default Gas do IGP
+
+#### Opção A: Atualização Direta (Sem Governança)
 
 ```bash
 IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
+KEY_NAME="hypelane-val-testnet"  # Ajuste para sua key name
 NEW_DEFAULT_GAS="200000"  # Recomendado: 200k para warp routes
 
 terrad tx wasm execute ${IGP} \
@@ -329,9 +430,56 @@ terrad tx wasm execute ${IGP} \
   --yes
 ```
 
-### 3. Configurar Gas Customizado para Domain Específico
+#### Opção B: Atualização Via Governança
+
+**Criar proposta JSON:**
 
 ```bash
+cat > proposal-igp-default-gas-update.json << EOF
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+      "msg": {
+        "set_default_gas": {
+          "gas": "200000"
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Update IGP default_gas_usage to 200000",
+  "deposit": "500000uluna",
+  "title": "Update IGP Default Gas Usage",
+  "summary": "Increase default_gas_usage from 100000 to 200000 to better cover warp route transfers"
+}
+EOF
+```
+
+**Submeter proposta:**
+
+```bash
+terrad tx gov submit-proposal proposal-igp-default-gas-update.json \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
+  --yes
+```
+
+### 3. Configurar Gas Customizado para Domain Específico
+
+#### Opção A: Atualização Direta (Sem Governança)
+
+```bash
+IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
+KEY_NAME="hypelane-val-testnet"  # Ajuste para sua key name
+
 # Configurar gas customizado para domain 97 (BSC Testnet)
 CUSTOM_GAS="200000"
 
@@ -344,6 +492,51 @@ terrad tx wasm execute ${IGP} \
   --gas auto \
   --gas-adjustment 1.5 \
   --fees 12000000uluna \
+  --yes
+```
+
+#### Opção B: Atualização Via Governança
+
+**Criar proposta JSON:**
+
+```bash
+cat > proposal-igp-gas-for-domain.json << EOF
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+      "msg": {
+        "set_gas_for_domain": {
+          "config": {
+            "domain": 97,
+            "gas": "200000"
+          }
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Set custom gas for BSC Testnet domain",
+  "deposit": "500000uluna",
+  "title": "Set Custom Gas for BSC Testnet",
+  "summary": "Set gas_for_domain to 200000 for domain 97 (BSC Testnet)"
+}
+EOF
+```
+
+**Submeter proposta:**
+
+```bash
+terrad tx gov submit-proposal proposal-igp-gas-for-domain.json \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
   --yes
 ```
 
@@ -590,6 +783,8 @@ terrad query wasm contract-state smart ${IGP_ORACLE} \
 
 ### Exemplo 1: Configurar IGP para BSC Testnet (Primeira Vez)
 
+#### Método A: Atualização Direta (Se você é o owner)
+
 ```bash
 # 1. Verificar gas price atual no BSC Testnet
 GAS_PRICE_GWEI=$(curl -s -X POST https://bsc-testnet.publicnode.com \
@@ -602,11 +797,21 @@ echo "Gas Price atual no BSC Testnet: $GAS_PRICE_GWEI Gwei"
 # 2. Calcular exchange_rate (assumindo gas_limit 200k, 20% margem)
 # ... usar script de cálculo ...
 
-# 3. Atualizar IGP Oracle
+# 3. Verificar se você é o owner
+IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+OWNER=$(terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"ownable":{"get_owner":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --output json | jq -r '.data.owner')
+
+echo "Owner do IGP Oracle: $OWNER"
+
+# 4. Atualizar IGP Oracle (se você for o owner)
 EXCHANGE_RATE="177534"
 GAS_PRICE_WEI="100000000"
 
-terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
+terrad tx wasm execute ${IGP_ORACLE} \
   "{\"set_remote_gas_data_configs\":{\"configs\":[{\"remote_domain\":97,\"token_exchange_rate\":\"${EXCHANGE_RATE}\",\"gas_price\":\"${GAS_PRICE_WEI}\"}]}}" \
   --from hypelane-val-testnet \
   --keyring-backend file \
@@ -617,8 +822,9 @@ terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhr
   --fees 12000000uluna \
   --yes
 
-# 4. Atualizar default_gas_usage
-terrad tx wasm execute terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9 \
+# 5. Atualizar default_gas_usage
+IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
+terrad tx wasm execute ${IGP} \
   '{"set_default_gas":{"gas":"200000"}}' \
   --from hypelane-val-testnet \
   --keyring-backend file \
@@ -629,14 +835,90 @@ terrad tx wasm execute terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6c
   --fees 12000000uluna \
   --yes
 
-# 5. Verificar configuração
-terrad query wasm contract-state smart terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
+# 6. Verificar configuração
+terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":97}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+#### Método B: Atualização Via Governança
+
+```bash
+# 1. Verificar gas price atual no BSC Testnet
+GAS_PRICE_GWEI=$(curl -s -X POST https://bsc-testnet.publicnode.com \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}' | \
+  jq -r '.result' | python3 -c "import sys; print(int(sys.stdin.read(), 16) / 1e9)")
+
+echo "Gas Price atual no BSC Testnet: $GAS_PRICE_GWEI Gwei"
+
+# 2. Calcular exchange_rate (assumindo gas_limit 200k, 20% margem)
+# ... usar script de cálculo ...
+
+# 3. Criar proposta de governança
+cat > proposal-igp-initial-setup.json << EOF
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+      "msg": {
+        "set_remote_gas_data_configs": {
+          "configs": [
+            {
+              "remote_domain": 97,
+              "token_exchange_rate": "177534",
+              "gas_price": "100000000"
+            }
+          ]
+        }
+      },
+      "funds": []
+    },
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+      "msg": {
+        "set_default_gas": {
+          "gas": "200000"
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Initial IGP configuration for BSC Testnet",
+  "deposit": "500000uluna",
+  "title": "Configure IGP for BSC Testnet",
+  "summary": "Set IGP Oracle exchange_rate (177534) and gas_price (0.1 Gwei) for BSC Testnet, and update default_gas_usage to 200000"
+}
+EOF
+
+# 4. Submeter proposta
+terrad tx gov submit-proposal proposal-igp-initial-setup.json \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
+  --yes
+
+# 5. Aguardar aprovação e execução da proposta
+# 6. Verificar configuração após execução
+IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+terrad query wasm contract-state smart ${IGP_ORACLE} \
   '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":97}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
 
 ### Exemplo 2: Atualizar Exchange Rate Após Mudança de Preços
+
+#### Método A: Atualização Direta
 
 ```bash
 # 1. Obter preços atuais (exemplo)
@@ -646,10 +928,18 @@ BNB_PRICE_USD=897.88
 # 2. Recalcular exchange_rate
 # ... usar script de cálculo ...
 
-# 3. Atualizar IGP Oracle
+# 3. Verificar se você é o owner
+IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+OWNER=$(terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"ownable":{"get_owner":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --output json | jq -r '.data.owner')
+
+# 4. Atualizar IGP Oracle (se você for o owner)
 NEW_EXCHANGE_RATE="177534"
 
-terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
+terrad tx wasm execute ${IGP_ORACLE} \
   "{\"set_remote_gas_data_configs\":{\"configs\":[{\"remote_domain\":97,\"token_exchange_rate\":\"${NEW_EXCHANGE_RATE}\",\"gas_price\":\"100000000\"}]}}" \
   --from hypelane-val-testnet \
   --keyring-backend file \
@@ -658,6 +948,57 @@ terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhr
   --gas auto \
   --gas-adjustment 1.5 \
   --fees 12000000uluna \
+  --yes
+```
+
+#### Método B: Atualização Via Governança
+
+```bash
+# 1. Obter preços atuais (exemplo)
+LUNC_PRICE_USD=0.00006069
+BNB_PRICE_USD=897.88
+
+# 2. Recalcular exchange_rate
+# ... usar script de cálculo ...
+
+# 3. Criar proposta de governança
+cat > proposal-igp-update-exchange-rate.json << EOF
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+      "msg": {
+        "set_remote_gas_data_configs": {
+          "configs": [
+            {
+              "remote_domain": 97,
+              "token_exchange_rate": "177534",
+              "gas_price": "100000000"
+            }
+          ]
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Update IGP Oracle exchange_rate after market price changes",
+  "deposit": "500000uluna",
+  "title": "Update IGP Oracle Exchange Rate",
+  "summary": "Update exchange_rate to 177534 based on current LUNC and BNB prices"
+}
+EOF
+
+# 4. Submeter proposta
+terrad tx gov submit-proposal proposal-igp-update-exchange-rate.json \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --gas-prices 28.5uluna \
   --yes
 ```
 

@@ -30,17 +30,23 @@ mkdir -p environments/testnet/warp-routes/lunc-solana
 
 ### 1.2. Criar Arquivo de Configuração do Token
 
+**⚠️ IMPORTANTE**: O `token-config.json` deve ter o nome da chain como chave:
+
 ```bash
 cat > environments/testnet/warp-routes/lunc-solana/token-config.json << EOF
 {
-  "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
-  "decimals": 6,
-  "total_supply": "0",
-  "type": "synthetic"
+  "solanatestnet": {
+    "type": "synthetic",
+    "name": "Luna Classic",
+    "symbol": "wwwwLUNC",
+    "decimals": 6,
+    "totalSupply": "0"
+  }
 }
 EOF
 ```
+
+**⚠️ IMPORTANTE**: NÃO inclua `foreignDeployment` na configuração inicial. Use `program-ids.json` para referenciar o Program ID existente.
 
 ### 1.3. Verificar Arquivo Criado
 
@@ -72,13 +78,20 @@ cd ~/hyperlane-monorepo/rust/sealevel/client
 # Variáveis
 PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-TOKEN_CONFIG="../../environments/testnet/warp-routes/lunc-solana/token-config.json"
 WARP_ROUTE_NAME="lunc-solana"
-ENVIRONMENTS_DIR="../../environments"
-BUILT_SO_DIR="../../target/deploy"
+
+# ⚠️ IMPORTANTE: Caminhos relativos a partir de client/
+# Use ../ (um nível acima), não ../../ (dois níveis)
+ENVIRONMENTS_DIR="../environments"
+TOKEN_CONFIG="../environments/testnet/warp-routes/lunc-solana/token-config.json"
+BUILT_SO_DIR="../target/deploy"
+
+# ⚠️ IMPORTANTE: NÃO use foreignDeployment no token-config.json
+# Use program-ids.json para referenciar o Program ID existente
+# Isso permite que o código inicialize o token mesmo usando o Program ID existente
 
 # Deploy/Inicializar o warp route sintético
-# NOTA: --url e --keypair são argumentos globais e devem vir ANTES do subcomando
+# NOTA: -k e -u são argumentos globais e devem vir ANTES do subcomando
 cargo run -- \
   -k ${KEYPAIR} \
   -u https://api.testnet.solana.com \
@@ -89,25 +102,32 @@ cargo run -- \
   --token-config-file ${TOKEN_CONFIG} \
   --built-so-dir ${BUILT_SO_DIR} \
   --registry ~/.hyperlane/registry \
-  --ata-payer-funding-amount 10000000
+  --ata-payer-funding-amount 5000000
 ```
 
 **Nota**: O comando `warp-route deploy` irá:
-1. Verificar se o programa já existe (você já deployou)
-2. Inicializar o token sintético usando o Program ID
-3. Criar o Mint Account e Mint Authority
+1. ✅ Ler o `program-ids.json` e encontrar o Program ID existente
+2. ✅ Verificar que o programa existe na blockchain
+3. ✅ **Inicializar o token sintético** (criar o PDA do token)
+4. ✅ Criar o Mint Account e configurar o Mint Authority
+5. ✅ Financiar o ATA payer
+6. ✅ Configurar o IGP
 
 **Saída esperada:**
 ```
-[INFO] Deploying warp route program...
-[INFO] Program ID: 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
-[INFO] Initializing synthetic token...
-[INFO] Token initialized successfully
-[INFO] Mint Account: <MINT_ACCOUNT>
-[INFO] Mint Authority: <MINT_AUTHORITY>
+Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+Initializing Warp Route program: domain_id: 1399811149, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
+Creating token DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA ...
+Address: DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
+Decimals: 9
+Signature: ...
+initialized metadata pointer. Status: exit status: 0
+initialized metadata. Status: exit status: 0
+Transferring authority: mint to the mint account DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
+Set the mint authority to the mint account. Status: exit status: 0
 ```
 
-**⚠️ IMPORTANTE**: Anote o `Mint Account` e `Mint Authority` retornados. Você precisará deles para linkar com o Terra Classic.
+**⚠️ IMPORTANTE**: Anote o `Mint Account` (`DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`) retornado. Você precisará dele para linkar com o Terra Classic.
 
 ### 2.3. Verificar Inicialização
 
@@ -301,11 +321,13 @@ cd ~/hyperlane-monorepo/rust/sealevel
 mkdir -p environments/testnet/warp-routes/lunc-solana
 cat > ${TOKEN_CONFIG} << EOF
 {
-  "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
-  "decimals": 6,
-  "total_supply": "0",
-  "type": "synthetic"
+  "solanatestnet": {
+    "type": "synthetic",
+    "name": "Luna Classic",
+    "symbol": "wwwwLUNC",
+    "decimals": 6,
+    "totalSupply": "0"
+  }
 }
 EOF
 echo "✅ Configuração do token criada"
@@ -319,11 +341,11 @@ cargo run -- \
   warp-route deploy \
   --warp-route-name lunc-solana \
   --environment testnet \
-  --environments-dir ../../environments \
-  --token-config-file ../../${TOKEN_CONFIG} \
-  --built-so-dir ../../target/deploy \
+  --environments-dir ../environments \
+  --token-config-file ../environments/testnet/warp-routes/lunc-solana/token-config.json \
+  --built-so-dir ../target/deploy \
   --registry ~/.hyperlane/registry \
-  --ata-payer-funding-amount 10000000
+  --ata-payer-funding-amount 5000000
 echo "✅ Warp route sintético inicializado"
 
 echo ""
@@ -402,14 +424,14 @@ cat environments/testnet/warp-routes/lunc-solana/token-config.json | jq
 
 Após completar este guia:
 
-1. **Anotar Informações Importantes**:
+1. **Informações Importantes**:
    - Program ID: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
-   - Mint Account: (retornado no Passo 2)
-   - Mint Authority: (retornado no Passo 2)
+   - Mint Account: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+   - Mint Authority: Transferido para o próprio mint account
 
 2. **Linkar com Terra Classic**:
-   - Consulte `WARP-ROUTE-TERRA-SOLANA.md` para instruções de link bidirecional
-   - Use o Mint Account para linkar o warp route do Terra Classic
+   - Consulte `WARP-ROUTE-TERRA-SOLANA-EN.md` para instruções de link bidirecional
+   - Use o Program ID (convertido para hex) para linkar o warp route do Terra Classic
 
 3. **Testar Transferências**:
    - Teste transferência Terra Classic → Solana
@@ -419,8 +441,10 @@ Após completar este guia:
 
 ## Referências
 
-- [WARP-ROUTE-TERRA-SOLANA.md](./WARP-ROUTE-TERRA-SOLANA.md)
+- [SOLANA-WARP-ROUTE-DEPLOYMENT.md](./SOLANA-WARP-ROUTE-DEPLOYMENT.md) - Guia completo em inglês
+- [WARP-ROUTE-TERRA-SOLANA-EN.md](./WARP-ROUTE-TERRA-SOLANA-EN.md) - Guia completo Terra ↔ Solana em inglês
 - [CONFIGURAR-ISM-SOLANA-WARP.md](./CONFIGURAR-ISM-SOLANA-WARP.md)
 - [CONFIGURAR-VALIDADORES-ISM-SOLANA.md](./CONFIGURAR-VALIDADORES-ISM-SOLANA.md)
+- [FIX-SOLANA-DEPLOY-USE-RPC.md](./FIX-SOLANA-DEPLOY-USE-RPC.md) - Correção do erro `--use-rpc`
 - [Hyperlane Solana Documentation](https://docs.hyperlane.xyz/docs/guides/warp-routes/svm/svm-warp-route-guide)
 

@@ -305,12 +305,42 @@ hyperlane-monorepo/
             └── deploy/        # Programas compilados (.so)
 ```
 
-### 2.4. Deploy do Warp Route na Solana
+### 2.4. Compilar Programas Solana (Se Necessário)
+
+**⚠️ IMPORTANTE**: Diferente do Cosmos onde você pode baixar `.wasm` pré-compilados, na Solana você precisa compilar os programas localmente.
+
+**Problema**: A compilação pode falhar com erro de stack overflow. Veja [FIX-SOLANA-STACK-OVERFLOW.md](./FIX-SOLANA-STACK-OVERFLOW.md) para soluções.
+
+**Alternativa**: Se os programas já foram deployados na Solana, você pode usar os Program IDs existentes sem precisar compilar.
+
+#### Compilar Programas
 
 ```bash
-cd rust/sealevel/client
+cd ~/hyperlane-monorepo/rust/sealevel
+
+# Limpar build anterior
+cargo clean
+
+# Compilar programa de token sintético
+cargo build-sbf --manifest-path programs/hyperlane-sealevel-token/Cargo.toml
+
+# Verificar se compilou
+ls -lh target/deploy/hyperlane_sealevel_token.so
+
+# Calcular hash para auditoria
+cd target/deploy
+sha256sum hyperlane_sealevel_token.so
+```
+
+**📖 Guia Completo**: Veja [SOLANA-PRECOMPILED-BINARIES.md](./SOLANA-PRECOMPILED-BINARIES.md) para informações sobre binários pré-compilados e verificação de hash.
+
+### 2.5. Deploy do Warp Route na Solana
+
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
 
 # Deploy do warp route
+# NOTA: Os programas devem estar compilados em target/deploy/
 cargo run -- \
   -k ~/solana-warp-deployer-key.json \
   warp-route deploy \
@@ -320,7 +350,8 @@ cargo run -- \
   --built-so-dir ../../target/deploy \
   --token-config-file ../../environments/testnet/warp-routes/lunc-solana/token-config.json \
   --registry ~/.hyperlane/registry \
-  --ata-payer-funding-amount 10000000
+  --ata-payer-funding-amount 10000000 \
+  --url https://api.testnet.solana.com
 ```
 
 **Saída esperada:**

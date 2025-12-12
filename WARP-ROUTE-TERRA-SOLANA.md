@@ -9,10 +9,11 @@ Este guia fornece instruções passo a passo para criar um Warp Route entre Terr
 3. [Arquitetura do Warp Route](#arquitetura-do-warp-route)
 4. [Passo 1: Deploy no Terra Classic](#passo-1-deploy-no-terra-classic)
 5. [Passo 2: Deploy na Solana](#passo-2-deploy-na-solana)
-6. [Passo 3: Link Bidirecional](#passo-3-link-bidirecional)
-7. [Passo 4: Testar Transferências](#passo-4-testar-transferências)
-8. [Troubleshooting](#troubleshooting)
-9. [Referências](#referências)
+6. [Passo 3: Configurar ISM no Terra Classic (Opcional)](#passo-3-configurar-ism-no-terra-classic-opcional)
+7. [Passo 4: Link Bidirecional](#passo-4-link-bidirecional)
+8. [Passo 5: Testar Transferências](#passo-5-testar-transferências)
+9. [Troubleshooting](#troubleshooting)
+10. [Referências](#referências)
 
 ---
 
@@ -120,11 +121,22 @@ Certifique-se de que os contratos Hyperlane estão deployados:
    - Warp Route Contract (Native Collateral)
    - Endereço: Será gerado após deploy
    - Tipo: `native` + `collateral`
+   - ISM: Pode ser configurado no warp route ou usar o padrão do Mailbox
 
 2. **Solana Side**:
    - Warp Route Program (Synthetic)
    - Program ID: Será gerado após deploy
    - Tipo: `synthetic` (Token-2022)
+   - ISM: Usa o ISM configurado no Mailbox da Solana (não configurável no warp route)
+
+### Diferenças de ISM entre Chains
+
+| Aspecto | Terra Classic | BSC (EVM) | Solana (SVM) |
+|---------|--------------|-----------|--------------|
+| **Configuração ISM** | Opcional via `--ism` flag | No arquivo YAML (`interchainSecurityModule`) | Não configurável no warp route |
+| **ISM Padrão** | Usa ISM do Mailbox se não especificado | Pode ter ISM próprio no YAML | Sempre usa ISM do Mailbox |
+| **Arquitetura** | ISM pode ser por warp route | ISM pode ser por warp route | ISM é gerenciado pelo Mailbox |
+| **Formato Config** | JSON (cw-hyperlane) | YAML (Hyperlane CLI) | JSON (sealevel client) |
 
 ### Fluxo de Dados
 
@@ -220,19 +232,34 @@ cd hyperlane-monorepo
 
 # Build dos programas warp route
 cd rust/sealevel
-cargo build-sbf --release
+
+# IMPORTANTE: cargo build-sbf não aceita --release diretamente
+# Use -- --release para passar para o cargo subjacente
+# Ou simplesmente use cargo build-sbf (build de debug, mais rápido)
+
+# Opção 1: Build otimizado (release)
+cargo build-sbf -- --release
+
+# Opção 2: Build de debug (mais rápido, recomendado para testes)
+cargo build-sbf
 
 # Os programas compilados estarão em:
-# target/deploy/hyperlane_token.so
+# target/deploy/hyperlane_sealevel_token.so
+# target/deploy/hyperlane_sealevel_token_collateral.so
+# target/deploy/hyperlane_sealevel_token_native.so
 ```
+
+**Nota:** O `cargo build-sbf` é um wrapper do Solana que compila programas Sealevel. Para passar flags ao cargo subjacente (como `--release`), use `--` antes das flags. Para testes, o build de debug (`cargo build-sbf` sem flags) é mais rápido e suficiente.
 
 ### 2.3. Preparar Configuração do Token
 
 Crie o arquivo de configuração do token:
 
 ```bash
+# Criar diretório para a configuração
 mkdir -p environments/testnet/warp-routes/lunc-solana
 
+# Criar arquivo de configuração do token
 cat > environments/testnet/warp-routes/lunc-solana/token-config.json << EOF
 {
   "name": "Luna Classic",
@@ -242,6 +269,40 @@ cat > environments/testnet/warp-routes/lunc-solana/token-config.json << EOF
   "type": "synthetic"
 }
 EOF
+```
+
+**⚠️ Importante: Configuração de ISM na Solana**
+
+Diferente das chains EVM (BSC, Ethereum), o `token-config.json` do sealevel client **não possui campo para ISM**. Na Solana:
+
+1. **ISM Padrão**: O warp route na Solana usa o ISM configurado no **Mailbox da Solana** por padrão
+2. **ISM do Mailbox**: O Mailbox da Solana já tem um ISM padrão configurado (geralmente um Multisig ISM)
+3. **ISM Customizado**: Se necessário configurar um ISM específico para o warp route, isso deve ser feito **após o deploy** usando comandos do sealevel client
+
+**Comparação:**
+
+| Chain | Formato | ISM no Config |
+|-------|---------|---------------|
+| **BSC/EVM** | YAML | ✅ `interchainSecurityModule` no arquivo YAML |
+| **Solana** | JSON | ❌ Não há campo ISM no `token-config.json` |
+| **Terra Classic** | JSON | ✅ Opcional via `--ism` flag no deploy |
+
+**Nota:** O ISM na Solana é gerenciado pelo Mailbox, não pelo warp route individual. Isso é uma diferença arquitetural entre EVM e SVM (Solana Virtual Machine).
+
+**Estrutura de Diretórios:**
+```
+hyperlane-monorepo/
+└── rust/
+    └── sealevel/
+        ├── programs/          # Código fonte dos programas
+        ├── client/            # Cliente CLI para deploy
+        ├── environments/      # Configurações por ambiente
+        │   └── testnet/
+        │       └── warp-routes/
+        │           └── lunc-solana/
+        │               └── token-config.json
+        └── target/
+            └── deploy/        # Programas compilados (.so)
 ```
 
 ### 2.4. Deploy do Warp Route na Solana
@@ -277,7 +338,48 @@ SOLANA_MINT_ACCOUNT="..." # Mint account do token sintético
 SOLANA_MINT_AUTHORITY="..." # Mint authority
 ```
 
-### 2.5. Verificar Deploy na Solana
+### 2.5. Configurar ISM no Warp Route da Solana (Opcional)
+
+**⚠️ Importante:** Na Solana, você **pode configurar um ISM específico** no warp route após o deploy, mesmo sem credenciais do Mailbox.
+
+**Por padrão**, o warp route usa o ISM configurado no Mailbox da Solana. Se você quiser usar um ISM específico:
+
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+
+# Program ID do warp route (obtido no deploy)
+WARP_ROUTE_PROGRAM_ID="SEU_PROGRAM_ID_AQUI"
+
+# Opção 1: Usar ISM padrão do Mailbox (não precisa fazer nada)
+# O warp route já usa o ISM padrão automaticamente
+
+# Opção 2: Configurar ISM específico (se necessário)
+ISM_PROGRAM_ID="4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k"  # Exemplo
+
+cargo run -- \
+  -k ~/solana-warp-deployer-key.json \
+  token set-interchain-security-module \
+  --program-id ${WARP_ROUTE_PROGRAM_ID} \
+  --ism ${ISM_PROGRAM_ID} \
+  --url https://api.testnet.solana.com
+
+# Opção 3: Remover ISM customizado (voltar ao padrão)
+cargo run -- \
+  -k ~/solana-warp-deployer-key.json \
+  token set-interchain-security-module \
+  --program-id ${WARP_ROUTE_PROGRAM_ID} \
+  --ism None \
+  --url https://api.testnet.solana.com
+```
+
+**📖 Guia Completo:** Veja [CONFIGURAR-ISM-SOLANA-WARP.md](./CONFIGURAR-ISM-SOLANA-WARP.md) para instruções detalhadas.
+
+**Diferença Arquitetural:**
+- **EVM (BSC)**: ISM configurado no YAML durante o deploy
+- **Solana**: ISM pode ser configurado após o deploy via `sealevel client` (owner do warp route)
+- **Terra Classic**: ISM pode ser configurado no deploy via `--ism` flag ou após via `terrad tx wasm execute`
+
+### 2.6. Verificar Deploy na Solana
 
 ```bash
 # Verificar o programa
@@ -289,9 +391,84 @@ spl-token supply ${SOLANA_MINT_ACCOUNT} --url https://api.testnet.solana.com
 
 ---
 
-## Passo 3: Link Bidirecional
+## Passo 3: Configurar ISM e Validadores
 
-### 3.1. Converter Endereços para Formato Hex (32 bytes)
+### 3.1. Verificar ISM Atual
+
+Antes de fazer o link, você pode configurar um ISM específico para o warp route no Terra Classic:
+
+```bash
+# Verificar ISM atual do warp route
+terrad query wasm contract-state smart ${TERRA_WARP_ADDRESS} \
+  '{"connection":{"ism":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+### 3.2. Configurar ISM (Se Necessário)
+
+Se você quiser usar um ISM específico (diferente do padrão do Mailbox):
+
+```bash
+# ISM Multisig para Solana (domain 1399811150)
+ISM_SOLANA="terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a"
+
+# Configurar ISM no warp route
+terrad tx wasm execute ${TERRA_WARP_ADDRESS} \
+  "{\"connection\":{\"set_ism\":{\"ism\":\"${ISM_SOLANA}\"}}}" \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id "rebel-2" \
+  --node "https://rpc.luncblaze.com:443" \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --fees 12000000uluna \
+  --yes
+```
+
+**Nota:** Se você não configurar um ISM específico, o warp route usará o ISM padrão configurado no Mailbox do Terra Classic.
+
+### 3.3. Configurar Validadores do ISM para Solana
+
+**⚠️ Importante:** O ISM Multisig precisa ter validadores configurados para validar mensagens vindas da Solana. Você **não precisa de credenciais do Mailbox** para configurar validadores.
+
+O ISM Multisig tem um `owner` que pode configurar validadores:
+- **Se você é o owner**: Pode configurar diretamente via `terrad tx wasm execute`
+- **Se o owner é governance**: Precisa fazer via proposta de governança
+
+**📖 Guia Completo:** Veja [CONFIGURAR-VALIDADORES-ISM.md](./CONFIGURAR-VALIDADORES-ISM.md) para instruções detalhadas.
+
+**Resumo Rápido:**
+
+```bash
+# 1. Verificar owner do ISM
+ISM_SOLANA="terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a"
+terrad query wasm contract-state smart ${ISM_SOLANA} \
+  '{"ownable":{"owner":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+
+# 2. Se owner é governance, criar proposta:
+# Veja CONFIGURAR-VALIDADORES-ISM.md para detalhes completos
+
+# 3. Se você é o owner, executar diretamente:
+terrad tx wasm execute ${ISM_SOLANA} \
+  '{"set_validators":{"domain":1399811150,"threshold":2,"validators":["242d8a855a8c932dec51f7999ae7d1e48b10c95e","f620f5e3d25a3ae848fec74bccae5de3edcd8796","1f030345963c54ff8229720dd3a711c15c554aeb"]}}' \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id "rebel-2" \
+  --node "https://rpc.luncblaze.com:443" \
+  --gas auto \
+  --gas-adjustment 1.5 \
+  --fees 12000000uluna \
+  --yes
+```
+
+---
+
+## Passo 4: Link Bidirecional
+
+### 4.1. Converter Endereços para Formato Hex (32 bytes)
 
 #### Converter Endereço Terra Classic (Bech32) para Hex
 
@@ -347,7 +524,7 @@ SOLANA_RECIPIENT_HEX="0x..."  # 64 caracteres hex após 0x
 - Terra Classic → Solana: Recipient deve ser hex (32 bytes, 64 caracteres, sem 0x no JSON)
 - Solana → Terra Classic: Recipient deve ser hex (32 bytes, 64 caracteres, sem 0x no JSON)
 
-### 3.2. Link Terra Classic → Solana
+### 4.2. Link Terra Classic → Solana
 
 No Terra Classic, registrar o warp route da Solana:
 
@@ -367,7 +544,7 @@ yarn cw-hpl warp link \
 
 **Nota:** O `SOLANA_PROGRAM_ID_HEX` deve ser o Program ID da Solana convertido para hex (32 bytes, 64 caracteres hex, sem 0x).
 
-### 3.3. Link Solana → Terra Classic
+### 4.3. Link Solana → Terra Classic
 
 Na Solana, registrar o warp route do Terra Classic:
 
@@ -389,7 +566,7 @@ cargo run -- \
 - `--remote-domain`: Domain ID do Terra Classic (1325)
 - `--remote-router`: Endereço hex do warp route no Terra Classic (32 bytes)
 
-### 3.4. Verificar Links
+### 4.4. Verificar Links
 
 #### Verificar no Terra Classic
 
@@ -416,9 +593,9 @@ cargo run -- \
 
 ---
 
-## Passo 4: Testar Transferências
+## Passo 5: Testar Transferências
 
-### 4.1. Transferência: Terra Classic → Solana
+### 5.1. Transferência: Terra Classic → Solana
 
 #### Usando terrad CLI
 
@@ -483,7 +660,7 @@ yarn cw-hpl warp transfer \
   -n terraclassic
 ```
 
-### 4.2. Verificar Recebimento na Solana
+### 5.2. Verificar Recebimento na Solana
 
 ```bash
 # Verificar saldo do token sintético
@@ -495,7 +672,7 @@ spl-token balance ${SOLANA_MINT_ACCOUNT} \
 echo "https://explorer.solana.com/address/${SOLANA_MINT_ACCOUNT}?cluster=testnet"
 ```
 
-### 4.3. Transferência: Solana → Terra Classic
+### 5.3. Transferência: Solana → Terra Classic
 
 ```bash
 cd hyperlane-monorepo/rust/sealevel/client
@@ -524,7 +701,7 @@ cargo run -- \
 - `synthetic`: Tipo de token na origem (Solana)
 - `--program-id`: Program ID do warp route
 
-### 4.4. Verificar Recebimento no Terra Classic
+### 5.4. Verificar Recebimento no Terra Classic
 
 ```bash
 # Verificar saldo
@@ -630,11 +807,22 @@ rustup update
 # Limpar e rebuild
 cd hyperlane-monorepo/rust/sealevel
 cargo clean
-cargo build-sbf --release
+
+# Build correto (sem --release diretamente)
+cargo build-sbf -- --release
+
+# Ou build de debug (mais rápido)
+cargo build-sbf
 
 # Verificar dependências
 cargo check
+
+# Se houver problemas com versão do Solana CLI
+solana-install update
 ```
+
+**Erro comum:** `cargo build-sbf --release` (incorreto)
+**Correto:** `cargo build-sbf -- --release` ou `cargo build-sbf`
 
 ---
 

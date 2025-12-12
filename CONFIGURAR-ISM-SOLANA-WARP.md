@@ -140,6 +140,30 @@ O ISM padrão do Mailbox na Solana geralmente é um **Multisig ISM Message ID** 
 
 Se você usar um ISM customizado (não o padrão do Mailbox), você precisará configurar validadores nesse ISM. Isso é feito no **programa ISM**, não no warp route.
 
+**📖 Guia Completo:** Veja [CONFIGURAR-VALIDADORES-ISM-SOLANA.md](./CONFIGURAR-VALIDADORES-ISM-SOLANA.md) para instruções detalhadas.
+
+### Comando Rápido
+
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+
+# Program ID do ISM Multisig Message ID
+ISM_PROGRAM_ID="4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k"
+
+# Domain do Terra Classic Testnet
+DOMAIN=1325
+
+# Configurar validadores
+cargo run -- \
+  -k ~/solana-ism-owner-key.json \
+  ism multisig-message-id set-validators-and-threshold \
+  --program-id ${ISM_PROGRAM_ID} \
+  --domain ${DOMAIN} \
+  --validators 242d8a855a8c932dec51f7999ae7d1e48b10c95e,f620f5e3d25a3ae848fec74bccae5de3edcd8796 \
+  --threshold 2 \
+  --url https://api.testnet.solana.com
+```
+
 ### 1. Verificar ISM do Mailbox
 
 O Mailbox da Solana já tem um ISM configurado. Você pode verificar qual ISM o Mailbox usa:
@@ -152,28 +176,21 @@ MAILBOX_PROGRAM_ID="75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR"
 solana account ${MAILBOX_PROGRAM_ID} --url https://api.testnet.solana.com --output json | jq
 ```
 
-### 2. Se Você Criar um ISM Customizado
+### 2. Configurar Validadores no ISM
 
-Se você deployar seu próprio Multisig ISM Message ID, precisará:
-
-1. **Deployar o ISM**: Usar o sealevel client para deployar um Multisig ISM
-2. **Configurar Validadores**: Configurar quais validadores podem assinar mensagens
-3. **Configurar no Warp Route**: Usar o comando acima para configurar o ISM no warp route
-
-**Exemplo de deploy de ISM customizado:**
+O ISM Multisig Message ID na Solana permite configurar validadores por domain:
 
 ```bash
-cd ~/hyperlane-monorepo/rust/sealevel/client
-
-# Deploy Multisig ISM Message ID
+# Verificar configuração atual
 cargo run -- \
-  -k ~/solana-ism-deployer-key.json \
-  ism deploy \
-  multisig-message-id \
+  -k ~/solana-ism-owner-key.json \
+  ism multisig-message-id query \
+  --program-id ${ISM_PROGRAM_ID} \
+  --domains ${DOMAIN} \
   --url https://api.testnet.solana.com
 ```
 
-**Nota:** O processo de configurar validadores em um ISM customizado na Solana é mais complexo e requer acesso ao código fonte do ISM. Recomenda-se usar o ISM padrão do Mailbox.
+**Nota:** O processo completo está documentado em [CONFIGURAR-VALIDADORES-ISM-SOLANA.md](./CONFIGURAR-VALIDADORES-ISM-SOLANA.md).
 
 ---
 

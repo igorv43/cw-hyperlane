@@ -431,7 +431,54 @@ spl-token supply ${SOLANA_MINT_ACCOUNT} --url https://api.testnet.solana.com
 
 ## Step 3: Configure ISM Validators
 
-### 3.1. Configure Validators on Solana ISM
+### 3.1. Create New ISM (Recommended)
+
+**⚠️ IMPORTANT**: The existing ISM (`4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k`) has a different owner. You need to **create a new ISM** and associate it with the warp route.
+
+**Note**: The `hyperlane-sealevel-client` uses `--use-rpc` which is not supported by Solana CLI 1.14.20. We need to deploy manually.
+
+```bash
+# 1. Deploy new ISM (manual, without --use-rpc)
+cd ~/hyperlane-monorepo/rust/sealevel
+solana program deploy target/deploy/hyperlane_sealevel_multisig_ism_message_id.so \
+  --url https://api.testnet.solana.com \
+  --keypair /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json
+
+# Save the Program ID returned (example: 8eFJPnNRz9byTu7NYc9NdsCMHQWfD37PZnhN8fZcahJS)
+NEW_ISM_PROGRAM_ID="8eFJPnNRz9byTu7NYc9NdsCMHQWfD37PZnhN8fZcahJS"
+
+# 2. Initialize the ISM
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  multisig-ism-message-id init \
+  --program-id "$NEW_ISM_PROGRAM_ID"
+
+# 3. Configure validators
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  multisig-ism-message-id set-validators-and-threshold \
+  --program-id "$NEW_ISM_PROGRAM_ID" \
+  --domain 1325 \
+  --validators 242d8a855a8c932dec51f7999ae7d1e48b10c95e \
+  --threshold 1
+
+# 4. Associate ISM with warp route
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  token set-interchain-security-module \
+  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
+  --ism "$NEW_ISM_PROGRAM_ID"
+```
+
+**📖 Complete Guide**: See [CREATE-NEW-ISM-SOLANA-EN.md](./CREATE-NEW-ISM-SOLANA-EN.md) for detailed instructions.
+
+**✅ Successfully Deployed ISM**: `8eFJPnNRz9byTu7NYc9NdsCMHQWfD37PZnhN8fZcahJS`
+
+### 3.2. Configure Validators on Existing ISM (If You Are the Owner)
 
 The Solana ISM needs validators configured for Terra Classic domain (1325):
 
@@ -446,10 +493,11 @@ VALIDATOR="242d8a855a8c932dec51f7999ae7d1e48b10c95e"  # Terra Classic validator 
 THRESHOLD="1"
 
 # Configure validators
+# ⚠️ IMPORTANT: Use "multisig-ism-message-id" (with hyphens), not "ism multisig-message-id"
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id set-validators-and-threshold \
+  multisig-ism-message-id set-validators-and-threshold \
   --program-id "$ISM_PROGRAM_ID" \
   --domain "$DOMAIN" \
   --validators "$VALIDATOR" \
@@ -463,9 +511,9 @@ cargo run -- \
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id get-validators-and-threshold \
+  multisig-ism-message-id query \
   --program-id "$ISM_PROGRAM_ID" \
-  --domain "$DOMAIN"
+  --domains "$DOMAIN"
 ```
 
 **Expected Output:**

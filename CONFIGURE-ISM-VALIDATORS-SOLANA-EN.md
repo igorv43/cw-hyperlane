@@ -1,6 +1,14 @@
 # Configure ISM Validators on Solana
 
-This guide explains how to configure validators for a Solana ISM (Interchain Security Module) using the `hyperlane-sealevel-client`.
+## ⚠️ IMPORTANT PROBLEM
+
+The existing ISM (`4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k`) has a different owner, so you **cannot configure validators on it**.
+
+**Solution**: You need to create a **new ISM** and associate it with the warp route. See [CREATE-NEW-ISM-SOLANA-EN.md](./CREATE-NEW-ISM-SOLANA-EN.md) for complete instructions.
+
+---
+
+This guide explains how to configure validators for a Solana ISM (Interchain Security Module) using the `hyperlane-sealevel-client`, **if you are the owner**.
 
 ## Prerequisites
 
@@ -34,10 +42,11 @@ VALIDATOR="242d8a855a8c932dec51f7999ae7d1e48b10c95e"  # Terra Classic validator 
 THRESHOLD="1"
 
 # Configure validators
+# ⚠️ IMPORTANT: Use "multisig-ism-message-id" (with hyphens), not "ism multisig-message-id"
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id set-validators-and-threshold \
+  multisig-ism-message-id set-validators-and-threshold \
   --program-id "$ISM_PROGRAM_ID" \
   --domain "$DOMAIN" \
   --validators "$VALIDATOR" \
@@ -51,9 +60,9 @@ cargo run -- \
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id get-validators-and-threshold \
+  multisig-ism-message-id query \
   --program-id "$ISM_PROGRAM_ID" \
-  --domain "$DOMAIN"
+  --domains "$DOMAIN"
 ```
 
 ## Multiple Validators
@@ -67,7 +76,7 @@ THRESHOLD="2"  # Require 2 out of 3 signatures
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id set-validators-and-threshold \
+  multisig-ism-message-id set-validators-and-threshold \
   --program-id "$ISM_PROGRAM_ID" \
   --domain "$DOMAIN" \
   --validators "$VALIDATORS" \

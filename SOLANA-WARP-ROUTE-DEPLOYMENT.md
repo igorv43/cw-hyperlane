@@ -235,6 +235,48 @@ Set the mint authority to the mint account. Status: exit status: 0
 
 ## Step 4: Configure ISM Validators
 
+**⚠️ IMPORTANT**: The existing ISM (`4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k`) has a different owner. You need to **create a new ISM** and associate it with the warp route. See [CREATE-NEW-ISM-SOLANA-EN.md](./CREATE-NEW-ISM-SOLANA-EN.md) for complete instructions.
+
+### Option 1: Create New ISM (Recommended)
+
+If you're not the owner of the existing ISM, create a new one:
+
+```bash
+# 1. Deploy new ISM
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k "$KEYPAIR" \
+  -u https://api.testnet.solana.com \
+  multisig-ism-message-id deploy \
+  --environment testnet \
+  --environments-dir ../environments \
+  --built-so-dir ../target/deploy \
+  --chain solanatestnet \
+  --context lunc-solana-ism \
+  --registry ~/.hyperlane/registry
+
+# 2. Configure validators (use the new Program ID)
+NEW_ISM_PROGRAM_ID="<NEW_PROGRAM_ID>"
+cargo run -- \
+  -k "$KEYPAIR" \
+  -u https://api.testnet.solana.com \
+  multisig-ism-message-id set-validators-and-threshold \
+  --program-id "$NEW_ISM_PROGRAM_ID" \
+  --domain 1325 \
+  --validators 242d8a855a8c932dec51f7999ae7d1e48b10c95e \
+  --threshold 1
+
+# 3. Associate ISM with warp route
+cargo run -- \
+  -k "$KEYPAIR" \
+  -u https://api.testnet.solana.com \
+  token set-interchain-security-module \
+  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
+  --ism "$NEW_ISM_PROGRAM_ID"
+```
+
+### Option 2: Configure Existing ISM (If You Are the Owner)
+
 After the warp route is deployed, configure the ISM validators.
 
 ### 4.1. Find the ISM Program ID
@@ -255,10 +297,11 @@ VALIDATOR="242d8a855a8c932dec51f7999ae7d1e48b10c95e"  # Terra Classic validator
 THRESHOLD="1"
 
 # Configure validators
+# ⚠️ IMPORTANT: Use "multisig-ism-message-id" (with hyphens), not "ism multisig-message-id"
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
-  ism multisig-message-id set-validators-and-threshold \
+  multisig-ism-message-id set-validators-and-threshold \
   --program-id "$ISM_PROGRAM_ID" \
   --domain "$DOMAIN" \
   --validators "$VALIDATOR" \

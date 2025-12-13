@@ -308,14 +308,56 @@ EOF
 
 ### 2.5. Prepare Token Configuration
 
-**⚠️ IMPORTANT**: The `token-config.json` must be in the correct format with the chain name as the key:
+**⚠️ IMPORTANT**: The `token-config.json` must be in the correct format with the chain name as the key.
+
+#### Complete Token Configuration Structure
+
+The `token-config.json` supports the following fields:
+
+**Required Fields:**
+- `type`: Token type - `"native"`, `"synthetic"`, or `"collateral"`
+- `decimals`: Number of decimals (0-9 for Solana, max 9)
+
+**For Synthetic Tokens:**
+- `name`: Token name (required for synthetic)
+- `symbol`: Token symbol (required for synthetic)
+- `totalSupply`: Initial total supply as string (e.g., `"0"`)
+- `uri`: (Optional) URI to metadata JSON file
+
+**For Collateral Tokens:**
+- `token`: Mint address of the collateral token
+
+**Optional Fields (All Token Types):**
+- `remoteDecimals`: Decimals on remote chain (defaults to `decimals` if not specified)
+- `interchainGasPaymaster`: IGP account Pubkey (optional, uses default if not specified)
+- `interchainSecurityModule`: ISM program Pubkey (optional, uses Mailbox default ISM if not specified)
+- `mailbox`: Mailbox program Pubkey (optional, uses core program IDs if not specified)
+- `owner`: Owner Pubkey (optional, defaults to deployer)
+- `foreignDeployment`: Program ID if program is already deployed (optional)
+
+#### Example: Complete Configuration for Testnet
 
 ```bash
 # Create configuration directory
 mkdir -p ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana
 
-# Create token configuration file
+# Create token configuration file with all available fields
 cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana/token-config.json << 'EOF'
+{
+  "solanatestnet": {
+    "type": "synthetic",
+    "name": "Luna Classic",
+    "symbol": "wwwwLUNC",
+    "decimals": 6,
+    "totalSupply": "0",
+    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy"
+  }
+}
+EOF
+```
+
+**Current Testnet Configuration (Minimal):**
+```json
 {
   "solanatestnet": {
     "type": "synthetic",
@@ -325,10 +367,88 @@ cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-s
     "totalSupply": "0"
   }
 }
-EOF
 ```
 
-**⚠️ IMPORTANT**: Do NOT include `foreignDeployment` in the initial configuration. Use `program-ids.json` to reference the existing Program ID.
+**IGP Account on Solana Testnet:**
+- **IGP Program ID**: `5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2`
+- **IGP Account**: `9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy`
+- **Overhead IGP Account**: `hBHAApi5ZoeCYHqDdCKkCzVKmBdwywdT3hMqe327eZB`
+
+**Note**: The `interchainGasPaymaster` field should point to the IGP account (`9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy`), not the program ID.
+
+#### Example: Native Token Configuration
+
+```json
+{
+  "solanamainnet": {
+    "type": "native",
+    "decimals": 9,
+    "interchainGasPaymaster": "AkeHBbE5JkwVppujCQQ6WuxsVsJtruBAjUo6fDCFp6fF"
+  }
+}
+```
+
+#### Example: Synthetic Token with Metadata URI
+
+```json
+{
+  "eclipsemainnet": {
+    "type": "synthetic",
+    "decimals": 9,
+    "name": "Solana",
+    "symbol": "SOL",
+    "uri": "https://github.com/hyperlane-xyz/hyperlane-registry/blob/b661127dd3dce5ea98b78ae0051fbd10c384b173/deployments/warp_routes/SOL/eclipse/metadata.json",
+    "interchainGasPaymaster": "3Wp4qKkgf4tjXz1soGyTSndCgBPLZFSrZkiDZ8Qp9EEj"
+  }
+}
+```
+
+#### Metadata JSON Structure
+
+When using `uri` for synthetic tokens, the metadata JSON should follow this structure:
+
+```json
+{
+  "name": "Solana",
+  "symbol": "SOL",
+  "description": "Warp Route SOL on Eclipse",
+  "image": "https://raw.githubusercontent.com/github/explore/14191328e15689ba52d5c10e18b43417bf79b2ef/topics/solana/solana.png",
+  "attributes": []
+}
+```
+
+**Metadata Fields:**
+- `name`: Token name (must match `name` in token-config.json)
+- `symbol`: Token symbol (must match `symbol` in token-config.json)
+- `description`: Token description (required)
+- `image`: URL to token image/logo (required, must return valid image)
+- `attributes`: Array of key-value pairs (optional)
+
+**Example Metadata for LUNC on Solana Testnet:**
+
+```json
+{
+  "name": "Luna Classic",
+  "symbol": "wwwwLUNC",
+  "description": "Warp Route LUNC on Solana Testnet - Native LUNC from Terra Classic",
+  "image": "https://raw.githubusercontent.com/terra-money/assets/master/icon/svg/LUNC.svg",
+  "attributes": [
+    {
+      "trait_type": "Chain",
+      "value": "Solana Testnet"
+    },
+    {
+      "trait_type": "Source Chain",
+      "value": "Terra Classic Testnet"
+    }
+  ]
+}
+```
+
+**⚠️ IMPORTANT**: 
+- Do NOT include `foreignDeployment` in the initial configuration if you want the client to initialize the token.
+- Use `program-ids.json` to reference the existing Program ID if the program is already deployed.
+- The `interchainGasPaymaster` should be the IGP account address, not the program ID.
 
 ### 2.6. Deploy Program (If Not Already Deployed)
 
@@ -563,9 +683,9 @@ cargo run -- \
 The Solana warp route needs the Terra Classic address in hex format (32 bytes):
 
 ```bash
-# Method 1: Use hex address generated during deploy (recommended)
-TERRA_WARP_ADDRESS="terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8"
-TERRA_WARP_HEX="0x0fe22b5522bb88b9836c3ec4888bcfdb40f72d5ec74991a87c7f171e06e63d02"
+# Method 1: Use hex address from context file (recommended)
+TERRA_WARP_ADDRESS="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+TERRA_WARP_HEX="0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b"
 
 # Method 2: Convert manually using cw-hpl CLI
 yarn cw-hpl wallet convert-cosmos-to-eth ${TERRA_WARP_ADDRESS}
@@ -630,22 +750,58 @@ terrad tx wasm execute "$TERRA_WARP" \
 
 On Solana, enroll the Terra Classic warp route as a remote router:
 
+**⚠️ IMPORTANT**: Unlike BSC/EVM chains, Solana does **NOT** use Safe. You interact directly with the Solana program using the `hyperlane-sealevel-client`.
+
 ```bash
 cd ~/hyperlane-monorepo/rust/sealevel/client
 
-# Terra Classic warp route address (32-byte hex, without 0x)
-TERRA_WARP_HEX="0fe22b5522bb88b9836c3ec4888bcfdb40f72d5ec74991a87c7f171e06e63d02"
+# Variables
+KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
+WARP_ROUTE_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
 TERRA_DOMAIN="1325"
 
+# Terra Classic warp route address
+# Option 1: Use hex format (with or without 0x prefix)
+TERRA_WARP_HEX="0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b"
+
+# Option 2: Use bech32 format (will be auto-converted to H256)
+TERRA_WARP_BECH32="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+
 # Link using sealevel client
+# ⚠️ IMPORTANT: -k and -u are global arguments and must come BEFORE the subcommand
+# ⚠️ IMPORTANT: domain and router are POSITIONAL arguments, not flags
 cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
   token enroll-remote-router \
-  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
-  --domain "$TERRA_DOMAIN" \
-  --router "$TERRA_WARP_HEX"
+  --program-id "$WARP_ROUTE_PROGRAM_ID" \
+  "$TERRA_DOMAIN" \
+  "$TERRA_WARP_HEX"
 ```
+
+**Alternative: Using Bech32 Address Directly**
+
+The `hyperlane-sealevel-client` can automatically convert bech32 addresses to H256:
+
+```bash
+cargo run -- \
+  -k "$KEYPAIR" \
+  -u https://api.testnet.solana.com \
+  token enroll-remote-router \
+  --program-id "$WARP_ROUTE_PROGRAM_ID" \
+  "$TERRA_DOMAIN" \
+  "$TERRA_WARP_BECH32"
+```
+
+**Expected Output:**
+```
+==== Instructions: ====
+Instruction 0: Set compute unit limit to 1400000
+Instruction 1: Enroll remote router for domain 1325: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+Transaction signature: <TX_SIGNATURE>
+```
+
+**📖 Complete Guide**: See [ENROLL-REMOTE-ROUTER-SOLANA.md](./ENROLL-REMOTE-ROUTER-SOLANA.md) for detailed instructions and troubleshooting.
 
 ### 4.4. Verify Links
 

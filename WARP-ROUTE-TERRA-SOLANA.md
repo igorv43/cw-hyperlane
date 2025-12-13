@@ -260,20 +260,128 @@ Crie o arquivo de configuração do token:
 mkdir -p environments/testnet/warp-routes/lunc-solana
 
 # Criar arquivo de configuração do token
-cat > environments/testnet/warp-routes/lunc-solana/token-config.json << EOF
+# Estrutura completa com todos os campos disponíveis
+cat > environments/testnet/warp-routes/lunc-solana/token-config.json << 'EOF'
 {
-  "name": "Luna Classic",
-  "symbol": "LUNC",
-  "decimals": 6,
-  "total_supply": "0",
-  "type": "synthetic"
+  "solanatestnet": {
+    "type": "synthetic",
+    "name": "Luna Classic",
+    "symbol": "wwwwLUNC",
+    "decimals": 6,
+    "totalSupply": "0",
+    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy"
+  }
 }
 EOF
 ```
 
 **⚠️ Importante: Configuração de ISM na Solana**
 
-Diferente das chains EVM (BSC, Ethereum), o `token-config.json` do sealevel client **não possui campo para ISM**. Na Solana:
+#### Estrutura Completa do token-config.json
+
+**Campos Obrigatórios:**
+- `type`: Tipo do token - `"native"`, `"synthetic"`, ou `"collateral"`
+- `decimals`: Número de decimais (0-9 para Solana, máximo 9)
+
+**Para Tokens Sintéticos:**
+- `name`: Nome do token (obrigatório para synthetic)
+- `symbol`: Símbolo do token (obrigatório para synthetic)
+- `totalSupply`: Fornecimento total inicial como string (ex: `"0"`)
+- `uri`: (Opcional) URI para arquivo JSON de metadados
+
+**Para Tokens Colaterais:**
+- `token`: Endereço do mint do token colateral
+
+**Campos Opcionais (Todos os Tipos):**
+- `remoteDecimals`: Decimais na chain remota (padrão: `decimals` se não especificado)
+- `interchainGasPaymaster`: Pubkey da conta IGP (opcional, usa padrão se não especificado)
+- `interchainSecurityModule`: Pubkey do programa ISM (opcional, usa ISM padrão do Mailbox se não especificado)
+- `mailbox`: Pubkey do programa Mailbox (opcional, usa program IDs do core se não especificado)
+- `owner`: Pubkey do owner (opcional, padrão: deployer)
+- `foreignDeployment`: Program ID se o programa já está deployado (opcional)
+
+**IGP Account na Solana Testnet:**
+- **IGP Program ID**: `5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2`
+- **IGP Account**: `9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy`
+- **Overhead IGP Account**: `hBHAApi5ZoeCYHqDdCKkCzVKmBdwywdT3hMqe327eZB`
+
+**Nota**: O campo `interchainGasPaymaster` deve apontar para a conta IGP (`9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy`), não o Program ID.
+
+#### Exemplo: Token Nativo
+
+```json
+{
+  "solanamainnet": {
+    "type": "native",
+    "decimals": 9,
+    "interchainGasPaymaster": "AkeHBbE5JkwVppujCQQ6WuxsVsJtruBAjUo6fDCFp6fF"
+  }
+}
+```
+
+#### Exemplo: Token Sintético com URI de Metadados
+
+```json
+{
+  "eclipsemainnet": {
+    "type": "synthetic",
+    "decimals": 9,
+    "name": "Solana",
+    "symbol": "SOL",
+    "uri": "https://github.com/hyperlane-xyz/hyperlane-registry/blob/b661127dd3dce5ea98b78ae0051fbd10c384b173/deployments/warp_routes/SOL/eclipse/metadata.json",
+    "interchainGasPaymaster": "3Wp4qKkgf4tjXz1soGyTSndCgBPLZFSrZkiDZ8Qp9EEj"
+  }
+}
+```
+
+#### Estrutura do Metadata JSON
+
+Quando usar `uri` para tokens sintéticos, o JSON de metadados deve seguir esta estrutura:
+
+```json
+{
+  "name": "Solana",
+  "symbol": "SOL",
+  "description": "Warp Route SOL on Eclipse",
+  "image": "https://raw.githubusercontent.com/github/explore/14191328e15689ba52d5c10e18b43417bf79b2ef/topics/solana/solana.png",
+  "attributes": []
+}
+```
+
+**Campos do Metadata:**
+- `name`: Nome do token (deve corresponder ao `name` no token-config.json)
+- `symbol`: Símbolo do token (deve corresponder ao `symbol` no token-config.json)
+- `description`: Descrição do token (obrigatório)
+- `image`: URL para imagem/logo do token (obrigatório, deve retornar imagem válida)
+- `attributes`: Array de pares chave-valor (opcional)
+
+**Exemplo de Metadata para LUNC na Solana Testnet:**
+
+```json
+{
+  "name": "Luna Classic",
+  "symbol": "wwwwLUNC",
+  "description": "Warp Route LUNC on Solana Testnet - Native LUNC from Terra Classic",
+  "image": "https://raw.githubusercontent.com/terra-money/assets/master/icon/svg/LUNC.svg",
+  "attributes": [
+    {
+      "trait_type": "Chain",
+      "value": "Solana Testnet"
+    },
+    {
+      "trait_type": "Source Chain",
+      "value": "Terra Classic Testnet"
+    }
+  ]
+}
+```
+
+**⚠️ IMPORTANTE**: 
+- NÃO inclua `foreignDeployment` na configuração inicial se quiser que o client inicialize o token.
+- Use `program-ids.json` para referenciar o Program ID existente se o programa já está deployado.
+- O `interchainGasPaymaster` deve ser o endereço da conta IGP, não o Program ID.
+
+Diferente das chains EVM (BSC, Ethereum), o `token-config.json` do sealevel client **não possui campo para ISM** na configuração inicial. Na Solana:
 
 1. **ISM Padrão**: O warp route na Solana usa o ISM configurado no **Mailbox da Solana** por padrão
 2. **ISM do Mailbox**: O Mailbox da Solana já tem um ISM padrão configurado (geralmente um Multisig ISM)

@@ -106,7 +106,7 @@ txhash: <TRANSACTION_HASH>
 Após a execução, verifique se o router foi vinculado:
 
 ```bash
-# Consultar o router vinculado para o domain 1399811149
+# Consultar o router vinculado para o domain 1399811150
 terrad query wasm contract-state smart "$TERRA_WARP" \
   '{"router":{"get_route":{"domain":1399811150}}}' \
   --node "https://rpc.luncblaze.com:443"

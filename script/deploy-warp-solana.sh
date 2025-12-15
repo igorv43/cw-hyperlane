@@ -45,7 +45,7 @@ if [ ! -f "$REGISTRY_DIR/chains/metadata.yaml" ]; then
     cat > "$REGISTRY_DIR/chains/metadata.yaml" << EOF
 solanatestnet:
   chainId: 101
-  domainId: 1399811149
+  domainId: 1399811150  # Solana Testnet (Mainnet uses 1399811149)
   name: solanatestnet
   nativeToken:
     decimals: 9

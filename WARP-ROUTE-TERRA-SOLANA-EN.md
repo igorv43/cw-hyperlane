@@ -2,6 +2,12 @@
 
 This guide provides step-by-step instructions for creating a Warp Route between Terra Classic Testnet (Native LUNC) and Solana Testnet (Synthetic LUNC), enabling bidirectional cross-chain transfers.
 
+**⚠️ IMPORTANT - Domain IDs:**
+- **Solana Testnet**: Domain `1399811150` (used in all examples below)
+- **Solana Mainnet**: Domain `1399811149` (for production deployments only)
+
+All code examples and commands in this guide use **Testnet** domain IDs.
+
 ## Table of Contents
 
 1. [Overview](#overview)
@@ -125,9 +131,12 @@ Ensure Hyperlane contracts are deployed:
 | Chain | Domain ID | RPC Endpoint | Explorer |
 |-------|-----------|--------------|----------|
 | Terra Classic Testnet | `1325` | `https://rpc.luncblaze.com:443` | https://finder.terra-classic.hexxagon.dev/testnet |
-| Solana Testnet | `1399811149` | `https://api.testnet.solana.com` | https://explorer.solana.com/?cluster=testnet |
+| Solana Testnet | `1399811150` | `https://api.testnet.solana.com` | https://explorer.solana.com/?cluster=testnet |
+| Solana Mainnet | `1399811149` | `https://api.mainnet-beta.solana.com` | https://explorer.solana.com |
 
-**Note**: Solana Testnet domain ID is `1399811149`, not `1399811150`.
+**⚠️ IMPORTANT**: 
+- **Solana Testnet** domain ID is `1399811150` (used in all examples below)
+- **Solana Mainnet** domain ID is `1399811149` (for production deployments)
 
 ---
 
@@ -290,7 +299,7 @@ mkdir -p ~/.hyperlane/registry/chains
 cat > ~/.hyperlane/registry/chains/metadata.yaml << 'EOF'
 solanatestnet:
   chainId: 101
-  domainId: 1399811149
+  domainId: 1399811150  # Solana Testnet (Mainnet uses 1399811149)
   name: solanatestnet
   nativeToken:
     decimals: 9
@@ -521,7 +530,7 @@ cargo run -- \
 **Expected Output:**
 ```
 Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
-Initializing Warp Route program: domain_id: 1399811149, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
+Initializing Warp Route program: domain_id: 1399811150, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
 Creating token DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA ...
 Address: DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
 Decimals: 9
@@ -732,7 +741,7 @@ TERRA_WARP="terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8"
 SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
 
 # Solana domain
-SOLANA_DOMAIN="1399811149"
+SOLANA_DOMAIN="1399811150"  # Solana Testnet (Mainnet uses 1399811149)
 
 # Link using terrad
 terrad tx wasm execute "$TERRA_WARP" \
@@ -811,7 +820,7 @@ Transaction signature: <TX_SIGNATURE>
 ```bash
 # Verify configured route
 terrad query wasm contract-state smart ${TERRA_WARP_ADDRESS} \
-  '{"router":{"get_route":{"domain":1399811149}}}' \
+  '{"router":{"get_route":{"domain":1399811150}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443 \
   --output json | jq -r '.data.route'
@@ -843,7 +852,7 @@ IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
 GAS_AMOUNT="200000"  # Estimated gas for Solana
 
 IGP_GAS=$(terrad query wasm contract-state smart ${IGP} \
-  '{"igp":{"quote_gas_payment":{"dest_domain":1399811149,"gas_amount":"'${GAS_AMOUNT}'"}}}' \
+  '{"igp":{"quote_gas_payment":{"dest_domain":1399811150,"gas_amount":"'${GAS_AMOUNT}'"}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443 \
   --output json | jq -r '.data.gas_needed')
@@ -874,7 +883,7 @@ TOTAL_AMOUNT=$((TRANSFER_AMOUNT + HOOK_FEE + IGP_GAS))
 
 # 4. Execute transfer
 terrad tx wasm execute terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8 \
-  "{\"transfer_remote\":{\"dest_domain\":1399811149,\"recipient\":\"${SOLANA_RECIPIENT_HEX}\",\"amount\":\"${TRANSFER_AMOUNT}\"}}" \
+  "{\"transfer_remote\":{\"dest_domain\":1399811150,\"recipient\":\"${SOLANA_RECIPIENT_HEX}\",\"amount\":\"${TRANSFER_AMOUNT}\"}}" \
   --from hypelane-val-testnet \
   --keyring-backend file \
   --chain-id "rebel-2" \
@@ -892,7 +901,7 @@ terrad tx wasm execute terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxan
 yarn cw-hpl warp transfer \
   --asset-type native \
   --asset-id uluna \
-  --target-domain 1399811149 \
+  --target-domain 1399811150 \
   --recipient ${SOLANA_RECIPIENT_HEX} \
   --amount 10000000 \
   -n terraclassic
@@ -1015,11 +1024,11 @@ EOF
 **Symptom**: Error "insufficient hook payment" or "insufficient funds".
 
 **Solution:**
-1. Check IGP Oracle configuration for domain 1399811149:
+1. Check IGP Oracle configuration for domain 1399811150:
 ```bash
 IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
 terrad query wasm contract-state smart ${IGP_ORACLE} \
-  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":1399811149}}}' \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":1399811150}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
@@ -1085,7 +1094,7 @@ yarn cw-hpl warp create ./example/warp/uluna-solana.json -n terraclassic
 yarn cw-hpl warp link \
   --asset-type native \
   --asset-id uluna \
-  --target-domain 1399811149 \
+  --target-domain 1399811150 \
   --warp-address ${SOLANA_PROGRAM_ID_HEX} \
   -n terraclassic
 
@@ -1093,7 +1102,7 @@ yarn cw-hpl warp link \
 yarn cw-hpl warp transfer \
   --asset-type native \
   --asset-id uluna \
-  --target-domain 1399811149 \
+  --target-domain 1399811150 \
   --recipient ${SOLANA_RECIPIENT_HEX} \
   --amount 10000000 \
   -n terraclassic

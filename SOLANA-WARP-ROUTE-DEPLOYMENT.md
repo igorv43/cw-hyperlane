@@ -60,7 +60,7 @@ mkdir -p ~/.hyperlane/registry/chains
 cat > ~/.hyperlane/registry/chains/metadata.yaml << 'EOF'
 solanatestnet:
   chainId: 101
-  domainId: 1399811149
+  domainId: 1399811150  # Solana Testnet (Mainnet uses 1399811149)
   name: solanatestnet
   nativeToken:
     decimals: 9
@@ -220,7 +220,7 @@ The command will:
 **Success Output**:
 ```
 Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
-Initializing Warp Route program: domain_id: 1399811149, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
+Initializing Warp Route program: domain_id: 1399811150, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
 Creating token DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA ...
 Address: DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
 Decimals: 9
@@ -337,7 +337,7 @@ TERRA_WARP="terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8"
 SOLANA_WARP_HEX="0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
 
 # Solana domain
-SOLANA_DOMAIN="1399811149"
+SOLANA_DOMAIN="1399811150"  # Solana Testnet (Mainnet uses 1399811149)
 
 # Link using terrad
 terrad tx wasm execute "$TERRA_WARP" \
@@ -389,7 +389,7 @@ TOTAL_AMOUNT=$((AMOUNT + HOOK_FEE))
 RECIPIENT="000000000000000000000000EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd"
 
 terrad tx wasm execute terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8 \
-  "{\"transfer_remote\":{\"dest_domain\":1399811149,\"recipient\":\"$RECIPIENT\",\"amount\":\"$AMOUNT\"}}" \
+  "{\"transfer_remote\":{\"dest_domain\":1399811150,\"recipient\":\"$RECIPIENT\",\"amount\":\"$AMOUNT\"}}" \
   --from hypelane-val-testnet \
   --keyring-backend file \
   --chain-id "rebel-2" \

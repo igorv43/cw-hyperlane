@@ -2,6 +2,12 @@
 
 Este guia fornece instruções passo a passo para criar um Warp Route entre Terra Classic Testnet (Native LUNC) e Solana Testnet (Synthetic LUNC), permitindo transferências cross-chain bidirecionais.
 
+**⚠️ IMPORTANTE - Domain IDs:**
+- **Solana Testnet**: Domain `1399811150` (usado em todos os exemplos abaixo)
+- **Solana Mainnet**: Domain `1399811149` (apenas para deployments de produção)
+
+Todos os exemplos de código e comandos neste guia usam domain IDs de **Testnet**.
+
 ## Índice
 
 1. [Visão Geral](#visão-geral)
@@ -312,7 +318,7 @@ EOF
 
 ```json
 {
-  "solanamainnet": {
+  "solanamainnet": {  // ⚠️ MAINNET - Para testnet use "solanatestnet" com domain 1399811150
     "type": "native",
     "decimals": 9,
     "interchainGasPaymaster": "AkeHBbE5JkwVppujCQQ6WuxsVsJtruBAjUo6fDCFp6fF"

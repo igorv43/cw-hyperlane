@@ -110,7 +110,7 @@ txhash: <TRANSACTION_HASH>
 After execution, verify that the router was enrolled:
 
 ```bash
-# Query the enrolled router for domain 1399811149
+# Query the enrolled router for domain 1399811150
 terrad query wasm contract-state smart "$TERRA_WARP" \
   '{"router":{"get_route":{"domain":1399811150}}}' \
   --node "https://rpc.luncblaze.com:443"

@@ -96,6 +96,35 @@ cargo run -- \
   --url https://api.testnet.solana.com
 ```
 
+### Exemplo Real: ISM Configurado para lunc-solana-v2
+
+**✅ ISM já configurado e funcionando:**
+
+```bash
+# Warp Route lunc-solana-v2
+WARP_ROUTE_PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"
+ISM_PROGRAM_ID="5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh"
+
+# ISM já está associado ao warp route
+# Configuração dos validadores:
+# - Domain: 1325 (Terra Classic)
+# - Validator: 242d8a855a8c932dec51f7999ae7d1e48b10c95e
+# - Threshold: 1
+```
+
+**Script usado para configurar**: `script/configurar-ism-lunc-solana-v2-manual.sh`
+
+**Verificar configuração:**
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  token query \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
+  synthetic
+```
+
 ### Opção 3: Remover ISM Customizado (Voltar ao Padrão)
 
 Para remover um ISM customizado e voltar a usar o ISM padrão do Mailbox:
@@ -156,12 +185,36 @@ DOMAIN=1325
 # Configurar validadores
 cargo run -- \
   -k ~/solana-ism-owner-key.json \
-  ism multisig-message-id set-validators-and-threshold \
+  multisig-ism-message-id set-validators-and-threshold \
   --program-id ${ISM_PROGRAM_ID} \
   --domain ${DOMAIN} \
   --validators 242d8a855a8c932dec51f7999ae7d1e48b10c95e,f620f5e3d25a3ae848fec74bccae5de3edcd8796 \
   --threshold 2 \
-  --url https://api.testnet.solana.com
+  -u https://api.testnet.solana.com
+```
+
+### Exemplo Real: Validadores Configurados para lunc-solana-v2
+
+**✅ Validadores já configurados:**
+
+```bash
+# ISM Program ID para lunc-solana-v2
+ISM_PROGRAM_ID="5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh"
+
+# Domain do Terra Classic
+DOMAIN=1325
+
+# Validadores configurados:
+# - Validator: 242d8a855a8c932dec51f7999ae7d1e48b10c95e
+# - Threshold: 1
+
+# Verificar configuração:
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  multisig-ism-message-id query \
+  --program-id 5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh \
+  --domains 1325
 ```
 
 ### 1. Verificar ISM do Mailbox

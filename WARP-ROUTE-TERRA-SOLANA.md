@@ -539,6 +539,43 @@ cargo run -- \
 
 **📖 Guia Completo:** Veja [CONFIGURAR-ISM-SOLANA-WARP.md](./CONFIGURAR-ISM-SOLANA-WARP.md) para instruções detalhadas.
 
+### 2.5.1. ISM Configurado para lunc-solana-v2
+
+**✅ ISM já configurado e associado ao Warp Route:**
+
+- **Warp Route Name**: `lunc-solana-v2`
+- **Warp Route Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **ISM Program ID**: `5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh`
+- **ISM Owner**: `EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd`
+- **Context**: `lunc-solana-v2-ism`
+
+**Configuração dos Validadores:**
+- **Domain**: 1325 (Terra Classic)
+- **Validator**: `242d8a855a8c932dec51f7999ae7d1e48b10c95e`
+- **Threshold**: 1
+
+**Status**: ✅ ISM inicializado, validadores configurados e associado ao warp route
+
+**Script usado**: `script/configurar-ism-lunc-solana-v2-manual.sh`
+
+**Remote Router Configurado:**
+- **Terra Classic Domain**: 1325
+- **Terra Classic Warp Route**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Terra Classic Warp Route (Hex)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+- **Status**: ✅ Remote Router vinculado na Solana
+- **Script usado**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+
+**Verificar configuração:**
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  token query \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
+  synthetic
+```
+
 **Diferença Arquitetural:**
 - **EVM (BSC)**: ISM configurado no YAML durante o deploy
 - **Solana**: ISM pode ser configurado após o deploy via `sealevel client` (owner do warp route)
@@ -722,14 +759,52 @@ cargo run -- \
   -u https://api.testnet.solana.com \
   token enroll-remote-router \
   --program-id ${SOLANA_PROGRAM_ID} \
-  --remote-domain 1325 \
-  --remote-router ${TERRA_WARP_HEX}
+  1325 \
+  ${TERRA_WARP_HEX}
 ```
+
+**⚠️ IMPORTANTE**: `domain` e `router` são **argumentos posicionais**, não flags. A sintaxe correta é:
+- `--program-id` (flag opcional)
+- `DOMAIN` (argumento posicional)
+- `ROUTER` (argumento posicional)
 
 **Parâmetros:**
 - `--program-id`: Program ID do warp route na Solana
-- `--remote-domain`: Domain ID do Terra Classic (1325)
-- `--remote-router`: Endereço hex do warp route no Terra Classic (32 bytes)
+- `1325`: Domain ID do Terra Classic (argumento posicional)
+- `${TERRA_WARP_HEX}`: Endereço hex do warp route no Terra Classic (32 bytes, argumento posicional)
+
+### 4.3.1. Remote Router Configurado para lunc-solana-v2
+
+**✅ Remote Router já vinculado e configurado:**
+
+- **Warp Route Name**: `lunc-solana-v2`
+- **Warp Route Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Terra Classic Domain**: 1325
+- **Terra Classic Warp Route (Bech32)**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Terra Classic Warp Route (Hex)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+- **Status**: ✅ Remote Router vinculado na Solana
+
+**Verificação:**
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  token query \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
+  synthetic
+```
+
+**Saída esperada (remote_routers):**
+```
+remote_routers: {
+    1325: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b,
+}
+```
+
+**Script usado**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+
+**📖 Guia Completo**: Veja [VINCULAR-REMOTE-ROUTER-SOLANA.md](./VINCULAR-REMOTE-ROUTER-SOLANA.md) para instruções detalhadas.
 
 ### 4.4. Verificar Links
 
@@ -988,6 +1063,84 @@ solana-install update
 
 **Erro comum:** `cargo build-sbf --release` (incorreto)
 **Correto:** `cargo build-sbf -- --release` ou `cargo build-sbf`
+
+---
+
+## Resumo Completo: Warp Route lunc-solana-v2
+
+### Informações do Deploy
+
+**Warp Route Solana:**
+- **Name**: `lunc-solana-v2`
+- **Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Owner**: `EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd`
+- **Mint**: `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu`
+- **Decimals**: 6
+- **Remote Decimals**: 6
+
+**Warp Route Terra Classic:**
+- **Address (Bech32)**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Address (Hex)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+- **Domain**: 1325
+
+### ISM Configurado
+
+- **ISM Program ID**: `5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh`
+- **ISM Owner**: `EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd`
+- **Context**: `lunc-solana-v2-ism`
+- **Domain Configurado**: 1325 (Terra Classic)
+- **Validator**: `242d8a855a8c932dec51f7999ae7d1e48b10c95e`
+- **Threshold**: 1
+- **Status**: ✅ Configurado e Associado
+
+### Remote Router Configurado
+
+- **Terra Classic Domain**: 1325
+- **Terra Classic Router (Hex)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+- **Status**: ✅ Vinculado na Solana
+
+**Verificação:**
+```bash
+cd ~/hyperlane-monorepo/rust/sealevel/client
+cargo run -- \
+  -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
+  -u https://api.testnet.solana.com \
+  token query \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
+  synthetic
+```
+
+**Saída esperada:**
+```
+remote_routers: {
+    1325: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b,
+}
+interchain_security_module: Some(
+    5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh,
+)
+```
+
+### IGP Configurado
+
+- **IGP Program ID**: `5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2`
+- **IGP Oracle**: `9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy`
+- **Status**: ✅ Configurado
+
+### Scripts Utilizados
+
+1. **Deploy Warp Route**: `script/criar-novo-warp-solana.sh`
+2. **Configurar ISM**: `script/configurar-ism-lunc-solana-v2-manual.sh`
+3. **Vincular Remote Router**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+
+### Status Geral
+
+| Componente | Status |
+|------------|--------|
+| Warp Route Solana | ✅ Deployado |
+| ISM | ✅ Configurado e Associado |
+| Remote Router | ✅ Vinculado |
+| IGP | ✅ Configurado |
+| Pronto para Transferências | ✅ Sim |
 
 ---
 

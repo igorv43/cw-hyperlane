@@ -10,7 +10,8 @@ Após vincular Terra Classic → Solana, você precisa vincular o router do Terr
 
 ## Pré-requisitos
 
-- Program ID do warp route Solana Testnet: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+- Program ID do warp route Solana Testnet: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x` (lunc-solana)
+- **OU** Program ID do warp route Solana Testnet: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw` (lunc-solana-v2) ✅
 - Warp route Terra Classic: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
 - Warp route Terra Classic (hex): `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
 - Domain Terra Classic: `1325`
@@ -184,6 +185,22 @@ AccountData {
 ```
 
 **✅ Confirmado!** O router do Terra Classic (domain 1325) foi vinculado com sucesso. O endereço hex `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b` corresponde ao seu warp route do Terra Classic.
+
+### Exemplo Real: lunc-solana-v2 (Configurado)
+
+**✅ Remote Router vinculado com sucesso para o warp route `lunc-solana-v2`:**
+
+- **Warp Route Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Remote Router Configurado**: 
+  ```
+  remote_routers: {
+      1325: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b,
+  }
+  ```
+- **Terra Classic Warp Route**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Status**: ✅ Vinculado e verificado
+
+**Script usado**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
 
 ## Referência Completa de Comandos
 

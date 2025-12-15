@@ -24,12 +24,20 @@
 
 ### Remote Router Configurado
 
+#### Solana → Terra Classic
 - **Terra Classic Domain**: 1325
 - **Terra Classic Warp Route (Bech32)**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
 - **Terra Classic Warp Route (Hex)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
 - **Status**: ✅ Remote Router vinculado na Solana
+- **Script usado**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
 
-**Script usado**: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+#### Terra Classic → Solana
+- **Solana Domain**: 1399811150
+- **Solana Router (Base58)**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Solana Router (Hex)**: `f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa`
+- **Transaction Hash**: `0630750886AC1FE214234BDB5B891DE1299883169C37130BB9C62E2EC64930F9`
+- **Status**: ✅ Transação enviada e confirmada no Terra Classic
+- **Script usado**: `script/vincular-terra-to-solana-lunc-solana-v2.sh`
 
 ---
 
@@ -87,11 +95,13 @@ Procure por `interchain_security_module` na saída - deve mostrar: `5FgXjCJ8hw1h
 2. **Inicialização**: Usado `multisig-ism-message-id init` para tornar o deployer o owner
 3. **Configuração de Validadores**: Configurado domain 1325 (Terra Classic) com validator `242d8a855a8c932dec51f7999ae7d1e48b10c95e` e threshold 1
 4. **Associação ao Warp Route**: Associado ao warp route `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw` (lunc-solana-v2)
-5. **Remote Router**: Vinculado Terra Classic (Domain 1325) → `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+5. **Remote Router (Solana → Terra)**: Vinculado Terra Classic (Domain 1325) → `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+6. **Remote Router (Terra → Solana)**: Vinculado Solana (Domain 1399811150) → `f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa` (Tx: `0630750886AC1FE214234BDB5B891DE1299883169C37130BB9C62E2EC64930F9`)
 
 **Scripts usados**: 
 - ISM: `script/configurar-ism-lunc-solana-v2-manual.sh`
-- Remote Router: `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+- Remote Router (Solana → Terra): `script/vincular-remote-router-solana-lunc-solana-v2.sh`
+- Remote Router (Terra → Solana): `script/vincular-terra-to-solana-lunc-solana-v2.sh`
 
 ### ISM lunc-solana (Anterior)
 
@@ -117,7 +127,8 @@ Procure por `interchain_security_module` na saída - deve mostrar: `5FgXjCJ8hw1h
 | **Validator** | `242d8a855a8c932dec51f7999ae7d1e48b10c95e` |
 | **Threshold** | 1 |
 | **Status** | ✅ Configurado e Associado |
-| **Remote Router** | ✅ Vinculado (Domain 1325) |
+| **Remote Router (Solana → Terra)** | ✅ Vinculado (Domain 1325) |
+| **Remote Router (Terra → Solana)** | ✅ Vinculado (Domain 1399811150) |
 
 ### ISM lunc-solana (Anterior)
 
@@ -137,8 +148,9 @@ Procure por `interchain_security_module` na saída - deve mostrar: `5FgXjCJ8hw1h
 - **`script/configurar-ism-lunc-solana-v2-direto.sh`** - Versão direta sem pausas
 
 ### Remote Router
-- **`script/vincular-remote-router-solana-lunc-solana-v2.sh`** - Script completo para vincular Remote Router (recomendado)
-- **`script/vincular-remote-router-lunc-solana-v2-simples.sh`** - Versão simplificada
+- **`script/vincular-remote-router-solana-lunc-solana-v2.sh`** - Script para vincular Remote Router (Solana → Terra Classic) (recomendado)
+- **`script/vincular-remote-router-lunc-solana-v2-simples.sh`** - Versão simplificada (Solana → Terra Classic)
+- **`script/vincular-terra-to-solana-lunc-solana-v2.sh`** - Script para vincular Remote Router (Terra Classic → Solana) (recomendado)
 
 ## Referências
 

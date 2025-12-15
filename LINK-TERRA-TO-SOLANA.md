@@ -170,7 +170,23 @@ terrad tx wasm execute "$TERRA_WARP" \
 
 ### Using Script
 
-Create a script `link-terra-to-solana.sh`:
+#### Script para lunc-solana-v2 (Recomendado)
+
+Use o script pronto para o warp route `lunc-solana-v2`:
+
+```bash
+/home/lunc/cw-hyperlane/script/vincular-terra-to-solana-lunc-solana-v2.sh
+```
+
+Este script:
+- ✅ Verifica as informações antes de executar
+- ✅ Mostra o comando que será executado
+- ✅ Vincula o Remote Router
+- ✅ Verifica a vinculação automaticamente
+
+#### Script Genérico (Referência)
+
+Se precisar criar um script customizado:
 
 ```bash
 #!/bin/bash
@@ -186,7 +202,7 @@ FEES="12000000uluna"
 
 # Execute
 terrad tx wasm execute "$TERRA_WARP" \
-  "{\"enroll_remote_router\":{\"domain\":$SOLANA_DOMAIN,\"router\":\"$SOLANA_WARP_HEX\"}}" \
+  "{\"router\":{\"set_route\":{\"set\":{\"domain\":$SOLANA_DOMAIN,\"route\":\"$SOLANA_WARP_HEX\"}}}}" \
   --from "$KEY_NAME" \
   --keyring-backend file \
   --chain-id "$CHAIN_ID" \
@@ -282,13 +298,43 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
   --node "https://rpc.luncblaze.com:443"
 ```
 
+## Example: lunc-solana-v2 (Configured)
+
+**✅ Remote Router vinculado com sucesso para o warp route `lunc-solana-v2`:**
+
+- **Terra Classic Warp Route**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Solana Warp Route Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Solana Router (Hex)**: `f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa`
+- **Transaction Hash**: `0630750886AC1FE214234BDB5B891DE1299883169C37130BB9C62E2EC64930F9`
+- **Status**: ✅ Transação enviada e confirmada (Terra Classic → Solana)
+
+**Script usado**: `script/vincular-terra-to-solana-lunc-solana-v2.sh`
+
+**Verificar vinculação:**
+```bash
+terrad query wasm contract-state smart terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml \
+  '{"router":{"get_route":{"domain":1399811150}}}' \
+  --node "https://rpc.luncblaze.com:443"
+```
+
+**Saída esperada (após confirmação):**
+```json
+{
+  "data": {
+    "route": "f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"
+  }
+}
+```
+
+**⚠️ Nota**: Se a rota aparecer como `null` na verificação imediata, aguarde alguns segundos para a transação ser confirmada no blockchain e execute a query novamente.
+
 ## Next Steps
 
 After successfully enrolling the remote router:
 
 1. **Verify both directions are linked:**
-   - Terra Classic → Solana: Verify route on Terra Classic (this guide)
-   - Solana → Terra Classic: Verify router enrollment on Solana (see [ENROLL-REMOTE-ROUTER-SOLANA.md](./ENROLL-REMOTE-ROUTER-SOLANA.md))
+   - Terra Classic → Solana: Verify route on Terra Classic (this guide) ✅
+   - Solana → Terra Classic: Verify router enrollment on Solana (see [ENROLL-REMOTE-ROUTER-SOLANA.md](./ENROLL-REMOTE-ROUTER-SOLANA.md)) ✅
 
 2. **Test cross-chain transfer:**
    - Transfer from Terra Classic to Solana

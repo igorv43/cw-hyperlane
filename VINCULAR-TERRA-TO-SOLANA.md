@@ -12,7 +12,7 @@ Após fazer o deploy dos warp routes tanto no Terra Classic quanto na Solana, vo
 
 - Warp route Terra Classic: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` (wwwwlunc)
 - Program ID do warp route Solana: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
-- Domain Solana: `1399811149`
+- Domain Solana: `1399811150` (Solana Testnet)
 - Conta Terra Classic com permissões de owner (owner do contrato warp route Terra Classic)
 
 ## Passo 1: Converter Solana Program ID para Formato Hex
@@ -74,12 +74,12 @@ No Terra Classic, vincule o warp route da Solana como um remote router usando `t
 ```bash
 # Variáveis
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
-SOLANA_DOMAIN="1399811149"
+SOLANA_DOMAIN="1399811150"
 SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
 
-# Vincular remote router
+# Vincular remote router (set route)
 terrad tx wasm execute "$TERRA_WARP" \
-  "{\"enroll_remote_router\":{\"domain\":$SOLANA_DOMAIN,\"router\":\"$SOLANA_WARP_HEX\"}}" \
+  "{\"router\":{\"set_route\":{\"set\":{\"domain\":$SOLANA_DOMAIN,\"route\":\"$SOLANA_WARP_HEX\"}}}}" \
   --from hypelane-val-testnet \
   --keyring-backend file \
   --chain-id "rebel-2" \
@@ -92,7 +92,7 @@ terrad tx wasm execute "$TERRA_WARP" \
 
 **⚠️ IMPORTANTE**: 
 - O parâmetro `router` deve ter **exatamente 64 caracteres hex** (32 bytes), **sem** o prefixo `0x`
-- O domain para Solana Testnet é `1399811149`
+- O domain para Solana Testnet é `1399811150`
 - Certifique-se de ter `uluna` suficiente para as taxas (12,000,000 uluna = 0.012 LUNC)
 
 **Saída esperada:**
@@ -108,7 +108,7 @@ Após a execução, verifique se o router foi vinculado:
 ```bash
 # Consultar o router vinculado para o domain 1399811149
 terrad query wasm contract-state smart "$TERRA_WARP" \
-  '{"router":{"get_route":{"domain":1399811149}}}' \
+  '{"router":{"get_route":{"domain":1399811150}}}' \
   --node "https://rpc.luncblaze.com:443"
 ```
 
@@ -135,7 +135,7 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
 
 ```bash
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml" && \
-SOLANA_DOMAIN="1399811149" && \
+SOLANA_DOMAIN="1399811150" && \
 SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d" && \
 terrad tx wasm execute "$TERRA_WARP" \
   "{\"enroll_remote_router\":{\"domain\":$SOLANA_DOMAIN,\"router\":\"$SOLANA_WARP_HEX\"}}" \
@@ -159,24 +159,28 @@ Use o script automatizado:
 
 ## Assinatura da Função
 
-A função `enroll_remote_router` no contrato warp route do Terra Classic:
+A função `router.set_route` no contrato warp route do Terra Classic:
 
 ```json
 {
-  "enroll_remote_router": {
-    "domain": 1399811149,
-    "router": "3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+  "router": {
+    "set_route": {
+      "set": {
+        "domain": 1399811150,
+        "route": "3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+      }
+    }
   }
 }
 ```
 
 **Parâmetros:**
-- `domain`: Domain ID da Solana (1399811149)
+- `domain`: Domain ID da Solana (1399811150)
 - `router`: Program ID da Solana em formato hex (32 bytes, 64 caracteres hex, sem prefixo 0x)
 
 ## Notas Importantes
 
-1. **Domain ID**: O domain da Solana Testnet é `1399811149` (não confundir com outras redes)
+1. **Domain ID**: O domain da Solana Testnet é `1399811150` (conforme sua configuração)
 2. **Formato de Endereço**: O Program ID da Solana deve ser:
    - Convertido de base58 para hex
    - Preenchido para 64 caracteres (32 bytes)
@@ -228,7 +232,7 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
 **Solução**: Isso não é um erro - a rota já está configurada. Você pode verificar com:
 ```bash
 terrad query wasm contract-state smart "$TERRA_WARP" \
-  '{"router":{"get_route":{"domain":1399811149}}}' \
+  '{"router":{"get_route":{"domain":1399811150}}}' \
   --node "https://rpc.luncblaze.com:443"
 ```
 

@@ -350,7 +350,8 @@ cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-s
     "symbol": "wwwwLUNC",
     "decimals": 6,
     "totalSupply": "0",
-    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy"
+    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy",
+    "uri": "https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/solana/metadata.json"
   }
 }
 EOF
@@ -364,7 +365,8 @@ EOF
     "name": "Luna Classic",
     "symbol": "wwwwLUNC",
     "decimals": 6,
-    "totalSupply": "0"
+    "totalSupply": "0",
+    "uri": "https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/solana/metadata.json"
   }
 }
 ```
@@ -426,24 +428,23 @@ When using `uri` for synthetic tokens, the metadata JSON should follow this stru
 
 **Example Metadata for LUNC on Solana Testnet:**
 
+The metadata file is located at: `warp/solana/metadata.json`
+
 ```json
 {
-  "name": "Luna Classic",
+  "name": "LUNA CLASSIC",
   "symbol": "wwwwLUNC",
-  "description": "Warp Route LUNC on Solana Testnet - Native LUNC from Terra Classic",
-  "image": "https://raw.githubusercontent.com/terra-money/assets/master/icon/svg/LUNC.svg",
-  "attributes": [
-    {
-      "trait_type": "Chain",
-      "value": "Solana Testnet"
-    },
-    {
-      "trait_type": "Source Chain",
-      "value": "Terra Classic Testnet"
-    }
-  ]
+  "description": "Warp Route LUNC",
+  "image": "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg",
+  "attributes": []
 }
 ```
+
+**File Location**: `/home/lunc/cw-hyperlane/warp/solana/metadata.json`
+
+**URI in token-config.json**: `https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/solana/metadata.json`
+
+**Note**: Make sure to push the `warp/solana/metadata.json` file to your GitHub repository so the URI is accessible.
 
 **⚠️ IMPORTANT**: 
 - Do NOT include `foreignDeployment` in the initial configuration if you want the client to initialize the token.

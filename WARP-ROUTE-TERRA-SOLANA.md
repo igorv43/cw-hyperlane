@@ -269,7 +269,8 @@ cat > environments/testnet/warp-routes/lunc-solana/token-config.json << 'EOF'
     "symbol": "wwwwLUNC",
     "decimals": 6,
     "totalSupply": "0",
-    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy"
+    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy",
+    "uri": "https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/solana/metadata.json"
   }
 }
 EOF
@@ -357,24 +358,23 @@ Quando usar `uri` para tokens sintéticos, o JSON de metadados deve seguir esta 
 
 **Exemplo de Metadata para LUNC na Solana Testnet:**
 
+O arquivo de metadata está localizado em: `warp/solana/metadata.json`
+
 ```json
 {
-  "name": "Luna Classic",
+  "name": "LUNA CLASSIC",
   "symbol": "wwwwLUNC",
-  "description": "Warp Route LUNC on Solana Testnet - Native LUNC from Terra Classic",
-  "image": "https://raw.githubusercontent.com/terra-money/assets/master/icon/svg/LUNC.svg",
-  "attributes": [
-    {
-      "trait_type": "Chain",
-      "value": "Solana Testnet"
-    },
-    {
-      "trait_type": "Source Chain",
-      "value": "Terra Classic Testnet"
-    }
-  ]
+  "description": "Warp Route LUNC",
+  "image": "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg",
+  "attributes": []
 }
 ```
+
+**Localização do Arquivo**: `/home/lunc/cw-hyperlane/warp/solana/metadata.json`
+
+**URI no token-config.json**: `https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/solana/metadata.json`
+
+**Nota**: Certifique-se de fazer push do arquivo `warp/solana/metadata.json` para seu repositório GitHub para que a URI seja acessível.
 
 **⚠️ IMPORTANTE**: 
 - NÃO inclua `foreignDeployment` na configuração inicial se quiser que o client inicialize o token.

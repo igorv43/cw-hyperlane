@@ -272,7 +272,7 @@ cat > environments/testnet/warp-routes/lunc-solana/token-config.json << 'EOF'
   "solanatestnet": {
     "type": "synthetic",
     "name": "Luna Classic",
-    "symbol": "wwwwLUNC",
+    "symbol": "wwwwwLUNC",  # Warp Route V2 (V1 usa "wwwwLUNC")
     "decimals": 6,
     "totalSupply": "0",
     "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy",
@@ -479,15 +479,15 @@ Instruction 0: Set compute unit limit to 1400000
 Instruction 1: Setting ISM for chain: solanatestnet (1399811150) to None
 
 ==== Instructions: ====
-Instruction 0: Enrolling routers for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x, routers: [RemoteRouterConfig { domain: 1325, router: None }]
+Instruction 0: Enrolling routers for chain: solanatestnet, program_id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw, routers: [RemoteRouterConfig { domain: 1325, router: None }]
 
-No destination gas amount changes for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+No destination gas amount changes for chain: solanatestnet, program_id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw
 
 Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json contents:
 {
   "solanatestnet": {
     "hex": "0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d",
-    "base58": "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+    "base58": "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"
   }
 }
 ```
@@ -499,8 +499,8 @@ Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json
 
 **Salve as informações:**
 ```bash
-SOLANA_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"  # Program ID do warp route
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"  # Hex (32 bytes, sem 0x)
+SOLANA_PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Program ID do warp route V2
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Hex (32 bytes, sem 0x) - V2
 ```
 
 ### 2.5. Configurar ISM no Warp Route da Solana (Opcional)

@@ -11,7 +11,8 @@ After deploying warp routes on both Terra Classic and Solana, you need to link t
 ## Prerequisites
 
 - Terra Classic warp route: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` (wwwwlunc)
-- Solana warp route Program ID: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+- **Solana warp route Program ID (V2)**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Solana warp route Program ID (V1 - Reference)**: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
 - Solana domain: `1399811150` (Solana Testnet)
 - Terra Classic account with owner permissions (owner of the Terra Classic warp route)
 
@@ -19,14 +20,14 @@ After deploying warp routes on both Terra Classic and Solana, you need to link t
 
 The Solana Program ID (base58) needs to be converted to a 32-byte hex format for the Terra Classic contract.
 
-**Solana Program ID (base58):**
+**Solana Program ID (base58) - Warp Route V2:**
 ```
-5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw
 ```
 
-**Converted Hex (32 bytes, without 0x prefix):**
+**Converted Hex (32 bytes, without 0x prefix) - Warp Route V2:**
 ```
-3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d
+f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa
 ```
 
 ### How to Convert
@@ -38,7 +39,7 @@ python3 << EOF
 import base58
 import binascii
 
-solana_address = "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+solana_address = "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 decoded = base58.b58decode(solana_address)
 hex_address = binascii.hexlify(decoded).decode('utf-8')
 # Pad to 64 characters (32 bytes)
@@ -49,7 +50,7 @@ EOF
 
 **Expected output:**
 ```
-Hex (32 bytes, no 0x): 3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d
+Hex (32 bytes, no 0x): f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa  # Warp Route V2
 ```
 
 #### Method 2: Using Node.js
@@ -57,7 +58,7 @@ Hex (32 bytes, no 0x): 3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5
 ```bash
 node -e "
 const bs58 = require('bs58');
-const solanaAddress = '5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x';
+const solanaAddress = 'HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw';  // Warp Route V2
 const decoded = bs58.decode(solanaAddress);
 const hex = Buffer.from(decoded).toString('hex');
 const padded = hex.padStart(64, '0');
@@ -79,7 +80,7 @@ On Terra Classic, enroll the Solana warp route as a remote router using `terrad`
 # Variables
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
 SOLANA_DOMAIN="1399811150"
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2
 
 # Set route (link remote router)
 terrad tx wasm execute "$TERRA_WARP" \
@@ -154,7 +155,7 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
 ```bash
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml" && \
 SOLANA_DOMAIN="1399811150" && \
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d" && \
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2 && \
 terrad tx wasm execute "$TERRA_WARP" \
   "{\"enroll_remote_router\":{\"domain\":$SOLANA_DOMAIN,\"router\":\"$SOLANA_WARP_HEX\"}}" \
   --from hypelane-val-testnet \
@@ -177,7 +178,7 @@ Create a script `link-terra-to-solana.sh`:
 # Variables
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
 SOLANA_DOMAIN="1399811150"
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2
 KEY_NAME="hypelane-val-testnet"
 CHAIN_ID="rebel-2"
 RPC_NODE="https://rpc.luncblaze.com:443"

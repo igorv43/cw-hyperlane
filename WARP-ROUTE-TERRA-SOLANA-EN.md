@@ -152,8 +152,15 @@ Ensure Hyperlane contracts are deployed:
 
 2. **Solana Side**:
    - Warp Route Program (Synthetic)
-   - Program ID: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
-   - Mint Account: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+   - **Warp Route V2 (Current)**:
+     - Program ID: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+     - Mint Account: `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu`
+     - Symbol: `wwwwwLUNC`
+     - Name: `lunc-solana-v2`
+   - **Warp Route V1 (Reference)**:
+     - Program ID: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+     - Mint Account: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+     - Symbol: `wwwwLUNC`
    - Type: `synthetic` (Token-2022)
    - ISM: Uses ISM configured in Solana Mailbox (not configurable in warp route during deployment)
 
@@ -348,10 +355,10 @@ The `token-config.json` supports the following fields:
 
 ```bash
 # Create configuration directory
-mkdir -p ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana
+mkdir -p ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana-v2
 
-# Create token configuration file with all available fields
-cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana/token-config.json << 'EOF'
+# Create token configuration file with all available fields (Warp Route V2)
+cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana-v2/token-config.json << 'EOF'
 {
   "solanatestnet": {
     "type": "synthetic",
@@ -473,7 +480,7 @@ solana program deploy target/deploy/hyperlane_sealevel_token.so \
   --keypair /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json
 ```
 
-**Note**: Save the Program ID returned. In this case: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+**Note**: Save the Program ID returned. For Warp Route V2: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
 
 ### 2.7. Create Program IDs File
 
@@ -482,11 +489,11 @@ Create the `program-ids.json` file to reference the existing Program ID:
 ```bash
 mkdir -p ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana
 
-cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana/program-ids.json << 'EOF'
+cat > ~/hyperlane-monorepo/rust/sealevel/environments/testnet/warp-routes/lunc-solana-v2/program-ids.json << 'EOF'
 {
   "solanatestnet": {
-    "hex": "0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d",
-    "base58": "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+    "hex": "0xf35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa",
+    "base58": "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"
   }
 }
 EOF
@@ -527,26 +534,30 @@ cargo run -- \
 
 **Note**: The `--ata-payer-funding-amount` is set to `5000000` (0.005 SOL). Adjust based on your account balance. Ensure you have at least 0.01 SOL in your account.
 
-**Expected Output:**
+**Expected Output (Warp Route V2):**
 ```
-Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
-Warp route token already exists, skipping init
-ATA payer fully funded with balance of 5000000
+Recovered existing program id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw
+Initializing Warp Route program: domain_id: 1399811150, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
+Creating token 3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu ...
+Address: 3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu
+Decimals: 6
+initialized metadata pointer. Status: exit status: 0
+initialized metadata. Status: exit status: 0
+Transferring authority: mint to the mint account 3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu
+Set the mint authority to the mint account. Status: exit status: 0
 
 ==== Instructions: ====
-Instruction 0: Set compute unit limit to 1400000
-Instruction 1: Setting ISM for chain: solanatestnet (1399811150) to None
+Instruction 0: Funding ATA payer ...
 
-==== Instructions: ====
-Instruction 0: Enrolling routers for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x, routers: [RemoteRouterConfig { domain: 1325, router: None }]
+No router changes for chain: solanatestnet, program_id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw
 
-No destination gas amount changes for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+No destination gas amount changes for chain: solanatestnet, program_id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw
 
-Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json contents:
+Writing to file ../environments/testnet/warp-routes/lunc-solana-v2/program-ids.json contents:
 {
   "solanatestnet": {
-    "hex": "0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d",
-    "base58": "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+    "hex": "0xf35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa",
+    "base58": "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"
   }
 }
 ```
@@ -555,8 +566,8 @@ Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json
 
 **Save the information:**
 ```bash
-SOLANA_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
-SOLANA_MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+SOLANA_PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
+SOLANA_MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 ```
 
 ### 2.9. Verify Deployment on Solana
@@ -612,7 +623,7 @@ cargo run -- \
   -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
   -u https://api.testnet.solana.com \
   token set-interchain-security-module \
-  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
   --ism "$NEW_ISM_PROGRAM_ID"
 ```
 
@@ -678,7 +689,7 @@ DomainDataAccount {
 cd ~/hyperlane-monorepo/rust/sealevel/client
 
 # Program ID of the warp route
-WARP_ROUTE_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+WARP_ROUTE_PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 
 # ISM Program ID (Multisig ISM Message ID)
 ISM_PROGRAM_ID="4GHxwWyKB9exhKG4fdyU2hfLgfFzhHp2WcsSKc2uNR1k"
@@ -779,7 +790,7 @@ cd ~/hyperlane-monorepo/rust/sealevel/client
 
 # Variables
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-WARP_ROUTE_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+WARP_ROUTE_PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 TERRA_DOMAIN="1325"
 
 # Terra Classic warp route address
@@ -846,7 +857,7 @@ cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
   token query \
-  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
   synthetic
 ```
 
@@ -1129,10 +1140,10 @@ cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
   warp-route deploy \
-  --warp-route-name lunc-solana \
+  --warp-route-name lunc-solana-v2 \
   --environment testnet \
   --environments-dir ../environments \
-  --token-config-file ../environments/testnet/warp-routes/lunc-solana/token-config.json \
+  --token-config-file ../environments/testnet/warp-routes/lunc-solana-v2/token-config.json \
   --built-so-dir ../target/deploy \
   --registry ~/.hyperlane/registry \
   --ata-payer-funding-amount 5000000
@@ -1142,7 +1153,7 @@ cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
   token enroll-remote-router \
-  --program-id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x \
+  --program-id HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw \
   --domain 1325 \
   --router 0fe22b5522bb88b9836c3ec4888bcfdb40f72d5ec74991a87c7f171e06e63d02
 
@@ -1166,9 +1177,9 @@ cargo run -- \
 After completing all steps, you will have:
 
 1. ✅ **Terra Classic Warp Route**: `terra1whrvf9u47c23lxa8wxc6vp4jy2l9p5x2gh3gqnpqy2snv7akxanqjcrlu8`
-2. ✅ **Solana Program Deployed**: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
-3. ✅ **Solana Mint Account**: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
-4. ✅ **Token Initialized**: "Luna Classic" (wwwwLUNC) with 6 decimals
+2. ✅ **Solana Program Deployed (V2)**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+3. ✅ **Solana Mint Account (V2)**: `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu`
+4. ✅ **Token Initialized (V2)**: "Luna Classic" (wwwwwLUNC) with 6 decimals
 5. ✅ **ISM Configured**: Validators set for Terra Classic domain
 6. ✅ **Warp Routes Linked**: Terra Classic ↔ Solana bidirectional link
 7. ✅ **Ready for Transfers**: Can send LUNC from Terra Classic to Solana and vice versa

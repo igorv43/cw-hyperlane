@@ -4,9 +4,16 @@ Este guia mostra como encontrar o mint account (endereço do token) do warp rout
 
 ## Mint Account do Warp Route LUNC → Solana
 
-**Mint Account**: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+**⚠️ WARP ROUTE V2 (ATUAL):**
+- **Mint Account**: `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu`
+- **Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Symbol**: `wwwwwLUNC`
+- **Explorer**: [Ver no Solana Explorer](https://explorer.solana.com/address/3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu?cluster=testnet)
 
-**Explorer**: [Ver no Solana Explorer](https://explorer.solana.com/address/DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA?cluster=testnet)
+**WARP ROUTE V1 (ANTIGO - REFERÊNCIA):**
+- **Mint Account**: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+- **Program ID**: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+- **Symbol**: `wwwwLUNC`
 
 ---
 
@@ -19,9 +26,9 @@ O comando `token query synthetic` retorna todas as informações do warp route, 
 ```bash
 cd ~/hyperlane-monorepo/rust/sealevel/client
 
-# Variáveis
+# Variáveis (Warp Route V2)
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 
 # Query do token sintético
 cargo run -- \
@@ -32,14 +39,14 @@ cargo run -- \
   synthetic
 ```
 
-**Saída esperada:**
+**Saída esperada (Warp Route V2):**
 ```json
 {
-  "mint": "DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA",
+  "mint": "3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu",
   "mint_bump": 255,
   "decimals": 6,
   "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
+  "symbol": "wwwwwLUNC",
   "total_supply": "0",
   ...
 }
@@ -55,9 +62,9 @@ cargo run -- \
   synthetic | jq -r '.mint'
 ```
 
-**Output:**
+**Output (Warp Route V2):**
 ```
-DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
+3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu
 ```
 
 ---
@@ -67,9 +74,9 @@ DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
 Quando você executa `warp-route deploy`, o mint account é exibido no output (se o token for criado pela primeira vez):
 
 ```bash
-# Durante o deploy inicial, você verá:
-Creating token DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA ...
-Address: DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
+# Durante o deploy inicial (Warp Route V2), você verá:
+Creating token 3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu ...
+Address: 3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu
 Decimals: 6
 ```
 
@@ -85,8 +92,8 @@ Se você tem o Program ID do warp route, pode derivar o mint account usando o PD
 # Instalar spl-token CLI (se ainda não tiver)
 cargo install spl-token-cli
 
-# Verificar informações do mint
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+# Verificar informações do mint (Warp Route V2)
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"
 
 spl-token supply "$MINT_ACCOUNT" --url https://api.testnet.solana.com
 spl-token display "$MINT_ACCOUNT" --url https://api.testnet.solana.com
@@ -104,7 +111,7 @@ Decimals: 6
 
 ```bash
 # Verificar a conta do mint
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 
 solana account "$MINT_ACCOUNT" \
   --url https://api.testnet.solana.com \
@@ -130,7 +137,7 @@ solana account "$MINT_ACCOUNT" \
 
 ### Método 5: Verificar no Solana Explorer
 
-1. Acesse: https://explorer.solana.com/address/DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA?cluster=testnet
+1. Acesse: https://explorer.solana.com/address/3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu?cluster=testnet
 2. Verifique as informações:
    - **Account Type**: Token Mint
    - **Mint Authority**: O próprio mint account (self-custody)
@@ -148,7 +155,7 @@ Crie um script para facilitar:
 # Script: get-mint-account.sh
 
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 
 cd ~/hyperlane-monorepo/rust/sealevel/client
 
@@ -195,7 +202,7 @@ chmod +x get-mint-account.sh
 ### 1. Supply (Quantidade Total)
 
 ```bash
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 
 spl-token supply "$MINT_ACCOUNT" --url https://api.testnet.solana.com
 ```
@@ -209,7 +216,7 @@ cargo run -- \
   -k "$KEYPAIR" \
   -u https://api.testnet.solana.com \
   token query \
-  --program-id "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x" \
+  --program-id "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw" \
   synthetic | jq '{name, symbol, decimals, total_supply, mint}'
 ```
 
@@ -217,17 +224,17 @@ cargo run -- \
 ```json
 {
   "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
+  "symbol": "wwwwwLUNC",
   "decimals": 6,
   "total_supply": "0",
-  "mint": "DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+  "mint": "3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"
 }
 ```
 
 ### 3. Verificar no Explorer
 
 Acesse o link direto:
-- **Testnet**: https://explorer.solana.com/address/DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA?cluster=testnet
+- **Testnet (V2)**: https://explorer.solana.com/address/3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu?cluster=testnet
 
 ---
 
@@ -235,14 +242,15 @@ Acesse o link direto:
 
 | Propriedade | Valor |
 |------------|-------|
-| **Mint Address** | `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA` |
+| **Mint Address** | `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu` |
 | **Name** | Luna Classic |
-| **Symbol** | wwwwLUNC |
+| **Symbol** | wwwwwLUNC |
 | **Decimals** | 6 |
 | **Total Supply** | 0 (inicial) |
 | **Mint Authority** | Self (o próprio mint account) |
 | **Program** | Token-2022 (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`) |
-| **Warp Route Program ID** | `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x` |
+| **Warp Route Program ID** | `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw` |
+| **Warp Route Name** | `lunc-solana-v2` |
 
 ---
 
@@ -255,7 +263,7 @@ Acesse o link direto:
 **Solução**:
 1. Verifique se o Program ID está correto:
    ```bash
-   solana program show 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x --url https://api.testnet.solana.com
+   solana program show HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw --url https://api.testnet.solana.com
    ```
 
 2. Verifique se o token foi inicializado:
@@ -275,7 +283,7 @@ Acesse o link direto:
 
 ## Referências
 
-- [Solana Explorer - Mint Account](https://explorer.solana.com/address/DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA?cluster=testnet)
+- [Solana Explorer - Mint Account V2](https://explorer.solana.com/address/3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu?cluster=testnet)
 - [WARP-ROUTE-TERRA-SOLANA-EN.md](./WARP-ROUTE-TERRA-SOLANA-EN.md) - Guia completo do warp route
 - [Hyperlane Solana Documentation](https://docs.hyperlane.xyz/docs/guides/warp-routes/svm/svm-warp-route-guide)
 

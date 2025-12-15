@@ -11,7 +11,8 @@ Após fazer o deploy dos warp routes tanto no Terra Classic quanto na Solana, vo
 ## Pré-requisitos
 
 - Warp route Terra Classic: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` (wwwwlunc)
-- Program ID do warp route Solana: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+- **Program ID do warp route Solana (V2)**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Program ID do warp route Solana (V1 - Referência)**: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
 - Domain Solana: `1399811150` (Solana Testnet)
 - Conta Terra Classic com permissões de owner (owner do contrato warp route Terra Classic)
 
@@ -38,7 +39,7 @@ python3 << EOF
 import base58
 import binascii
 
-solana_address = "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+solana_address = "HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 decoded = base58.b58decode(solana_address)
 hex_address = binascii.hexlify(decoded).decode('utf-8')
 # Pad to 64 characters (32 bytes)
@@ -49,7 +50,7 @@ EOF
 
 **Saída esperada:**
 ```
-Hex (32 bytes, sem 0x): 3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d
+Hex (32 bytes, sem 0x): f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa  # Warp Route V2
 ```
 
 #### Método 2: Usando Node.js
@@ -75,7 +76,7 @@ No Terra Classic, vincule o warp route da Solana como um remote router usando `t
 # Variáveis
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
 SOLANA_DOMAIN="1399811150"
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2
 
 # Vincular remote router (set route)
 terrad tx wasm execute "$TERRA_WARP" \
@@ -136,7 +137,7 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
 ```bash
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml" && \
 SOLANA_DOMAIN="1399811150" && \
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d" && \
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2 && \
 terrad tx wasm execute "$TERRA_WARP" \
   "{\"enroll_remote_router\":{\"domain\":$SOLANA_DOMAIN,\"router\":\"$SOLANA_WARP_HEX\"}}" \
   --from hypelane-val-testnet \

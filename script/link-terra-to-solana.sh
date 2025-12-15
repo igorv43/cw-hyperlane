@@ -8,7 +8,7 @@ set -e
 # Variables
 TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
 SOLANA_DOMAIN="1399811150"
-SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"
+SOLANA_WARP_HEX="f35ac96952cd5f87be0a99b173927e2fe0a814079ceb9ce8f5237f775fc940fa"  # Warp Route V2
 KEY_NAME="hypelane-val-testnet"
 CHAIN_ID="rebel-2"
 RPC_NODE="https://rpc.luncblaze.com:443"

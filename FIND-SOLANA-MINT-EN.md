@@ -4,9 +4,16 @@ This guide shows how to locate the mint account (token address) of the synthetic
 
 ## Warp Route LUNC → Solana Mint Account
 
-**Mint Account**: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+**⚠️ WARP ROUTE V2 (CURRENT):**
+- **Mint Account**: `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu`
+- **Program ID**: `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw`
+- **Symbol**: `wwwwwLUNC`
+- **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu?cluster=testnet)
 
-**Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA?cluster=testnet)
+**WARP ROUTE V1 (OLD - REFERENCE):**
+- **Mint Account**: `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA`
+- **Program ID**: `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x`
+- **Symbol**: `wwwwLUNC`
 
 ---
 
@@ -21,7 +28,7 @@ cd ~/hyperlane-monorepo/rust/sealevel/client
 
 # Variables
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 
 # Query synthetic token
 cargo run -- \
@@ -35,11 +42,11 @@ cargo run -- \
 **Expected Output:**
 ```json
 {
-  "mint": "DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA",
+  "mint": "3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu",
   "mint_bump": 255,
   "decimals": 6,
   "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
+  "symbol": "wwwwwLUNC",
   "total_supply": "0",
   ...
 }
@@ -86,7 +93,7 @@ If you have the warp route Program ID, you can verify the mint account using the
 cargo install spl-token-cli
 
 # Check mint information
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 
 spl-token supply "$MINT_ACCOUNT" --url https://api.testnet.solana.com
 spl-token display "$MINT_ACCOUNT" --url https://api.testnet.solana.com
@@ -104,7 +111,7 @@ Decimals: 6
 
 ```bash
 # Check the mint account
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 
 solana account "$MINT_ACCOUNT" \
   --url https://api.testnet.solana.com \
@@ -148,7 +155,7 @@ Create a script to make it easier:
 # Script: get-mint-account.sh
 
 KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json"
-PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+PROGRAM_ID="HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw"  # Warp Route V2
 
 cd ~/hyperlane-monorepo/rust/sealevel/client
 
@@ -195,7 +202,7 @@ chmod +x get-mint-account.sh
 ### 1. Supply (Total Amount)
 
 ```bash
-MINT_ACCOUNT="DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
+MINT_ACCOUNT="3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu"  # Warp Route V2
 
 spl-token supply "$MINT_ACCOUNT" --url https://api.testnet.solana.com
 ```
@@ -217,7 +224,7 @@ cargo run -- \
 ```json
 {
   "name": "Luna Classic",
-  "symbol": "wwwwLUNC",
+  "symbol": "wwwwwLUNC",
   "decimals": 6,
   "total_supply": "0",
   "mint": "DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA"
@@ -235,14 +242,15 @@ Visit the direct link:
 
 | Property | Value |
 |----------|-------|
-| **Mint Address** | `DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA` |
+| **Mint Address** | `3yhG9dDHVX6K1duf8znEcaJcuTiKSLYvfBD4xy6akxfu` |
 | **Name** | Luna Classic |
-| **Symbol** | wwwwLUNC |
+| **Symbol** | wwwwwLUNC |
 | **Decimals** | 6 |
 | **Total Supply** | 0 (initial) |
 | **Mint Authority** | Self (the mint account itself) |
 | **Program** | Token-2022 (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`) |
-| **Warp Route Program ID** | `5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x` |
+| **Warp Route Program ID** | `HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw` |
+| **Warp Route Name** | `lunc-solana-v2` |
 
 ---
 

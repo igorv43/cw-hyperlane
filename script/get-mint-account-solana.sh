@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Variáveis
 KEYPAIR="${KEYPAIR:-/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json}"
-PROGRAM_ID="${PROGRAM_ID:-5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x}"
+PROGRAM_ID="${PROGRAM_ID:-HNxN3ZSBtD5J2nNF4AATMhuvTWVeHQf18nTtzKtsnkyw}"  # Warp Route V2
 RPC_URL="${RPC_URL:-https://api.testnet.solana.com}"
 CLIENT_DIR="${CLIENT_DIR:-$HOME/hyperlane-monorepo/rust/sealevel/client}"
 

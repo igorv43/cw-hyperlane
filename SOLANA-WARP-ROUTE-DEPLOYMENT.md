@@ -217,19 +217,34 @@ The command will:
 8. ✅ Configure IGP
 9. ✅ Write `program-ids.json` with the Program ID
 
-**Success Output**:
+**Success Output (when token already exists)**:
 ```
 Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
-Initializing Warp Route program: domain_id: 1399811150, mailbox: 75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR, ...
-Creating token DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA ...
-Address: DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
-Decimals: 9
-Signature: ...
-initialized metadata pointer. Status: exit status: 0
-initialized metadata. Status: exit status: 0
-Transferring authority: mint to the mint account DA3ymZtWfJa7dxKkXgar3j5tYnKDRw9JXWh2N5SGbQtA
-Set the mint authority to the mint account. Status: exit status: 0
+Warp route token already exists, skipping init
+ATA payer fully funded with balance of 5000000
+
+==== Instructions: ====
+Instruction 0: Set compute unit limit to 1400000
+Instruction 1: Setting ISM for chain: solanatestnet (1399811150) to None
+
+==== Instructions: ====
+Instruction 0: Enrolling routers for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x, routers: [RemoteRouterConfig { domain: 1325, router: None }]
+
+No destination gas amount changes for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+
+Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json contents:
+{
+  "solanatestnet": {
+    "hex": "0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d",
+    "base58": "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+  }
+}
 ```
+
+**Note**: 
+- If the warp route token already exists, initialization is skipped
+- The router for Terra Classic (domain 1325) is automatically enrolled during deployment
+- The `program-ids.json` file is automatically updated with the Program ID
 
 ---
 

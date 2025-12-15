@@ -468,19 +468,39 @@ cargo run -- \
   --url https://api.testnet.solana.com
 ```
 
-**Saída esperada:**
+**Saída esperada (deploy completo):**
 ```
-[INFO] Deploying warp route program...
-[INFO] Program ID: ...
-[INFO] Mint Account: ...
-[INFO] Mint Authority: ...
+Recovered existing program id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+Warp route token already exists, skipping init
+ATA payer fully funded with balance of 5000000
+
+==== Instructions: ====
+Instruction 0: Set compute unit limit to 1400000
+Instruction 1: Setting ISM for chain: solanatestnet (1399811150) to None
+
+==== Instructions: ====
+Instruction 0: Enrolling routers for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x, routers: [RemoteRouterConfig { domain: 1325, router: None }]
+
+No destination gas amount changes for chain: solanatestnet, program_id 5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x
+
+Writing to file ../environments/testnet/warp-routes/lunc-solana/program-ids.json contents:
+{
+  "solanatestnet": {
+    "hex": "0x3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d",
+    "base58": "5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"
+  }
+}
 ```
+
+**⚠️ IMPORTANTE**: 
+- Se o warp route token já existir, a inicialização é pulada
+- O router para Terra Classic (domain 1325) é automaticamente configurado durante o deploy
+- O arquivo `program-ids.json` é atualizado automaticamente
 
 **Salve as informações:**
 ```bash
-SOLANA_PROGRAM_ID="..."  # Program ID do warp route
-SOLANA_MINT_ACCOUNT="..." # Mint account do token sintético
-SOLANA_MINT_AUTHORITY="..." # Mint authority
+SOLANA_PROGRAM_ID="5BuTS1oZhUKJgpgwXJyz5VRdTq99SMvHm7hrPMctJk6x"  # Program ID do warp route
+SOLANA_WARP_HEX="3e39de1edbc0495cee651b3e046f63d01ff9436932bb520e8c0cb4ba5c5c7f1d"  # Hex (32 bytes, sem 0x)
 ```
 
 ### 2.5. Configurar ISM no Warp Route da Solana (Opcional)

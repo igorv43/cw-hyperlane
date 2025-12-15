@@ -20,17 +20,13 @@ cd ~/cw-hyperlane
 cat > example/warp/uluna-solana.json << EOF
 {
   "type": "native",
-  "token": {
-    "denom": "uluna"
-  },
-  "hypNative": {
-    "targetNetworks": [
-      {
-        "domain": 1399811150,
-        "type": "sealevel",
-        "name": "solanatestnet"
-      }
-    ]
+  "mode": "collateral",
+  "id": "wwwwlunc",
+  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+  "config": {
+    "collateral": {
+      "denom": "uluna"
+    }
   }
 }
 EOF
@@ -39,7 +35,11 @@ EOF
 yarn cw-hpl warp create ./example/warp/uluna-solana.json -n terraclassic
 ```
 
-**Note**: Save the Terra Classic warp route address from the output.
+**Note**: Save the Terra Classic warp route address from the output. You can also find it in `context/terraclassic.json`:
+
+```bash
+cat context/terraclassic.json | jq '.deployments.warp.native[] | select(.id == "wwwwlunc")'
+```
 
 ---
 
@@ -48,19 +48,21 @@ yarn cw-hpl warp create ./example/warp/uluna-solana.json -n terraclassic
 ```bash
 cd ~/hyperlane-monorepo/rust/sealevel
 
+# Build programs first (if not already built)
+cargo build-sbf
+
 # Create token config
 mkdir -p environments/testnet/warp-routes/lunc-solana-v2
 cat > environments/testnet/warp-routes/lunc-solana-v2/token-config.json << 'EOF'
 {
-  "type": "synthetic",
-  "name": "LUNC",
-  "symbol": "LUNC",
-  "decimals": 6,
-  "collateral": {
-    "type": "native",
-    "chain": "terraclassic",
-    "denom": "uluna",
-    "decimals": 6
+  "solanatestnet": {
+    "type": "synthetic",
+    "name": "Luna Classic",
+    "symbol": "wwwwwLUNC",
+    "decimals": 6,
+    "totalSupply": "0",
+    "interchainGasPaymaster": "9SQVtTNsbipdMzumhzi6X8GwojiSMwBfqAhS7FgyTcqy",
+    "uri": "https://raw.githubusercontent.com/igorv43/cw-hyperlane/refs/heads/main/warp/solana/metadata.json"
   }
 }
 EOF
@@ -70,15 +72,17 @@ cd client
 cargo run -- \
   -k /home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json \
   -u https://api.testnet.solana.com \
-  token deploy \
+  warp-route deploy \
   --warp-route-name lunc-solana-v2 \
   --environment testnet \
   --environments-dir ../environments \
   --token-config-file ../environments/testnet/warp-routes/lunc-solana-v2/token-config.json \
-  --registry ~/.hyperlane/registry
+  --built-so-dir ../target/deploy \
+  --registry ~/.hyperlane/registry \
+  --ata-payer-funding-amount 5000000
 ```
 
-**Note**: Save the Solana Program ID from the output.
+**Note**: Save the Solana Program ID from the output. It will also be saved in `environments/testnet/warp-routes/lunc-solana-v2/program-ids.json`.
 
 ---
 
@@ -334,7 +338,7 @@ For detailed information, see:
 | Step | Command/Script |
 |------|----------------|
 | Deploy Terra Classic Warp | `yarn cw-hpl warp create ./example/warp/uluna-solana.json -n terraclassic` |
-| Deploy Solana Warp | `cargo run -- ... token deploy --warp-route-name lunc-solana-v2 ...` |
+| Deploy Solana Warp | `cargo run -- ... warp-route deploy --warp-route-name lunc-solana-v2 ...` |
 | Configure ISM | `script/configurar-ism-lunc-solana-v2-manual.sh` |
 | Link Solana → Terra | `script/vincular-remote-router-solana-lunc-solana-v2.sh` |
 | Link Terra → Solana | `script/vincular-terra-to-solana-lunc-solana-v2.sh` |

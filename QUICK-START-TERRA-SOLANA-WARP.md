@@ -260,8 +260,10 @@ IGP_GAS=$(terrad query wasm contract-state smart ${IGP} \
   --node https://rpc.luncblaze.com:443 \
   --output json | jq -r '.data.gas_needed')
 
-echo "IGP Gas needed: ${IGP_GAS} uluna"
+echo "IGP Gas needed: ${IGP_GAS} uluna ($(echo "scale=2; ${IGP_GAS}/1000000" | bc) LUNC)"
 ```
+
+**Expected output:** `549401878 uluna (549.40 LUNC)`
 
 #### Step 3: Execute Transfer
 
@@ -289,10 +291,15 @@ terrad tx wasm execute ${TERRA_WARP} \
   --node ${NODE} \
   --gas auto \
   --gas-adjustment 1.5 \
-  --fees 12000000uluna \
+  --fees 70000000uluna \
   --amount ${TOTAL_AMOUNT}uluna \
   --yes
 ```
+
+**Note**: 
+- `--fees`: 70 LUNC (70000000uluna) - required for transaction fees
+- `--amount`: Includes transfer amount + hook fee + IGP gas
+- Expected IGP gas: ~549.40 LUNC (549401878 uluna) for 200k gas
 
 **Option 2: Using cw-hpl CLI (Limited)**
 
@@ -409,6 +416,46 @@ echo "https://finder.terra-classic.hexxagon.dev/testnet/address/${TERRA_RECIPIEN
 
 ## Verify Configuration
 
+### Verify IGP Oracle Configuration
+
+```bash
+IGP_ORACLE="terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
+
+# Check configuration for Solana Testnet
+terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":1399811150}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+**Expected output:**
+```json
+{
+  "data": {
+    "token_exchange_rate": "27470093900000",
+    "gas_price": "1"
+  }
+}
+```
+
+### Verify IGP Gas Calculation
+
+```bash
+IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
+
+# Query gas payment for 200k gas
+terrad query wasm contract-state smart ${IGP} \
+  '{"igp":{"quote_gas_payment":{"dest_domain":1399811150,"gas_amount":"200000"}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+**Expected output:**
+```
+data:
+  gas_needed: "549401878"  # ~549.40 LUNC
+```
+
 ### Verify ISM on Solana
 
 ```bash
@@ -514,9 +561,10 @@ terrad query bank balances $(terrad keys show hypelane-val-testnet -a --keyring-
 **Solution**: Make sure you have enough balance:
 - Transfer amount: e.g., `10000000uluna` (10 LUNC)
 - Hook fee: `283215uluna` (required for cross-chain gas payment)
-- IGP gas: Variable (query IGP for exact amount)
-- Transaction fees: `12000000uluna` (minimum)
+- IGP gas: `549401878uluna` (~549.40 LUNC for 200k gas)
+- Transaction fees: `70000000uluna` (70 LUNC)
 - **Total needed**: Transfer + Hook fee + IGP gas + Transaction fees
+  - Example: 10 + 0.28 + 549.40 + 70 = ~629.68 LUNC
 
 #### Error: "route not found"
 
@@ -539,9 +587,23 @@ terrad query bank balances $(terrad keys show hypelane-val-testnet -a --keyring-
 **Problem**: The IGP (Interchain Gas Paymaster) is calculating an incorrect gas cost.
 
 **Solution**: 
-1. Check IGP Oracle configuration
-2. Verify the `token_exchange_rate` and `gas_price` for domain 1399811150 (Solana) are correct
-3. Update IGP Oracle configuration via governance if needed
+1. Check IGP Oracle configuration:
+```bash
+IGP_ORACLE="terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
+terrad query wasm contract-state smart ${IGP_ORACLE} \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":1399811150}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+2. Expected values:
+   - `token_exchange_rate`: `"27470093900000"`
+   - `gas_price`: `"1"`
+   - Expected IGP gas cost: ~549.40 LUNC (549401878 uluna) for 200k gas
+
+3. If values are incorrect, update IGP Oracle:
+   - Use script: `bash script/update-igp-oracle-solana-direct.sh`
+   - Or see: `FIX-IGP-SOLANA.md` for detailed instructions
 
 ---
 

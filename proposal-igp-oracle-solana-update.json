@@ -9,7 +9,7 @@
           "configs": [
             {
               "remote_domain": 1399811150,
-              "token_exchange_rate": "27470093900000",
+              "token_exchange_rate": "40000000000000",
               "gas_price": "1"
             }
           ]
@@ -21,6 +21,6 @@
   "metadata": "Update IGP Oracle gas data configuration for Solana Testnet (domain 1399811150). Fixes gas cost calculation using correct formula from IGP-COMPLETE-GUIDE.md. New cost: ~549.40 LUNC per transfer (with 20% margin).",
   "deposit": "1000000uluna",
   "title": "Update IGP Oracle Configuration for Solana Testnet",
-  "summary": "Update token_exchange_rate from 57675000000000000 to 27470093900000 for Solana Testnet (domain 1399811150). Calculation follows IGP-COMPLETE-GUIDE.md logic: gas_limit 200k, SOL @ $138.93, LUNC @ $0.00006069, 20% margin. New cost: ~549.40 LUNC per transfer.",
+  "summary": "Update token_exchange_rate from 57675000000000000 to 40000000000000 for Solana Testnet (domain 1399811150). New cost: ~800.00 LUNC per transfer (200k gas).",
   "expedited": false
 }

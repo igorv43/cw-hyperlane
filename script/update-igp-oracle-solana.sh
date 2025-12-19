@@ -17,15 +17,15 @@ GOV_MODULE="terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 SOLANA_DOMAIN="1399811150"
 
 # Novo exchange_rate calculado para Solana Testnet
-# Cálculo seguindo EXATAMENTE a lógica do IGP-COMPLETE-GUIDE.md (mesma do BSC):
-# 1. Custo do gas no destino: 200,000 compute units × 1 lamport = 0.0002 SOL
-# 2. Converter para USD: 0.0002 SOL × $138.93 = $0.027786
-# 3. Converter para LUNC: $0.027786 / $0.00006069 = 457.83 LUNC
-# 4. Adicionar margem (20%): 457.83 × 1.20 = 549.40 LUNC = 549,401,878 uluna
-# 5. Exchange Rate: (549,401,878 × 10^10) / (200,000 × 1) = 27,470,093,900,000
+# Objetivo: 800 LUNC para 200k gas (valor razoável)
+# Cálculo: (800,000,000 × 10^10) / (200,000 × 1) = 40,000,000,000,000
 # Fórmula: exchange_rate = (gas_needed × 10^10) / (gas_amount × gas_price)
 # TOKEN_EXCHANGE_RATE_SCALE = 10^10 (não 10^18!)
-NEW_EXCHANGE_RATE="${1:-27470093900000}"
+# Valores possíveis:
+#   - 500 LUNC: 25000000000000
+#   - 800 LUNC: 40000000000000 (padrão recomendado)
+#   - 1000 LUNC: 50000000000000
+NEW_EXCHANGE_RATE="${1:-40000000000000}"
 GAS_PRICE="${2:-1}"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
@@ -41,13 +41,14 @@ echo ""
 echo -e "${YELLOW}📊 Valores Atuais (INCORRETOS):${NC}"
 echo "   token_exchange_rate: 57675000000000000"
 echo "   gas_price: 1"
-echo "   Custo resultante: ~576.75 LUNC (MUITO ALTO!)"
+echo "   Custo resultante: ~1,153,500 LUNC (MUITO ALTO!)"
 echo ""
-echo -e "${YELLOW}✨ Valores Novos (CORRETOS - seguindo IGP-COMPLETE-GUIDE.md):${NC}"
+echo -e "${YELLOW}✨ Valores Novos (CORRETOS):${NC}"
 echo "   token_exchange_rate: ${NEW_EXCHANGE_RATE}"
 echo "   gas_price: ${GAS_PRICE}"
-echo "   Custo esperado: ~549.40 LUNC (com 20% margem)"
-echo "   Baseado em: SOL @ \$138.93, LUNC @ \$0.00006069, gas_limit 200k"
+EXPECTED_COST=$(echo "scale=0; (200000 * ${GAS_PRICE} * ${NEW_EXCHANGE_RATE}) / 10000000000" | bc)
+EXPECTED_COST_LUNC=$(echo "scale=2; ${EXPECTED_COST} / 1000000" | bc)
+echo "   Custo esperado: ${EXPECTED_COST} uluna (~${EXPECTED_COST_LUNC} LUNC)"
 echo ""
 
 # Verificar se jq está instalado
@@ -56,6 +57,10 @@ if ! command -v jq &> /dev/null; then
     echo "   Instale com: sudo apt-get install jq"
     exit 1
 fi
+
+# Calcular custo esperado
+EXPECTED_COST=$(echo "scale=0; (200000 * ${GAS_PRICE} * ${NEW_EXCHANGE_RATE}) / 10000000000" | bc)
+EXPECTED_COST_LUNC=$(echo "scale=2; ${EXPECTED_COST} / 1000000" | bc)
 
 # Criar arquivo JSON da proposta
 PROPOSAL_FILE="proposal-igp-oracle-solana-update.json"
@@ -84,7 +89,7 @@ cat > ${PROPOSAL_FILE} <<EOF
   "metadata": "Update IGP Oracle gas data configuration for Solana Testnet (domain 1399811150). Fixes gas cost calculation using correct formula from IGP-COMPLETE-GUIDE.md. New cost: ~549.40 LUNC per transfer (with 20% margin).",
   "deposit": "1000000uluna",
   "title": "Update IGP Oracle Configuration for Solana Testnet",
-  "summary": "Update token_exchange_rate from 57675000000000000 to ${NEW_EXCHANGE_RATE} for Solana Testnet (domain ${SOLANA_DOMAIN}). Calculation follows IGP-COMPLETE-GUIDE.md logic: gas_limit 200k, SOL @ \$138.93, LUNC @ \$0.00006069, 20% margin. New cost: ~549.40 LUNC per transfer.",
+  "summary": "Update token_exchange_rate from 57675000000000000 to ${NEW_EXCHANGE_RATE} for Solana Testnet (domain ${SOLANA_DOMAIN}). New cost: ~${EXPECTED_COST_LUNC} LUNC per transfer (200k gas).",
   "expedited": false
 }
 EOF
@@ -142,6 +147,6 @@ echo "     '{\"igp\":{\"quote_gas_payment\":{\"dest_domain\":${SOLANA_DOMAIN},\"
 echo "     --chain-id rebel-2 \\"
 echo "     --node https://rpc.luncblaze.com:443"
 echo ""
-echo -e "${GREEN}   Resultado esperado: ~549,401,878 uluna (~549.40 LUNC)${NC}"
+echo -e "${GREEN}   Resultado esperado: ~${EXPECTED_COST} uluna (~${EXPECTED_COST_LUNC} LUNC)${NC}"
 echo ""
 

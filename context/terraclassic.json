@@ -100,6 +100,12 @@
           "type": "hpl_warp_native",
           "address": "terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml",
           "hexed": "0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b"
+        },
+        {
+          "id": "wwwustc",
+          "type": "hpl_warp_native",
+          "address": "terra1rnpvpwvqcf94keldtm2udt4tqhwthpw5cu94m443rz5ue7rvvkjq9nklml",
+          "hexed": "0x1cc2c0b980c24b5b67ed5ed5c6aeab05dcbb85d4c70b5dd6b118a9ccf86c65a4"
         }
       ],
       "cw20": []

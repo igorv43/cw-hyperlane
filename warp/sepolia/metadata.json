@@ -1,0 +1,8 @@
+{
+  "name": "Luna Classic",
+  "symbol": "wLUNC",
+  "description": "Wrapped Terra Classic LUNC via Hyperlane Warp Route",
+  "image": "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg",
+  "decimals": 6,
+  "attributes": []
+}

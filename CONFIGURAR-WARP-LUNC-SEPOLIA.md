@@ -7,7 +7,8 @@ Este guia fornece instruções passo a passo para configurar o Warp Route do LUN
 - [Visão Geral](#visão-geral)
 - [Pré-requisitos](#pré-requisitos)
 - [Passo 1: Instanciar ISM Multisig para Sepolia](#passo-1-instanciar-ism-multisig-para-sepolia)
-- [Passo 2: Configurar Validadores ISM via Governança](#passo-2-configurar-validadores-ism-via-governança)
+- [Passo 2: Configurar IGP e ISM Routing via Governança](#passo-2-configurar-igp-e-ism-routing-via-governança)
+  - [Passo 2.1: Atualizar IGP Oracle para Sepolia (Direto - Sem Governança)](#passo-21-atualizar-igp-oracle-para-sepolia-direto---sem-governança)
 - [Passo 3: Deploy Warp Route no Terra Classic](#passo-3-deploy-warp-route-no-terra-classic)
 - [Passo 4: Deploy Warp Route no Sepolia](#passo-4-deploy-warp-route-no-sepolia)
 - [Passo 5: Link Warp Routes](#passo-5-link-warp-routes)
@@ -26,12 +27,34 @@ Este processo configura:
      - `0xb22b65f202558adf86a8bb2847b76ae1036686a5` (Abacus Works)
      - `0x469f0940684d147defc44f3647146cb90dd0bc8e` (Abacus Works)
      - `0xd3c75dcf15056012a4d74c483a0c6ea11d8c2b83` (Abacus Works)
+   - **Contrato Deployado (Testnet)**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
 
 2. **IGP Oracle**: Configura taxa de câmbio e gas price para Sepolia
+   - **Contrato**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
+   - **Exchange Rate**: 177534
+   - **Gas Price**: 1000000000 (1 Gwei)
 3. **Warp Route Terra Classic**: Token nativo LUNC no Terra Classic
 4. **Warp Route Sepolia**: Token sintético wLUNC no Sepolia
    - **Validador**: `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` (Threshold: 1)
+   - **Token Address (Testnet)**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
    - **Logo**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+
+### Referência Rápida - Contratos Deployados (Testnet)
+
+**ISM Multisig Sepolia**:
+- **Address**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+- **TX Instanciação**: `E21DAF985480B3A712F50A45B35FDDD0740085013895A7244F3A29FC914F5E37`
+- **TX Configuração**: `EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A`
+
+**IGP Oracle Sepolia**:
+- **Address**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
+- **TX Atualização**: `20F52E56B6E387F9DE48A43EEE9C35737B3228C640E5DEBAA634BEFFCAEC1627`
+- **Exchange Rate**: 177534
+- **Gas Price**: 1000000000 (1 Gwei)
+
+**Warp Route Sepolia**:
+- **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
+- **Etherscan**: https://sepolia.etherscan.io/token/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
 
 ---
 
@@ -57,52 +80,184 @@ Este processo configura:
 
 ## Passo 1: Instanciar ISM Multisig para Sepolia
 
-Primeiro, precisamos instanciar um novo contrato ISM Multisig específico para Sepolia. Como você é o owner, pode fazer isso diretamente via script (sem governança) ou via governança.
+Primeiro, precisamos instanciar um novo contrato ISM Multisig específico para Sepolia. Como você é o owner, pode fazer isso diretamente via script (sem governança).
 
 ### 1.1. Instanciar via Script (Recomendado - Direto)
 
-Use o script fornecido para instanciar o ISM Multisig:
+Use o script fornecido para instanciar o ISM Multisig e configurar os validadores automaticamente:
 
 ```bash
 cd script
 PRIVATE_KEY="sua_chave_privada_terra" npx tsx instantiate-ism-multisig-sepolia.ts
 ```
 
-**Parâmetros de Instanciação**:
-```json
-{
-  "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
+**O que o script faz**:
+1. **Instancia o contrato ISM Multisig** com:
+   - Code ID: 1984 (mesmo usado para BSC e Solana)
+   - Nome: `hpl_ism_multisig_sepolia`
+   - Owner: `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` (governance module)
+
+2. **Configura os validadores automaticamente**:
+   - Domain: 11155111 (Sepolia Testnet)
+   - Threshold: 2 de 3 validadores
+   - Validadores (Abacus Works):
+     - `b22b65f202558adf86a8bb2847b76ae1036686a5`
+     - `469f0940684d147defc44f3647146cb90dd0bc8e`
+     - `d3c75dcf15056012a4d74c483a0c6ea11d8c2b83`
+
+**⚠️ IMPORTANTE**: 
+- Salve o endereço do contrato retornado! Você precisará dele no Passo 2.
+- Os validadores já estarão configurados, então você pode pular a mensagem de configuração de validadores na proposta de governança
+
+**Exemplo de saída completa**:
+```
+INSTANTIATE ISM MULTISIG FOR SEPOLIA TESTNET
+================================================================================
+
+Wallet: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+Chain ID: rebel-2
+Node: https://rpc.luncblaze.com:443
+Owner (Admin): terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+✓ Connected to node
+
+🔐 Instantiating ISM MULTISIG for Sepolia Testnet (Domain 11155111)
+Instantiation Parameters: {
+  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
 }
+
+📝 Instantiating hpl_ism_multisig_sepolia...
+Code ID: 1984
+Init Message: {
+  "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze"
+}
+✅ SUCCESS!
+  • Contract Address: terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa
+  • TX Hash: E21DAF985480B3A712F50A45B35FDDD0740085013895A7244F3A29FC914F5E37
+  • Gas Used: 209092
+  • Height: 29249714
+
+────────────────────────────────────────────────────────────────────────────────
+
+⚙️  Configuring validators for domain 11155111...
+  • Threshold: 2
+  • Validators: 3
+  • Validator addresses: [
+    'b22b65f202558adf86a8bb2847b76ae1036686a5',
+    '469f0940684d147defc44f3647146cb90dd0bc8e',
+    'd3c75dcf15056012a4d74c483a0c6ea11d8c2b83'
+  ]
+✅ Validators configured successfully!
+  • TX Hash: EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A
+  • Gas Used: 185930
+  • Height: 29249715
+
+================================================================================
+✅ ISM MULTISIG SEPOLIA INSTANTIATED AND CONFIGURED SUCCESSFULLY!
+================================================================================
+
+📋 CONTRACT INFORMATION:
+────────────────────────────────────────────────────────────────────────────────
+  • Contract Address: terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa
+  • Domain: 11155111 (Sepolia Testnet)
+  • Threshold: 2 of 3
+  • Validators configured: 3
 ```
 
-**Code ID**: 1984 (mesmo usado para BSC e Solana)
-
-**⚠️ IMPORTANTE**: Salve o endereço do contrato retornado! Você precisará dele no Passo 3.
+**⚠️ IMPORTANTE**: Salve o endereço do contrato retornado! Você precisará dele nos próximos passos.
 
 ### 1.2. Configurar Variável de Ambiente
 
-Após a instanciação, configure a variável de ambiente:
+Após a instanciação, configure a variável de ambiente com o endereço retornado:
 
 ```bash
-export ISM_MULTISIG_SEPOLIA='terra1...'  # Endereço retornado no Passo 1.1
+export ISM_MULTISIG_SEPOLIA='terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa'
+```
+
+**⚠️ CRÍTICO**: Você DEVE ter essa variável configurada antes de executar o Passo 2 (governança).
+
+#### Informações do Contrato Deployado (Testnet)
+
+**Endereço do ISM Multisig Sepolia (Testnet)**:
+- **Contract Address**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+- **TX Hash (Instanciação)**: `E21DAF985480B3A712F50A45B35FDDD0740085013895A7244F3A29FC914F5E37`
+- **TX Hash (Configuração Validadores)**: `EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A`
+- **Gas Used (Instanciação)**: 209092
+- **Gas Used (Configuração)**: 185930
+- **Height (Instanciação)**: 29249714
+- **Height (Configuração)**: 29249715
+
+**Configuração dos Validadores**:
+- **Domain**: 11155111 (Sepolia Testnet)
+- **Threshold**: 2 de 3
+- **Validadores**:
+  - `b22b65f202558adf86a8bb2847b76ae1036686a5` (Abacus Works Validator 1)
+  - `469f0940684d147defc44f3647146cb90dd0bc8e` (Abacus Works Validator 2)
+  - `d3c75dcf15056012a4d74c483a0c6ea11d8c2b83` (Abacus Works Validator 3)
+
+**Para outros desenvolvedores testarem**:
+```bash
+export ISM_MULTISIG_SEPOLIA='terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa'
+```
+
+#### Informações do Contrato Deployado (Testnet)
+
+**Endereço do ISM Multisig Sepolia (Testnet)**:
+- **Contract Address**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+- **TX Hash (Instanciação)**: `E21DAF985480B3A712F50A45B35FDDD0740085013895A7244F3A29FC914F5E37`
+- **TX Hash (Configuração Validadores)**: `EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A`
+- **Gas Used (Instanciação)**: 209092
+- **Gas Used (Configuração)**: 185930
+- **Height (Instanciação)**: 29249714
+- **Height (Configuração)**: 29249715
+
+**Configuração dos Validadores**:
+- **Domain**: 11155111 (Sepolia Testnet)
+- **Threshold**: 2 de 3
+- **Validadores**:
+  - `b22b65f202558adf86a8bb2847b76ae1036686a5` (Abacus Works Validator 1)
+  - `469f0940684d147defc44f3647146cb90dd0bc8e` (Abacus Works Validator 2)
+  - `d3c75dcf15056012a4d74c483a0c6ea11d8c2b83` (Abacus Works Validator 3)
+
+**Para outros desenvolvedores testarem**:
+```bash
+export ISM_MULTISIG_SEPOLIA='terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa'
 ```
 
 ### 1.3. Alternativa: Instanciar via Governança
 
 Se preferir fazer via governança, você precisará criar uma proposta de instanciação separada. O processo é similar ao usado para BSC e Solana, mas usando o Code ID 1984 e o nome `hpl_ism_multisig_sepolia`.
 
+**Exemplo de mensagem de governança para instanciação**:
+```json
+{
+  "wasm": {
+    "instantiate": {
+      "admin": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "code_id": 1984,
+      "label": "hpl_ism_multisig_sepolia",
+      "msg": {
+        "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
+      },
+      "funds": []
+    }
+  }
+}
+```
+
 ---
 
-## Passo 2: Configurar Validadores ISM via Governança
+## Passo 2: Configurar IGP e ISM Routing via Governança
+
+**⚠️ IMPORTANTE**: Se você usou o script do Passo 1.1, os validadores já estão configurados automaticamente. Você pode pular a mensagem de configuração de validadores na proposta de governança.
 
 Use o script `submit-proposal-sepolia.ts` fornecido. Este script configura:
 
-1. Validadores ISM Multisig para Sepolia (Domain 11155111)
+1. ~~Validadores ISM Multisig para Sepolia~~ ✅ **Já configurado no Passo 1.1** (pode pular esta mensagem)
 2. IGP Oracle com dados de gas para Sepolia
 3. Rotas IGP para Sepolia
 4. Atualização do ISM Routing
 
-### 3.1. Configurar Variável de Ambiente
+### 2.1. Configurar Variável de Ambiente
 
 **⚠️ CRÍTICO**: Antes de executar o script, você DEVE ter o endereço do ISM Multisig Sepolia:
 
@@ -110,18 +265,22 @@ Use o script `submit-proposal-sepolia.ts` fornecido. Este script configura:
 export ISM_MULTISIG_SEPOLIA='terra1...'  # Do Passo 1.1
 ```
 
-### 3.2. Executar Script
+### 2.2. Executar Script
 
 ```bash
 cd script
 PRIVATE_KEY="sua_chave_privada_terra" ISM_MULTISIG_SEPOLIA="terra1..." npx tsx submit-proposal-sepolia.ts
 ```
 
+**⚠️ NOTA**: O script criará uma proposta com a mensagem de configuração de validadores. Se os validadores já foram configurados no Passo 1.1, você pode:
+- **Opção 1**: Remover a primeira mensagem do array `EXEC_MSGS` no script antes de executar
+- **Opção 2**: Deixar como está (a mensagem será executada novamente, mas não causará problemas)
+
 O script criará os arquivos:
 - `exec_msgs_sepolia.json` - Mensagens de execução individuais
 - `proposal_sepolia.json` - Proposta completa formatada para terrad
 
-### 3.3. Submeter Proposta via terrad
+### 2.3. Submeter Proposta via terrad
 
 ```bash
 terrad tx gov submit-proposal proposal_sepolia.json \
@@ -136,11 +295,13 @@ terrad tx gov submit-proposal proposal_sepolia.json \
 
 **Nota**: Como você é o owner, pode aprovar a proposta diretamente com sua conta.
 
-### 3.4. Mensagens de Governança
+### 2.4. Mensagens de Governança
 
 O script criará as seguintes mensagens:
 
 #### Mensagem 1: Configurar Validadores ISM para Sepolia
+
+**⚠️ NOTA**: Se você executou o script do Passo 1.1, esta mensagem **já foi executada automaticamente**. Você pode pular esta mensagem na proposta de governança ou deixá-la (não causará problemas se executada novamente).
 
 ```json
 {
@@ -165,7 +326,7 @@ O script criará as seguintes mensagens:
 
 ```json
 {
-  "contractAddress": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg",
+  "contractAddress": "terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds",
   "msg": {
     "set_remote_gas_data_configs": {
       "configs": [
@@ -180,11 +341,11 @@ O script criará as seguintes mensagens:
 }
 ```
 
-**Valores de Referência** (ajuste conforme necessário):
-- `token_exchange_rate`: Taxa de câmbio LUNC:ETH (exemplo: `"1000000000000000000"` para 1:1 em wei)
-  - Ajuste baseado na taxa de câmbio real entre LUNC e ETH
-- `gas_price`: Gas price em Sepolia (exemplo: `"20000000000"` para 20 Gwei)
-  - Verifique o gas price atual em Sepolia e ajuste conforme necessário
+**Valores Atuais Configurados** (Testnet):
+- `token_exchange_rate`: `"177534"` (Taxa de câmbio LUNC:ETH)
+- `gas_price`: `"1000000000"` (1 Gwei)
+
+**⚠️ NOTA**: Se você atualizou o IGP Oracle via script (Passo 2.1), esta mensagem já foi executada. Você pode pular esta mensagem na proposta de governança ou deixá-la (não causará problemas se executada novamente).
 
 #### Mensagem 3: Configurar Rotas IGP para Sepolia
 
@@ -197,7 +358,7 @@ O script criará as seguintes mensagens:
         "set": [
           {
             "domain": 11155111,
-            "route": "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+            "route": "terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
           }
         ]
       }
@@ -225,6 +386,117 @@ O script criará as seguintes mensagens:
 ```
 
 **⚠️ IMPORTANTE**: Substitua `<ISM_MULTISIG_SEPOLIA>` pelo endereço do contrato instanciado no Passo 1.1.
+
+---
+
+## Passo 2.1: Atualizar IGP Oracle para Sepolia (Direto - Sem Governança)
+
+**⚠️ IMPORTANTE**: Se você é o owner do IGP Oracle, pode atualizar diretamente sem precisar de proposta de governança.
+
+### 2.1.1. Atualizar via Script TypeScript (Recomendado)
+
+Use o script fornecido para atualizar o IGP Oracle diretamente:
+
+```bash
+cd script
+PRIVATE_KEY="sua_chave_privada_terra" npx tsx update-igp-oracle-sepolia.ts
+```
+
+**O que o script faz**:
+1. Conecta à rede Terra Classic Testnet
+2. Atualiza o IGP Oracle com:
+   - **Domain**: 11155111 (Sepolia Testnet)
+   - **Exchange Rate**: 177534
+   - **Gas Price**: 1000000000 (1 Gwei)
+
+**⚠️ IMPORTANTE**: 
+- A chave privada deve corresponder à conta que é **OWNER** do IGP Oracle
+- Se você receber erro "unauthorized", verifique se a conta é o owner
+
+**Exemplo de saída bem-sucedida**:
+```
+================================================================================
+UPDATE IGP ORACLE FOR SEPOLIA TESTNET
+================================================================================
+
+Wallet: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+Chain ID: rebel-2
+Node: https://rpc.luncblaze.com:443
+IGP Oracle: terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds
+Domain: 11155111 (Sepolia Testnet)
+
+⚠️  IMPORTANTE: Esta wallet deve ser o OWNER do IGP Oracle.
+   Se você receber erro "unauthorized", verifique se a conta é o owner.
+   Owner padrão: terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n (governance)
+✓ Connected to node
+
+⚙️  Updating IGP Oracle for domain 11155111...
+  • Exchange Rate: 177534
+  • Gas Price: 1000000000
+✅ IGP Oracle updated successfully!
+  • TX Hash: 20F52E56B6E387F9DE48A43EEE9C35737B3228C640E5DEBAA634BEFFCAEC1627
+  • Gas Used: 178317
+  • Height: 29251168
+
+================================================================================
+✅ IGP ORACLE UPDATED SUCCESSFULLY!
+================================================================================
+
+📋 CONFIGURATION:
+────────────────────────────────────────────────────────────────────────────────
+  • Domain: 11155111 (Sepolia Testnet)
+  • Exchange Rate: 177534
+  • Gas Price: 1000000000 (1 Gwei)
+
+📋 VERIFICATION:
+────────────────────────────────────────────────────────────────────────────────
+  terrad query wasm contract-state smart terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":11155111}}}' --chain-id rebel-2 --node https://rpc.luncblaze.com:443
+================================================================================
+```
+
+#### Informações do Contrato Atualizado (Testnet)
+
+**IGP Oracle Sepolia (Testnet)**:
+- **Contract Address**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
+- **TX Hash (Atualização)**: `20F52E56B6E387F9DE48A43EEE9C35737B3228C640E5DEBAA634BEFFCAEC1627`
+- **Gas Used**: 178317
+- **Height**: 29251168
+
+**Configuração**:
+- **Domain**: 11155111 (Sepolia Testnet)
+- **Exchange Rate**: 177534
+- **Gas Price**: 1000000000 (1 Gwei)
+
+### 2.1.2. Atualizar via Script Bash (terrad CLI)
+
+Alternativamente, você pode usar o script bash com terrad:
+
+```bash
+cd script
+KEY_NAME="hypelane-val-testnet" ./update-igp-oracle-sepolia.sh 177534 1000000000
+```
+
+**Parâmetros**:
+- `177534`: Taxa de câmbio (exchange rate)
+- `1000000000`: Gas price (1 Gwei)
+
+**⚠️ IMPORTANTE**: 
+- `KEY_NAME` deve ser o nome da chave no keyring do terrad que é owner do IGP Oracle
+- O script solicitará confirmação antes de executar
+
+### 2.1.3. Verificar Atualização
+
+Após atualizar, verifique se a configuração foi aplicada:
+
+```bash
+IGP_ORACLE="terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
+
+# Verificar dados de gas para Sepolia
+terrad query wasm contract-state smart $IGP_ORACLE \
+  '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":11155111}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
 
 ---
 
@@ -685,7 +957,7 @@ hyperlane ism multisig-message-id get-validators-and-threshold \
 ### Verificar IGP Configurado
 
 ```bash
-IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
+IGP_ORACLE="terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
 
 # Verificar dados de gas para Sepolia
 terrad query wasm contract-state smart $IGP_ORACLE \
@@ -703,7 +975,7 @@ Após completar todos os passos, você terá:
 | Item | Endereço | Descrição |
 |------|----------|-----------|
 | ISM Multisig Sepolia | `terra1...` | ISM para validar mensagens de Sepolia |
-| IGP Oracle | `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg` | Oracle de gas (já existe) |
+| IGP Oracle | `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` | Oracle de gas (atualizado para Sepolia) |
 | IGP | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Interchain Gas Paymaster (já existe) |
 | ISM Routing | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | ISM Router (já existe) |
 | Warp Route Terra | `terra1...` | Warp route LUNC no Terra Classic |

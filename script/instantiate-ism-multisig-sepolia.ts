@@ -12,13 +12,25 @@ const NODE = "https://rpc.luncblaze.com:443";
 const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || "a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6";
 
 // Owner address (governance module)
-const OWNER = "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n";
+//const OWNER = "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n";
+const OWNER = "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze";
 
 // Code ID for ISM Multisig (same as BSC and Solana)
 const CODE_ID_ISM_MULTISIG = 1984;
 
 // Contract name for identification
 const CONTRACT_NAME = "hpl_ism_multisig_sepolia";
+
+// Domain ID for Sepolia
+const DOMAIN_SEPOLIA = 11155111;
+
+// Validators configuration for Sepolia (Abacus Works)
+const SEPOLIA_VALIDATORS = [
+  "b22b65f202558adf86a8bb2847b76ae1036686a5",  // Abacus Works Validator 1
+  "469f0940684d147defc44f3647146cb90dd0bc8e",  // Abacus Works Validator 2
+  "d3c75dcf15056012a4d74c483a0c6ea11d8c2b83",  // Abacus Works Validator 3
+];
+const SEPOLIA_THRESHOLD = 2; // 2 out of 3 validators
 
 // ==============================
 // INSTANTIATE CONTRACT
@@ -55,6 +67,54 @@ async function instantiateContract(
     return result.contractAddress;
   } catch (error: any) {
     console.error("❌ ERROR!");
+    console.error("  • Message:", error.message);
+    if (error.log) {
+      console.error("  • Log:", error.log);
+    }
+    throw error;
+  }
+}
+
+// ==============================
+// EXECUTE CONTRACT (Configure Validators)
+// ==============================
+async function configureValidators(
+  client: SigningCosmWasmClient,
+  sender: string,
+  contractAddress: string,
+  domain: number,
+  threshold: number,
+  validators: string[]
+) {
+  console.log(`\n⚙️  Configuring validators for domain ${domain}...`);
+  console.log("  • Threshold:", threshold);
+  console.log("  • Validators:", validators.length);
+  console.log("  • Validator addresses:", validators);
+
+  const msg = {
+    set_validators: {
+      domain: domain,
+      threshold: threshold,
+      validators: validators,
+    },
+  };
+
+  try {
+    const result = await client.execute(
+      sender,
+      contractAddress,
+      msg,
+      "auto"
+    );
+
+    console.log("✅ Validators configured successfully!");
+    console.log("  • TX Hash:", result.transactionHash);
+    console.log("  • Gas Used:", result.gasUsed);
+    console.log("  • Height:", result.height);
+
+    return result;
+  } catch (error: any) {
+    console.error("❌ ERROR configuring validators!");
     console.error("  • Message:", error.message);
     if (error.log) {
       console.error("  • Log:", error.log);
@@ -102,8 +162,8 @@ async function main() {
 
   console.log("\n🔐 Instantiating ISM MULTISIG for Sepolia Testnet (Domain 11155111)");
   console.log("Instantiation Parameters:", JSON.stringify(ismMultisigSepoliaInit, null, 2));
-  console.log("ℹ️  Validators and threshold will be configured later via governance");
 
+  // Step 1: Instantiate the contract
   const contractAddress = await instantiateContract(
     client,
     sender,
@@ -112,17 +172,34 @@ async function main() {
     ismMultisigSepoliaInit
   );
 
+  // Step 2: Configure validators immediately after instantiation
+  console.log("\n" + "─".repeat(80));
+  await configureValidators(
+    client,
+    sender,
+    contractAddress,
+    DOMAIN_SEPOLIA,
+    SEPOLIA_THRESHOLD,
+    SEPOLIA_VALIDATORS
+  );
+
   console.log("\n" + "=".repeat(80));
-  console.log("✅ ISM MULTISIG SEPOLIA INSTANTIATED SUCCESSFULLY!");
+  console.log("✅ ISM MULTISIG SEPOLIA INSTANTIATED AND CONFIGURED SUCCESSFULLY!");
   console.log("=".repeat(80));
+  console.log("\n📋 CONTRACT INFORMATION:");
+  console.log("─".repeat(80));
+  console.log("  • Contract Address:", contractAddress);
+  console.log("  • Domain:", DOMAIN_SEPOLIA, "(Sepolia Testnet)");
+  console.log("  • Threshold:", SEPOLIA_THRESHOLD, "of", SEPOLIA_VALIDATORS.length);
+  console.log("  • Validators configured:", SEPOLIA_VALIDATORS.length);
   console.log("\n📋 NEXT STEPS:");
   console.log("─".repeat(80));
   console.log("1. Save the contract address above");
   console.log("2. Set environment variable:");
   console.log(`   export ISM_MULTISIG_SEPOLIA='${contractAddress}'`);
-  console.log("3. Run the governance proposal script:");
+  console.log("3. Continue with IGP and ISM Routing configuration via governance:");
   console.log("   PRIVATE_KEY=... ISM_MULTISIG_SEPOLIA=" + contractAddress + " npx tsx script/submit-proposal-sepolia.ts");
-  console.log("4. Submit the proposal via governance");
+  console.log("   (Note: Validators are already configured, so you can skip that message in the proposal)");
   console.log("=".repeat(80) + "\n");
 }
 

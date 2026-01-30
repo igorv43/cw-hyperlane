@@ -5,7 +5,6 @@ sepolia:
   symbol: "LUNC"
   decimals: 6
   owner: "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
-  logoURI: "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg"
   interchainSecurityModule:
     type: messageIdMultisigIsm
     validators:

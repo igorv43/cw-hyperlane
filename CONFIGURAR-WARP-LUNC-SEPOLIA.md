@@ -288,7 +288,6 @@ sepolia:
   symbol: "LUNC"
   decimals: 6
   owner: "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
-  logoURI: "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg"
   interchainSecurityModule:
     type: messageIdMultisigIsm
     validators:
@@ -301,7 +300,6 @@ EOF
 - Substitua `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` pelo seu endereço Sepolia (owner do contrato)
 - O validador `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` é o validador do warp route no Sepolia (Threshold: 1)
 - **Os validadores DEVEM ter o prefixo `0x`** (formato hexadecimal completo)
-- O campo `logoURI` configura a logo do token que será exibida na blockchain
 
 **Nota sobre Domain e Validadores**:
 - O domain **não é especificado explicitamente** no YAML do Hyperlane CLI para EVM chains
@@ -310,10 +308,10 @@ EOF
 - Os validadores especificados no `interchainSecurityModule` são para validar mensagens vindas do **Terra Classic (Domain 1325)**
 - Quando uma mensagem vem do Terra Classic para o warp route no Sepolia, o ISM usa esses validadores para verificar as assinaturas
 
-**Nota sobre Logo**:
-- O campo `logoURI` aponta diretamente para a URL da logo do LUNC
-- A logo será armazenada no contrato do token e exibida em wallets e exploradores
-- **Logo URL**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+**⚠️ IMPORTANTE sobre Logo**:
+- **O YAML do Hyperlane CLI NÃO possui campo para logo** - o contrato ERC20 não armazena logo
+- A logo deve ser configurada **após o deploy** através do formulário oficial do Etherscan (ver Passo 4.4)
+- **Logo URL para usar no Etherscan**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 
 ### 4.2. Deploy no Sepolia
 
@@ -450,9 +448,11 @@ Para outros desenvolvedores testarem, o endereço do contrato warp route deploya
 
 **⚠️ IMPORTANTE**: O contrato `HypERC20` do Hyperlane **não possui métodos para armazenar ou atualizar a logo do token**. O padrão ERC20 não inclui logo no contrato - isso é gerenciado externamente.
 
-O campo `logoURI` no YAML do Hyperlane CLI é usado apenas para metadata/registro, mas **não é armazenado no contrato**. A logo exibida no Etherscan precisa ser atualizada através do **formulário oficial do Etherscan**.
+**⚠️ IMPORTANTE**: O contrato `HypERC20` do Hyperlane **não possui métodos para armazenar ou atualizar a logo do token**. O padrão ERC20 não inclui logo no contrato - isso é gerenciado externamente.
 
-**Logo configurada no YAML**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+**O YAML do Hyperlane CLI NÃO possui campo para logo** - o contrato ERC20 não armazena logo. A logo exibida no Etherscan precisa ser atualizada através do **formulário oficial do Etherscan**.
+
+**Logo URL para usar no Etherscan**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 
 #### Como Atualizar a Logo no Etherscan
 
@@ -539,7 +539,7 @@ Após análise do contrato `HypERC20.sol` no projeto Hyperlane (`/home/lunc/hype
 - O método `initialize()` define apenas `name` e `symbol` através de `__ERC20_init(_name, _symbol)`
 - **Não existem métodos** como `setLogo()`, `setLogoURI()`, `updateLogo()` ou similares no contrato
 - O padrão ERC20 não inclui logo - isso é gerenciado externamente por exploradores (Etherscan) ou Token Lists
-- O campo `logoURI` no YAML do Hyperlane CLI é usado apenas para metadata/registro, mas não é armazenado no contrato
+- O YAML do Hyperlane CLI NÃO possui campo para logo - o contrato ERC20 não armazena logo
 
 **Conclusão**: A logo deve ser atualizada manualmente no Etherscan, não através de chamadas ao contrato.
 
@@ -711,13 +711,13 @@ Após completar todos os passos, você terá:
 
 ## Logo do Token
 
-A logo do LUNC está configurada diretamente no YAML através do campo `logoURI`:
+**⚠️ IMPORTANTE**: O YAML do Hyperlane CLI **NÃO possui campo para logo**. O contrato ERC20 não armazena logo no contrato.
 
-- **Campo no YAML**: `logoURI`
-- **Logo URL**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+A logo deve ser configurada **após o deploy** através do formulário oficial do Etherscan (ver **Passo 4.4**).
+
+- **Logo URL para usar no Etherscan**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 - **Fonte**: [classic-terra/assets](https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg)
-
-A logo será armazenada no contrato do token durante o deploy e exibida automaticamente em wallets e exploradores que suportam token metadata.
+- **Formato recomendado**: PNG, 256x256 pixels
 
 ---
 

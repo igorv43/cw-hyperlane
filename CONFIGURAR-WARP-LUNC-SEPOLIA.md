@@ -30,7 +30,7 @@ Este processo configura:
 2. **IGP Oracle**: Configura taxa de câmbio e gas price para Sepolia
 3. **Warp Route Terra Classic**: Token nativo LUNC no Terra Classic
 4. **Warp Route Sepolia**: Token sintético wLUNC no Sepolia
-   - **Validador Terra Classic**: `242d8a855a8c932dec51f7999ae7d1e48b10c95e` (único validador anunciado)
+   - **Validador**: `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` (Threshold: 1)
    - **Logo**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 
 ---
@@ -277,34 +277,47 @@ cat context/terraclassic.json | jq '.deployments.warp.native[] | select(.id == "
 
 ### 4.1. Criar Arquivo de Configuração YAML
 
-Crie o arquivo `warp-sepolia.yaml`:
+Crie o arquivo `warp-sepolia.yaml` com o seguinte comando:
 
-```yaml
+```bash
+cat > warp-sepolia.yaml << EOF
 sepolia:
   isNft: false
   type: synthetic
   name: "Wrapped Terra Classic LUNC"
-  symbol: "wLUNC"
+  symbol: "LUNC"
   decimals: 6
-  owner: "0xSEU_ENDERECO_SEPOLIA_AQUI"
+  owner: "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
+  logoURI: "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg"
   interchainSecurityModule:
     type: messageIdMultisigIsm
     validators:
-      - "242d8a855a8c932dec51f7999ae7d1e48b10c95e"
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"
     threshold: 1
+EOF
 ```
 
 **⚠️ IMPORTANTE**: 
-- Substitua `0xSEU_ENDERECO_SEPOLIA_AQUI` pelo seu endereço Sepolia
-- O validador `242d8a855a8c932dec51f7999ae7d1e48b10c95e` é o único validador anunciado do Terra Classic
-- O campo `uri` aponta para o arquivo de metadata JSON com a logo do LUNC
+- Substitua `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` pelo seu endereço Sepolia (owner do contrato)
+- O validador `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` é o validador do warp route no Sepolia (Threshold: 1)
+- **Os validadores DEVEM ter o prefixo `0x`** (formato hexadecimal completo)
+- O campo `logoURI` configura a logo do token que será exibida na blockchain
 
-**Nota sobre Metadata/Logo**: 
-- O campo `uri` está configurado para apontar ao arquivo de metadata: `warp/sepolia/metadata.json`
-- A logo do LUNC está incluída no arquivo de metadata
-- **IMPORTANTE**: Faça push do arquivo `warp/sepolia/metadata.json` para o repositório GitHub antes do deploy para que a URI seja acessível
+**Nota sobre Domain e Validadores**:
+- O domain **não é especificado explicitamente** no YAML do Hyperlane CLI para EVM chains
+- O Hyperlane CLI determina automaticamente o domain baseado na chain onde o warp route está sendo deployado:
+  - **Sepolia**: Domain 11155111 (inferido automaticamente)
+- Os validadores especificados no `interchainSecurityModule` são para validar mensagens vindas do **Terra Classic (Domain 1325)**
+- Quando uma mensagem vem do Terra Classic para o warp route no Sepolia, o ISM usa esses validadores para verificar as assinaturas
+
+**Nota sobre Logo**:
+- O campo `logoURI` aponta diretamente para a URL da logo do LUNC
+- A logo será armazenada no contrato do token e exibida em wallets e exploradores
+- **Logo URL**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 
 ### 4.2. Deploy no Sepolia
+
+Execute o comando de deploy:
 
 ```bash
 hyperlane warp deploy \
@@ -321,60 +334,214 @@ hyperlane warp deploy \
   --private-key $SEPOLIA_PRIVATE_KEY
 ```
 
+**⚠️ IMPORTANTE**: 
+- Substitua `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` pelo seu endereço Sepolia (owner do contrato)
+- O validador `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` é o validador do warp route no Sepolia (Threshold: 1)
+- **Os validadores DEVEM ter o prefixo `0x`** (formato hexadecimal completo)
+- Sem o prefixo `0x`, o Hyperlane CLI retornará erro de validação regex
+- O campo `logoURI` configura a logo do token que será exibida na blockchain
+
+**Nota sobre Domain e Validadores**:
+- O domain **não é especificado explicitamente** no YAML do Hyperlane CLI para EVM chains
+- O Hyperlane CLI determina automaticamente o domain baseado na chain onde o warp route está sendo deployado:
+  - **Sepolia**: Domain 11155111 (inferido automaticamente)
+- Os validadores especificados no `interchainSecurityModule` são para validar mensagens vindas do **Terra Classic (Domain 1325)**
+- Quando uma mensagem vem do Terra Classic para o warp route no Sepolia, o ISM usa esses validadores para verificar as assinaturas
+
+**Nota sobre Logo**:
+- O campo `logoURI` aponta diretamente para a URL da logo do LUNC
+- A logo será armazenada no contrato do token e exibida em wallets e exploradores
+- **Logo URL**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+
+### 4.2. Deploy no Sepolia
+
+Execute o comando de deploy:
+
+```bash
+hyperlane warp deploy \
+  --config warp-sepolia.yaml \
+  --private-key 0xSUA_CHAVE_PRIVADA_SEPOLIA
+```
+
+**⚠️ SEGURANÇA**: Use variáveis de ambiente para a chave privada:
+
+```bash
+export SEPOLIA_PRIVATE_KEY="0x..."
+hyperlane warp deploy \
+  --config warp-sepolia.yaml \
+  --private-key $SEPOLIA_PRIVATE_KEY
+```
+
+**⚠️ IMPORTANTE**: 
+- **Os validadores DEVEM ter o prefixo `0x`** no YAML
+- Sem o prefixo `0x`, o Hyperlane CLI retornará erro de validação regex
+
 ### 4.3. Salvar Endereços Deployados
 
 A saída será algo como:
 
 ```
-Deployed warp route on sepolia:
-  Token: 0xABCDEF1234567890...
-  Router: 0x1234567890ABCDEF...
+Done adding warp route at filesystem registry
+    tokens:
+      - chainName: sepolia
+        standard: EvmHypSynthetic
+        decimals: 6
+        symbol: LUNC
+        name: Wrapped Terra Classic LUNC
+        addressOrDenom: "0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
 ```
 
-**Salve ambos os endereços** para usar no próximo passo.
+**⚠️ IMPORTANTE**: Salve o endereço do contrato (`addressOrDenom`) para usar nos próximos passos.
 
-### 4.4. Publicar Arquivo de Metadata no GitHub
+#### Endereço do Warp Route Deployado (Sepolia Testnet)
 
-Antes de fazer o deploy, você precisa publicar o arquivo de metadata no GitHub para que a URI seja acessível:
+Para outros desenvolvedores testarem, o endereço do contrato warp route deployado é:
 
-```bash
-# 1. Adicionar o arquivo ao git
-git add warp/sepolia/metadata.json
+- **Chain**: Sepolia Testnet
+- **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
+- **Token Name**: Wrapped Terra Classic LUNC
+- **Token Symbol**: LUNC
+- **Decimals**: 6
+- **Standard**: EvmHypSynthetic
+- **Etherscan**: https://sepolia.etherscan.io/address/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
 
-# 2. Fazer commit
-git commit -m "Add metadata.json for Sepolia warp route with LUNC logo"
+**Você pode usar este endereço para**:
+- Verificar o contrato no Etherscan
+- Adicionar o token em wallets (MetaMask, etc.)
+- Testar transferências cross-chain
+- Verificar o saldo do token
 
-# 3. Fazer push para o repositório
-git push origin main
+### 4.3. Salvar Endereços Deployados
+
+A saída do deploy será algo como:
+
+```
+Done adding warp route at filesystem registry
+    tokens:
+      - chainName: sepolia
+        standard: EvmHypSynthetic
+        decimals: 6
+        symbol: LUNC
+        name: Wrapped Terra Classic LUNC
+        addressOrDenom: "0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
 ```
 
-**Verificar se a URI está acessível**:
+**⚠️ IMPORTANTE**: Salve o endereço do contrato (`addressOrDenom`) para usar nos próximos passos.
 
-```bash
-# Testar se a URI está acessível
-curl https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/sepolia/metadata.json
+#### Endereço do Warp Route Deployado (Sepolia Testnet)
+
+Para outros desenvolvedores testarem, o endereço do contrato warp route deployado é:
+
+- **Chain**: Sepolia Testnet
+- **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
+- **Token Name**: Wrapped Terra Classic LUNC
+- **Token Symbol**: LUNC
+- **Decimals**: 6
+- **Standard**: EvmHypSynthetic
+- **Etherscan**: https://sepolia.etherscan.io/address/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+
+**Você pode usar este endereço para**:
+- Verificar o contrato no Etherscan
+- Adicionar o token em wallets (MetaMask, etc.)
+- Testar transferências cross-chain
+- Verificar o saldo do token
+
+### 4.4. Atualizar Logo do Token no Etherscan
+
+**⚠️ IMPORTANTE**: O contrato `HypERC20` do Hyperlane **não possui métodos para armazenar ou atualizar a logo do token**. O padrão ERC20 não inclui logo no contrato - isso é gerenciado externamente.
+
+O campo `logoURI` no YAML do Hyperlane CLI é usado apenas para metadata/registro, mas **não é armazenado no contrato**. A logo exibida no Etherscan precisa ser atualizada através do **formulário oficial do Etherscan**.
+
+**Logo configurada no YAML**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+
+#### Como Atualizar a Logo no Etherscan
+
+**Referência oficial**: [Token Info Submission Guidelines - Etherscan](https://support.etherscan.com/support/solutions/articles/69000775720-token-info-submission-guidelines)
+
+**Pré-requisitos** (obrigatórios):
+
+1. **Verificar propriedade do contrato**:
+   - Você precisa verificar que é o owner do contrato
+   - Acesse: https://sepolia.etherscan.io/verifyContract
+   - Siga o processo de verificação de propriedade do endereço do contrato
+
+2. **Publicar o código-fonte do contrato**:
+   - O código-fonte do contrato deve estar verificado e publicado no Etherscan
+   - Acesse: https://sepolia.etherscan.io/verifyContract
+   - Faça a verificação do código-fonte do contrato
+
+**Processo de Atualização**:
+
+1. **Acesse o formulário oficial do Etherscan**:
+   - **⚠️ IMPORTANTE**: Use APENAS o formulário oficial do Etherscan
+   - Não envie solicitações por outros canais (email, redes sociais, etc.)
+   - O formulário está disponível na página do token ou através do suporte do Etherscan
+
+2. **Preencha o formulário com as informações**:
+
+   **Informações Básicas**:
+   - **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
+   - **Token Name**: Wrapped Terra Classic LUNC
+   - **Token Symbol**: LUNC
+   - **Decimals**: 6
+   - **Website**: URL do projeto (se aplicável)
+   - **Email oficial**: Email do domínio do projeto
+   - **Descrição**: Descrição neutra do projeto (sem exageros)
+
+   **Logo do Token**:
+   - **Formato**: PNG (recomendado)
+   - **Resolução**: 256x256 pixels
+   - **URL da Logo**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+   - **⚠️ IMPORTANTE**: 
+     - O link para download da logo NÃO deve ser privado (sem senha)
+     - Se a logo estiver protegida por senha, forneça a senha no campo "Comment/Message"
+     - A URL deve ser acessível publicamente
+
+3. **Submeta o formulário**:
+   - Após preencher todas as informações, submeta o formulário
+   - O Etherscan revisará sua solicitação
+   - **NÃO** envie múltiplas submissões para o mesmo contrato (isso aumenta o tempo de processamento)
+
+**Regras Importantes** (conforme Etherscan):
+
+- ✅ **Use APENAS o formulário oficial** - solicitações por outros canais não serão atendidas
+- ✅ **NÃO** entre em contato com membros da equipe pessoalmente
+- ✅ **NÃO** envie múltiplas submissões para o mesmo contrato
+- ✅ **NÃO** ofereça dinheiro ou incentivos para acelerar o processo
+- ✅ A atualização é **gratuita**, mas há um plano pago para atualizações urgentes (24 horas)
+- ✅ Cada submissão é **final** - não será possível editar após o envio
+- ✅ Certifique-se de que a logo, nome e símbolo não sejam fraudulentos ou infrinjam direitos autorais
+
+**Tempo de Processamento**:
+
+- **Gratuito**: Processamento normal (pode levar alguns dias)
+- **Pago**: Atualização urgente (24 horas) - [Mais informações](https://support.etherscan.com)
+
+**Verificação após Submissão**:
+
+- Após a submissão, o Etherscan revisará sua solicitação
+- Se necessário, podem solicitar informações adicionais
+- Se a equipe estiver demorando, responda ao email original da submissão (não envie um novo email)
+
+**Página do Token**:
+- URL: https://sepolia.etherscan.io/token/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+
+**Logo URL para usar**:
+```
+https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg
 ```
 
-**Estrutura do arquivo de metadata** (`warp/sepolia/metadata.json`):
+#### Análise Técnica do Contrato
 
-```json
-{
-  "name": "Luna Classic",
-  "symbol": "wLUNC",
-  "description": "Wrapped Terra Classic LUNC via Hyperlane Warp Route",
-  "image": "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg",
-  "decimals": 6,
-  "attributes": []
-}
-```
+Após análise do contrato `HypERC20.sol` no projeto Hyperlane (`/home/lunc/hyperlane-monorepo/solidity/contracts/token/HypERC20.sol`):
 
-**Logo do LUNC**: A URL da logo está configurada: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
+- O contrato estende `ERC20Upgradeable` do OpenZeppelin
+- O método `initialize()` define apenas `name` e `symbol` através de `__ERC20_init(_name, _symbol)`
+- **Não existem métodos** como `setLogo()`, `setLogoURI()`, `updateLogo()` ou similares no contrato
+- O padrão ERC20 não inclui logo - isso é gerenciado externamente por exploradores (Etherscan) ou Token Lists
+- O campo `logoURI` no YAML do Hyperlane CLI é usado apenas para metadata/registro, mas não é armazenado no contrato
 
-**⚠️ IMPORTANTE**: 
-- O campo `uri` no YAML aponta para: `https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/sepolia/metadata.json`
-- Certifique-se de fazer push do arquivo antes do deploy
-- A logo será exibida em wallets e exploradores que suportam token metadata
-- Alguns exploradores (como Etherscan) podem exigir verificação manual do token para exibir a logo
+**Conclusão**: A logo deve ser atualizada manualmente no Etherscan, não através de chamadas ao contrato.
 
 ---
 
@@ -544,13 +711,13 @@ Após completar todos os passos, você terá:
 
 ## Logo do Token
 
-A logo do LUNC está configurada no arquivo de metadata:
+A logo do LUNC está configurada diretamente no YAML através do campo `logoURI`:
 
-- **Arquivo**: `warp/sepolia/metadata.json`
+- **Campo no YAML**: `logoURI`
 - **Logo URL**: `https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg`
 - **Fonte**: [classic-terra/assets](https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg)
 
-A logo será exibida em wallets e exploradores que suportam token metadata. Certifique-se de configurar a metadata após o deploy do warp route (ver Passo 4.4).
+A logo será armazenada no contrato do token durante o deploy e exibida automaticamente em wallets e exploradores que suportam token metadata.
 
 ---
 

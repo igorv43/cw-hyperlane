@@ -1,0 +1,41 @@
+{
+  "chains": {
+    "sepolia": {
+      "chainId": 11155111,
+      "domainId": 11155111,
+      "name": "sepolia",
+      "displayName": "Sepolia",
+      "protocol": "ethereum",
+      "isTestnet": true,
+      "rpcUrls": [
+        {
+          "http": "https://rpc.sepolia.org"
+        },
+        {
+          "http": "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
+        }
+      ],
+      "blockExplorers": [
+        {
+          "name": "Etherscan",
+          "url": "https://sepolia.etherscan.io",
+          "apiUrl": "https://api-sepolia.etherscan.io/api",
+          "family": "etherscan"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 13,
+        "reorgPeriod": 2
+      },
+      "nativeToken": {
+        "name": "Ether",
+        "symbol": "ETH",
+        "decimals": 18
+      },
+      "mailbox": "0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766",
+      "messageIdMultisigIsmFactory": "0xFEb9585b2f948c1eD74034205a7439261a9d27DD",
+      "merkleRootMultisigIsmFactory": "0x0a71AcC99967829eE305a285750017C4916Ca269"
+    }
+  }
+}

@@ -2,12 +2,12 @@ sepolia:
   isNft: false
   type: synthetic
   name: "Wrapped Terra Classic LUNC"
-  symbol: "wLUNC"
+  symbol: "LUNC"
   decimals: 6
-  owner: "0xSEU_ENDERECO_SEPOLIA_AQUI"
-  uri: "https://raw.githubusercontent.com/igorv43/cw-hyperlane/main/warp/sepolia/metadata.json"
+  owner: "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
+  logoURI: "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/LUNC.svg"
   interchainSecurityModule:
     type: messageIdMultisigIsm
     validators:
-      - "242d8a855a8c932dec51f7999ae7d1e48b10c95e"
+      - "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0"
     threshold: 1

@@ -786,7 +786,7 @@ threshold: 1  # 1 of 1
 
 2. **Terra Private Key**: For Terra Classic operations
    - Format: 64-character hexadecimal (without `0x` prefix)
-   - Example: `a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6`
+   - Example: `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` (fictício - use sua própria chave)
 
 3. **NEVER commit private keys to Git**
 4. **NEVER share private keys publicly**

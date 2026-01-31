@@ -12,7 +12,8 @@ const CHAIN_ID = "rebel-2";
 const NODE = "https://rpc.luncblaze.com:443";
 
 // GET FROM ENVIRONMENT
-const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || "a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6";
+// OBRIGATÓRIO: Defina PRIVATE_KEY ou TERRA_PRIVATE_KEY como variável de ambiente
+const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || process.env.TERRA_PRIVATE_KEY || undefined;
 
 // ---------------------------
 // CONTRACT ADDRESSES (TESTNET)
@@ -21,10 +22,10 @@ const MAILBOX = "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8y
 const ISM_MULTISIG_BSC = "terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv";
 const ISM_MULTISIG_SOL = "terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a";
 // ⚠️ IMPORTANTE: Substitua pelo endereço do ISM Multisig Sepolia após instanciá-lo
-const ISM_MULTISIG_SEPOLIA = process.env.ISM_MULTISIG_SEPOLIA || "terra1REPLACE_WITH_SEPOLIA_ISM_ADDRESS";
+const ISM_MULTISIG_SEPOLIA = process.env.ISM_MULTISIG_SEPOLIA || "terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa";
 const ISM_ROUTING = "terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh";
 const IGP = "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9";
-const IGP_ORACLE = "terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg";
+const IGP_ORACLE = "terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds";
 
 // Domain IDs
 const DOMAIN_SEPOLIA = 11155111;

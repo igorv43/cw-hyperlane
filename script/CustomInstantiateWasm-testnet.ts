@@ -23,7 +23,8 @@ const ADMIN = "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n";
 const OWNER = ADMIN;
 
 // GET FROM ENVIRONMENT — NEVER HARDCODE
-const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || "a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6";
+// OBRIGATÓRIO: Defina PRIVATE_KEY ou TERRA_PRIVATE_KEY como variável de ambiente
+const PRIVATE_KEY_HEX = process.env.PRIVATE_KEY || process.env.TERRA_PRIVATE_KEY || undefined;
 
 // ==============================
 // ADDRESS MAP

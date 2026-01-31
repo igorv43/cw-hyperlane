@@ -9,6 +9,7 @@ Este guia fornece instruções passo a passo para configurar o Warp Route do LUN
 - [Passo 1: Instanciar ISM Multisig para Sepolia](#passo-1-instanciar-ism-multisig-para-sepolia)
 - [Passo 2: Configurar IGP e ISM Routing via Governança](#passo-2-configurar-igp-e-ism-routing-via-governança)
   - [Passo 2.1: Atualizar IGP Oracle para Sepolia (Direto - Sem Governança)](#passo-21-atualizar-igp-oracle-para-sepolia-direto---sem-governança)
+  - [Passo 2.2: Configurar Rota IGP Router para Sepolia (Direto - Sem Governança)](#passo-22-configurar-rota-igp-router-para-sepolia-direto---sem-governança)
 - [Passo 3: Deploy Warp Route no Terra Classic](#passo-3-deploy-warp-route-no-terra-classic)
 - [Passo 4: Deploy Warp Route no Sepolia](#passo-4-deploy-warp-route-no-sepolia)
 - [Passo 5: Link Warp Routes](#passo-5-link-warp-routes)
@@ -33,6 +34,10 @@ Este processo configura:
    - **Contrato**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
    - **Exchange Rate**: 177534
    - **Gas Price**: 1000000000 (1 Gwei)
+3. **IGP Router**: Roteia consultas de gas para o IGP Oracle correto
+   - **Contrato**: `terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r`
+   - **Owner**: `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze` (pode configurar diretamente)
+   - **Rota Configurada**: Aponta para o IGP Oracle acima
 3. **Warp Route Terra Classic**: Token nativo LUNC no Terra Classic
 4. **Warp Route Sepolia**: Token sintético wLUNC no Sepolia
    - **Validador**: `0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0` (Threshold: 1)
@@ -51,6 +56,12 @@ Este processo configura:
 - **TX Atualização**: `20F52E56B6E387F9DE48A43EEE9C35737B3228C640E5DEBAA634BEFFCAEC1627`
 - **Exchange Rate**: 177534
 - **Gas Price**: 1000000000 (1 Gwei)
+
+**IGP Router Sepolia**:
+- **Address**: `terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r`
+- **Owner**: `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze` (pode configurar diretamente)
+- **TX Configuração Rota**: `8228C79919C32143E2DBE293EB8C5CF05DF8009A8D6D8C44DD2D8AD41437C9A0`
+- **Rota Configurada**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` (IGP Oracle)
 
 **Warp Route Sepolia**:
 - **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
@@ -358,6 +369,10 @@ O script criará as seguintes mensagens:
 
 #### Mensagem 3: Configurar Rotas IGP para Sepolia
 
+**⚠️ NOTA**: Se você configurou o IGP Router via script (Passo 2.2), esta mensagem já foi executada. Você pode pular esta mensagem na proposta de governança ou deixá-la (não causará problemas se executada novamente).
+
+**⚠️ IMPORTANTE**: O IGP Router usado no Passo 2.2 (`terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r`) é diferente do IGP Router controlado por governança (`terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`). Se você já configurou via Passo 2.2, não precisa desta mensagem.
+
 ```json
 {
   "contractAddress": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
@@ -506,6 +521,127 @@ terrad query wasm contract-state smart $IGP_ORACLE \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
+
+---
+
+## Passo 2.2: Configurar Rota IGP Router para Sepolia (Direto - Sem Governança)
+
+**⚠️ IMPORTANTE**: O IGP Router (`terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r`) é controlado pela sua wallet (`terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze`). Isso significa que você pode configurar a rota diretamente, sem precisar de proposta de governança.
+
+**Por que isso é necessário?**
+O IGP Router precisa saber qual IGP Oracle usar para calcular os custos de gas para transferências para Sepolia. Sem esta configuração, você receberá o erro: `gas oracle not found for 11155111`.
+
+### 2.2.1. Configurar via Script TypeScript (Recomendado)
+
+Use o script fornecido para configurar a rota IGP Router diretamente:
+
+```bash
+cd script
+PRIVATE_KEY="sua_chave_privada_terra" npx tsx set-igp-route-sepolia.ts
+```
+
+**O que o script faz**:
+1. Conecta à rede Terra Classic Testnet
+2. Configura o IGP Router para usar o IGP Oracle quando calcular custos de gas para Sepolia:
+   - **Domain**: 11155111 (Sepolia Testnet)
+   - **Rota**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` (IGP Oracle)
+
+**⚠️ IMPORTANTE**: 
+- A chave privada deve corresponder à conta que é **OWNER** do IGP Router (`terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze`)
+- Se você receber erro "unauthorized", verifique se a conta é o owner
+
+**Exemplo de saída bem-sucedida**:
+```
+================================================================================
+SET IGP ROUTE FOR SEPOLIA TESTNET
+================================================================================
+
+Wallet: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+Chain ID: rebel-2
+Node: https://rpc.luncblaze.com:443
+IGP Router: terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r
+IGP Oracle: terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds
+Domain: 11155111 (Sepolia Testnet)
+✓ Connected to node
+
+⚙️  Configurando rota IGP Router para domain 11155111...
+  • IGP Router: terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r
+  • IGP Oracle: terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds
+  • Domain: 11155111 (Sepolia Testnet)
+✅ Rota IGP configurada com sucesso!
+  • TX Hash: 8228C79919C32143E2DBE293EB8C5CF05DF8009A8D6D8C44DD2D8AD41437C9A0
+  • Gas Used: 178278
+  • Height: 29257783
+
+================================================================================
+✅ IGP ROUTE CONFIGURED SUCCESSFULLY!
+================================================================================
+```
+
+### 2.2.2. Configurar via Script Bash
+
+Alternativamente, você pode usar o script bash:
+
+```bash
+PRIVATE_KEY="sua_chave_privada_terra" SKIP_CONFIRM="1" ./script/set-igp-route-sepolia.sh
+```
+
+Ou usando keyring do terrad:
+
+```bash
+KEY_NAME="hypelane-val-testnet" ./script/set-igp-route-sepolia.sh
+```
+
+**Notas**:
+- `KEY_NAME` deve ser o nome da chave no keyring do terrad que é owner do IGP Router
+- O script solicitará confirmação antes de executar (a menos que `SKIP_CONFIRM="1"` seja definido)
+
+### 2.2.3. Verificar Configuração
+
+Após configurar, verifique se a rota foi configurada corretamente:
+
+```bash
+IGP="terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r"
+
+# Verificar rota para Sepolia
+terrad query wasm contract-state smart "$IGP" \
+  '{"router":{"get_route":{"domain":11155111}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443
+```
+
+**Saída esperada**:
+```json
+{
+  "data": {
+    "route": {
+      "domain": 11155111,
+      "route": "terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
+    }
+  }
+}
+```
+
+### 2.2.4. Verificação Completa com Script
+
+Para verificar tanto o IGP Router quanto o IGP Oracle de uma vez:
+
+```bash
+./script/check-igp-sepolia.sh
+```
+
+**Saída esperada**:
+```
+✅ Rota IGP configurada: terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds
+   ✓ Rota aponta para o IGP Oracle correto
+✅ IGP Oracle configurado:
+   • Exchange Rate: 177534
+   • Gas Price: 1000000000
+
+✅ Tudo configurado corretamente!
+```
+
+**⚠️ IMPORTANTE**: Sem esta configuração, você receberá o erro `gas oracle not found for 11155111` ao tentar transferir LUNC para Sepolia.
 
 ---
 
@@ -1311,7 +1447,8 @@ Após completar todos os passos, você terá:
 |------|----------|-----------|
 | ISM Multisig Sepolia | `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa` | ISM para validar mensagens de Sepolia |
 | IGP Oracle | `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` | Oracle de gas (atualizado para Sepolia) |
-| IGP | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Interchain Gas Paymaster (já existe) |
+| IGP Router | `terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r` | IGP Router (owner: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze) |
+| IGP (Governance) | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Interchain Gas Paymaster controlado por governança |
 | ISM Routing | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | ISM Router (já existe) |
 | Warp Route Terra | `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` | Warp route LUNC no Terra Classic |
 | Warp Route Sepolia | `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4` | Warp route wLUNC no Sepolia |
@@ -1358,13 +1495,28 @@ console.log(padded);
 
 **Solução**: Certifique-se de que executou o Passo 2 e adicionou Sepolia ao ISM Routing via governança.
 
+### Erro: "gas oracle not found for 11155111"
+
+**Problema**: O IGP Router não tem uma rota configurada para Sepolia.
+
+**Solução**: 
+1. Execute o Passo 2.2 para configurar a rota IGP Router:
+   ```bash
+   PRIVATE_KEY="sua_chave_privada" npx tsx script/set-igp-route-sepolia.ts
+   ```
+2. Verifique a configuração:
+   ```bash
+   ./script/check-igp-sepolia.sh
+   ```
+3. Certifique-se de que o IGP Oracle está configurado (Passo 2.1)
+
 ### Erro: "Insufficient gas payment"
 
 **Problema**: O pagamento de gas não é suficiente.
 
 **Solução**: 
 1. Verifique se o IGP Oracle está configurado corretamente para Sepolia
-2. Verifique se as rotas IGP estão configuradas
+2. Verifique se as rotas IGP estão configuradas (Passo 2.2)
 3. Ajuste o exchange rate e gas price se necessário
 
 ---

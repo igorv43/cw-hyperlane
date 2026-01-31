@@ -1,0 +1,27 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+      "sender": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
+      "contract": "terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9",
+      "msg": {
+        "router": {
+          "set_routes": {
+            "set": [
+              {
+                "domain": 11155111,
+                "route": "terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds"
+              }
+            ]
+          }
+        }
+      },
+      "funds": []
+    }
+  ],
+  "metadata": "Configure IGP Router route for Sepolia Testnet",
+  "deposit": "10000000uluna",
+  "title": "Configure IGP Router Route - Sepolia Testnet",
+  "summary": "Proposal to configure IGP Router route for Sepolia Testnet (Domain 11155111) to use IGP Oracle for gas calculations",
+  "expedited": false
+}

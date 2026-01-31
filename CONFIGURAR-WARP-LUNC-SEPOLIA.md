@@ -56,6 +56,14 @@ Este processo configura:
 - **Token Address**: `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4`
 - **Etherscan**: https://sepolia.etherscan.io/token/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
 
+**Warp Route Terra Classic**:
+- **Address**: `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml`
+- **Hex (32 bytes)**: `0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b`
+
+**Rotas Vinculadas**:
+- ✅ Terra Classic → Sepolia: Configurado
+- ✅ Sepolia → Terra Classic: Configurado
+
 ---
 
 ## Pré-requisitos
@@ -73,6 +81,7 @@ Este processo configura:
 4. **Chaves privadas**:
    - Terra Classic Testnet private key
    - Sepolia Testnet private key
+   - **⚠️ IMPORTANTE**: **NUNCA** compartilhe suas chaves privadas reais. Os exemplos na documentação usam chaves fictícias apenas para referência de formato.
 
 5. **Contratos Hyperlane já deployados** no Terra Classic Testnet (ver `TESTNET-ARTIFACTS.md`)
 
@@ -817,63 +826,358 @@ Após análise do contrato `HypERC20.sol` no projeto Hyperlane (`/home/lunc/hype
 
 ---
 
-## Passo 5: Link Warp Routes
+## Passo 5: Link Warp Routes (Terra Classic ↔ Sepolia)
 
-Agora precisamos vincular os dois warp routes (Terra Classic ↔ Sepolia).
+Agora precisamos vincular os dois warp routes bidirecionalmente. Este passo configura as rotas para permitir transferências cross-chain em ambas as direções.
 
-### 5.1. Link Terra Classic → Sepolia
+### 5.1. Usar Script Automatizado (Recomendado)
+
+O script `link-terra-sepolia.sh` automatiza todo o processo de vinculação bidirecional, incluindo conversão de endereços e verificação.
+
+#### 5.1.1. Modo Interativo
+
+Execute o script sem variáveis de ambiente para modo interativo:
 
 ```bash
-# Defina as variáveis
-TERRA_WARP_ADDRESS="terra1..."  # Do Passo 6
-SEPOLIA_WARP_ADDRESS="0x..."     # Do Passo 7
-
-# Link Terra → Sepolia
-yarn cw-hpl warp link \
-  --asset-type native \
-  --asset-id uluna \
-  --target-domain 11155111 \
-  --warp-address $SEPOLIA_WARP_ADDRESS \
-  -n terraclassic
+cd /home/lunc/cw-hyperlane
+./script/link-terra-sepolia.sh
 ```
 
-**Parâmetros**:
-- `--asset-type native`: Token nativo (uluna)
-- `--asset-id uluna`: ID do asset
-- `--target-domain 11155111`: Domain ID do Sepolia
-- `--warp-address`: Endereço do warp route no Sepolia
-- `-n terraclassic`: Rede Terra Classic
+O script solicitará:
+- **Terra Classic Warp Route**: Endereço bech32 do warp route no Terra Classic
+- **Sepolia Domain**: Domain ID do Sepolia (padrão: 11155111)
+- **Sepolia Warp Route**: Endereço hex (0x...) do warp route no Sepolia
+- **Sepolia Private Key**: Chave privada para executar transação no Sepolia
+- **Terra Classic Auth**: Escolha entre chave privada ou keyring
 
-### 5.2. Link Sepolia → Terra Classic
+#### 5.1.2. Modo Não-Interativo (Variáveis de Ambiente)
+
+**⚠️ SEGURANÇA**: As chaves privadas nos exemplos abaixo são **FICTÍCIAS** e servem apenas como referência de formato. **NUNCA** compartilhe suas chaves privadas reais.
+
+Para execução automatizada, defina as variáveis de ambiente:
 
 ```bash
-# Link Sepolia → Terra Classic
-hyperlane warp link \
-  --warp $SEPOLIA_WARP_ADDRESS \
-  --destination terraclassic \
-  --destination-warp $TERRA_WARP_ADDRESS \
-  --private-key $SEPOLIA_PRIVATE_KEY
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml" \
+TERRA_PRIVATE_KEY="0000000000000000000000000000000000000000000000000000000000000000" \
+SEPOLIA_WARP="0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4" \
+SEPOLIA_PRIVATE_KEY="0x0000000000000000000000000000000000000000000000000000000000000000" \
+SEPOLIA_DOMAIN="11155111" \
+SKIP_CONFIRM="1" \
+./script/link-terra-sepolia.sh
 ```
 
-**Nota**: O Hyperlane CLI pode não reconhecer `terraclassic` como destino. Nesse caso, use o endereço hex do Terra Classic:
+**Variáveis de Ambiente**:
+- `TERRA_WARP`: Endereço bech32 do warp route no Terra Classic
+- `TERRA_PRIVATE_KEY`: Chave privada Terra Classic (hex, sem 0x) - **opcional** (pode usar `KEY_NAME` em vez disso)
+  - **⚠️ Exemplo fictício**: `0000000000000000000000000000000000000000000000000000000000000000`
+- `KEY_NAME`: Nome da chave no keyring do terrad (padrão: `hypelane-val-testnet`) - **opcional** (se não usar `TERRA_PRIVATE_KEY`)
+- `SEPOLIA_WARP`: Endereço hex do warp route no Sepolia (com 0x)
+- `SEPOLIA_PRIVATE_KEY`: Chave privada Sepolia (com 0x)
+  - **⚠️ Exemplo fictício**: `0x0000000000000000000000000000000000000000000000000000000000000000`
+- `SEPOLIA_DOMAIN`: Domain ID do Sepolia (padrão: 11155111)
+- `SKIP_CONFIRM`: Pular confirmação (1 = sim, vazio = não)
+
+**⚠️ IMPORTANTE**:
+- O script tenta múltiplos RPCs do Sepolia automaticamente se um falhar
+- RPCs testados e funcionando: `https://1rpc.io/sepolia`, `https://sepolia.drpc.org`
+- O script converte automaticamente os endereços para o formato correto (hex 32 bytes)
+
+#### 5.1.3. O que o Script Faz
+
+1. **Converte endereços para formato hex**:
+   - Sepolia → hex 32 bytes (padded com zeros à esquerda)
+   - Terra Classic → hex 32 bytes (converte bech32 para hex)
+
+2. **Vincular Terra Classic → Sepolia**:
+   - Executa `router.set_route` no contrato Terra Classic
+   - Usa chave privada ou keyring conforme especificado
+   - Registra o endereço Sepolia (hex) como rota para domain 11155111
+
+3. **Vincular Sepolia → Terra Classic**:
+   - Executa `enrollRemoteRouter(uint32,bytes32)` no contrato Sepolia
+   - Usa chave privada Sepolia
+   - Registra o endereço Terra Classic (hex) como rota para domain 1325
+
+4. **Verifica as vinculações**:
+   - Consulta Terra Classic para verificar rota → Sepolia
+   - Consulta Sepolia para verificar rota → Terra Classic
+   - Lista todas as rotas configuradas no Terra Classic
+
+#### 5.1.4. Exemplo de Saída
+
+```
+======================================================================
+Vincular Warp Routes: Terra Classic ↔ Sepolia
+======================================================================
+
+📝 Modo não-interativo: usando variáveis de ambiente
+
+======================================================================
+📋 Resumo da Configuração:
+======================================================================
+Terra Classic Warp Route: terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml
+Terra Classic Domain: 1325
+Sepolia Warp Route: 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+Sepolia Domain: 11155111
+Terra Classic Auth: Private Key (64 chars)
+
+======================================================================
+🔄 Convertendo endereços para formato hex...
+======================================================================
+✅ Sepolia Warp Route (hex 32 bytes): 0x000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4
+Convertendo Terra Classic address para hex...
+✅ Terra Classic Warp Route (hex 32 bytes): 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+
+======================================================================
+🔗 Passo 1: Vincular Terra Classic → Sepolia
+======================================================================
+Executando transação no Terra Classic usando chave privada...
+✅ Terra Classic → Sepolia vinculado com sucesso!
+  • TX Hash: ABC123...
+  • Gas Used: 123456
+
+======================================================================
+🔗 Passo 2: Vincular Sepolia → Terra Classic
+======================================================================
+Executando transação no Sepolia...
+Tentando RPC: https://1rpc.io/sepolia
+✅ Sucesso com RPC: https://1rpc.io/sepolia
+✅ Sepolia → Terra Classic vinculado com sucesso!
+  • TX Hash: 0xDEF456...
+  • Gas Used: 21000
+
+======================================================================
+✅ Verificação das Vinculações
+======================================================================
+1. Verificando Terra Classic → Sepolia...
+✅ Rota encontrada: 0x000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4
+
+2. Verificando Sepolia → Terra Classic...
+✅ Rota encontrada: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+
+3. Listando todas as rotas no Terra Classic...
+[... lista de rotas ...]
+
+======================================================================
+✅ Processo concluído!
+======================================================================
+
+📋 Resumo das Transações:
+  • Terra Classic → Sepolia: ABC123...
+  • Sepolia → Terra Classic: 0xDEF456...
+```
+
+### 5.2. Método Manual (Alternativo)
+
+Se preferir executar manualmente, siga os passos abaixo:
+
+#### 5.2.1. Link Terra Classic → Sepolia
+
+**Converter endereço Sepolia para hex**:
 
 ```bash
-# Converter endereço Terra para hex (64 caracteres)
-TERRA_WARP_HEX="000000000000000000000000..."  # Do context/terraclassic.json
+# Sepolia Warp Route: 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+# Converter para hex 32 bytes (sem 0x, padded)
+node -e "
+const addr = '0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4';
+const hex = addr.replace('0x', '').toLowerCase();
+const padded = hex.padStart(64, '0');
+console.log(padded);
+"
+# Resultado: 000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4
+```
 
-# Link via terrad (método alternativo)
-terrad tx wasm execute $TERRA_WARP_ADDRESS \
-  '{"router":{"set_route":{"set":{"domain":11155111,"route":"'$SEPOLIA_WARP_HEX'"}}}}' \
-  --from hyperlane-val-testnet \
-  --chain-id rebel-2 \
-  --node https://rpc.luncblaze.com:443 \
+**Executar transação no Terra Classic**:
+
+```bash
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+SEPOLIA_WARP_HEX="000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+SEPOLIA_DOMAIN="11155111"
+
+# Usando chave privada (TypeScript script)
+TERRA_PRIVATE_KEY="0000000000000000000000000000000000000000000000000000000000000000" \
+npx tsx script/enroll-remote-router-terra.ts
+
+# OU usando terrad CLI
+terrad tx wasm execute "$TERRA_WARP" \
+  "{\"router\":{\"set_route\":{\"domain\":$SEPOLIA_DOMAIN,\"route\":\"$SEPOLIA_WARP_HEX\"}}}" \
+  --from hypelane-val-testnet \
+  --keyring-backend file \
+  --chain-id "rebel-2" \
+  --node "https://rpc.luncblaze.com:443" \
   --gas auto \
   --gas-adjustment 1.5 \
   --fees 12000000uluna \
-  -y
+  --yes
 ```
 
-Onde `$SEPOLIA_WARP_HEX` é o endereço Sepolia convertido para hex (64 caracteres, lowercase, sem 0x, padded).
+**⚠️ IMPORTANTE**: 
+- O endereço hex **NÃO deve ter prefixo `0x`** ao enviar para o contrato Terra Classic
+- O contrato espera exatamente 64 caracteres hexadecimais (32 bytes)
+
+#### 5.2.2. Link Sepolia → Terra Classic
+
+**Converter endereço Terra Classic para hex**:
+
+```bash
+# Terra Classic Warp Route: terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml
+# Converter bech32 para hex 32 bytes
+node -e "
+const { fromBech32 } = require('@cosmjs/encoding');
+const addr = 'terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml';
+const { data } = fromBech32(addr);
+const hexed = Buffer.from(data).toString('hex');
+const padded = hexed.padStart(64, '0');
+console.log('Hex (32 bytes):', '0x' + padded);
+"
+# Resultado: 0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+```
+
+**Executar transação no Sepolia**:
+
+```bash
+SEPOLIA_WARP="0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
+TERRA_DOMAIN="1325"
+TERRA_WARP_HEX="0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b"
+SEPOLIA_PRIVATE_KEY="0x0000000000000000000000000000000000000000000000000000000000000000"
+
+# Usar cast (Foundry) para executar
+cast send "$SEPOLIA_WARP" \
+  "enrollRemoteRouter(uint32,bytes32)" \
+  $TERRA_DOMAIN \
+  $TERRA_WARP_HEX \
+  --private-key "$SEPOLIA_PRIVATE_KEY" \
+  --rpc-url "https://1rpc.io/sepolia" \
+  --legacy \
+  --gas-price 1000000000
+```
+
+**⚠️ IMPORTANTE**: 
+- O endereço hex **deve ter prefixo `0x`** ao usar `cast send`
+- O Sepolia RPC pode falhar - o script tenta múltiplos RPCs automaticamente
+
+### 5.3. Verificar Vinculações
+
+Após vincular, verifique se as rotas foram configuradas corretamente:
+
+#### 5.3.1. Verificar Terra Classic → Sepolia
+
+```bash
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+SEPOLIA_DOMAIN="11155111"
+
+terrad query wasm contract-state smart "$TERRA_WARP" \
+  '{"router":{"get_route":{"domain":'$SEPOLIA_DOMAIN'}}}' \
+  --node "https://rpc.luncblaze.com:443"
+```
+
+**Saída esperada**:
+```json
+{
+  "route": "000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+}
+```
+
+#### 5.3.2. Verificar Sepolia → Terra Classic
+
+```bash
+SEPOLIA_WARP="0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
+TERRA_DOMAIN="1325"
+
+cast call "$SEPOLIA_WARP" \
+  "routers(uint32)(bytes32)" \
+  $TERRA_DOMAIN \
+  --rpc-url "https://1rpc.io/sepolia"
+```
+
+**Saída esperada**:
+```
+0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+```
+
+#### 5.3.3. Listar Todas as Rotas no Terra Classic
+
+```bash
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+
+terrad query wasm contract-state smart "$TERRA_WARP" \
+  '{"router":{"list_routes":{}}}' \
+  --node "https://rpc.luncblaze.com:443" \
+  --output json | jq '.data.routes'
+```
+
+### 5.4. Scripts Auxiliares
+
+#### 5.4.1. `enroll-remote-router-terra.ts`
+
+Script TypeScript para vincular rota remota no Terra Classic usando chave privada:
+
+**⚠️ SEGURANÇA**: As chaves privadas nos exemplos abaixo são **FICTÍCIAS** e servem apenas como referência de formato.
+
+```bash
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml" \
+TERRA_PRIVATE_KEY="0000000000000000000000000000000000000000000000000000000000000000" \
+SEPOLIA_DOMAIN="11155111" \
+SEPOLIA_WARP_HEX="000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4" \
+npx tsx script/enroll-remote-router-terra.ts
+```
+
+**Variáveis de Ambiente**:
+- `TERRA_WARP`: Endereço bech32 do warp route no Terra Classic
+- `TERRA_PRIVATE_KEY`: Chave privada Terra Classic (hex, sem 0x)
+  - **⚠️ Exemplo fictício**: `0000000000000000000000000000000000000000000000000000000000000000`
+- `SEPOLIA_DOMAIN`: Domain ID do Sepolia (padrão: 11155111)
+- `SEPOLIA_WARP_HEX`: Endereço Sepolia em hex (64 chars, sem 0x)
+
+**⚠️ IMPORTANTE**: 
+- O script remove automaticamente o prefixo `0x` do `SEPOLIA_WARP_HEX` se presente
+- O contrato Terra Classic espera exatamente 64 caracteres hexadecimais (sem 0x)
+
+### 5.5. Troubleshooting
+
+#### Erro: "Error parsing into type hpl_interface::warp::native::ExecuteMsg: unknown variant `enroll_remote_router`"
+
+**Problema**: O método `enroll_remote_router` não existe no contrato native warp.
+
+**Solução**: Use `router.set_route` em vez de `enroll_remote_router`:
+
+```json
+{
+  "router": {
+    "set_route": {
+      "domain": 11155111,
+      "route": "000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+    }
+  }
+}
+```
+
+#### Erro: "Error parsing into type hpl_interface::warp::native::ExecuteMsg: invalid hex: 0x..."
+
+**Problema**: O contrato Terra Classic não aceita prefixo `0x` no endereço hex.
+
+**Solução**: Remova o prefixo `0x` antes de enviar ao contrato:
+
+```bash
+# ❌ ERRADO
+SEPOLIA_WARP_HEX="0x000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+
+# ✅ CORRETO
+SEPOLIA_WARP_HEX="000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+```
+
+#### Erro: RPC Sepolia retorna 522 (Cloudflare timeout)
+
+**Problema**: O RPC `https://rpc.sepolia.org` pode estar indisponível.
+
+**Solução**: O script `link-terra-sepolia.sh` tenta automaticamente múltiplos RPCs:
+- `https://1rpc.io/sepolia` ✅ (testado e funcionando)
+- `https://sepolia.drpc.org` ✅ (testado e funcionando)
+- `https://rpc.sepolia.org` (pode falhar)
+- `https://rpc.ankr.com/eth_sepolia` (pode falhar)
+- `https://eth-sepolia-public.unifra.io` (pode falhar)
+
+Se todos falharem, verifique sua conexão de internet ou aguarde alguns minutos e tente novamente.
 
 ---
 
@@ -913,23 +1217,54 @@ hyperlane warp transfer \
 
 ### Verificar Rotas Configuradas
 
-#### Terra Classic
+#### Terra Classic → Sepolia
 
 ```bash
-TERRA_WARP="terra1..."  # Endereço do warp route
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+SEPOLIA_DOMAIN="11155111"
 
 # Verificar rota para Sepolia
-terrad query wasm contract-state smart $TERRA_WARP \
-  '{"router":{"route":{"domain":11155111}}}' \
+terrad query wasm contract-state smart "$TERRA_WARP" \
+  '{"router":{"get_route":{"domain":'$SEPOLIA_DOMAIN'}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
 
-#### Sepolia
+**Saída esperada**:
+```json
+{
+  "route": "000000000000000000000000224a4419d7fa69d3bebabce574c7c84b48d829b4"
+}
+```
+
+#### Sepolia → Terra Classic
 
 ```bash
-# Verificar rota para Terra Classic (via Hyperlane CLI)
-hyperlane warp show --warp $SEPOLIA_WARP_ADDRESS
+SEPOLIA_WARP="0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
+TERRA_DOMAIN="1325"
+
+# Verificar rota para Terra Classic
+cast call "$SEPOLIA_WARP" \
+  "routers(uint32)(bytes32)" \
+  $TERRA_DOMAIN \
+  --rpc-url "https://1rpc.io/sepolia"
+```
+
+**Saída esperada**:
+```
+0x17f6fba8dcd0ef3962f3516e698583f57863032be8ca4f5058cdc8656c19120b
+```
+
+#### Listar Todas as Rotas no Terra Classic
+
+```bash
+TERRA_WARP="terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml"
+
+terrad query wasm contract-state smart "$TERRA_WARP" \
+  '{"router":{"list_routes":{}}}' \
+  --chain-id rebel-2 \
+  --node https://rpc.luncblaze.com:443 \
+  --output json | jq '.data.routes'
 ```
 
 ### Verificar ISM Configurado
@@ -974,12 +1309,12 @@ Após completar todos os passos, você terá:
 
 | Item | Endereço | Descrição |
 |------|----------|-----------|
-| ISM Multisig Sepolia | `terra1...` | ISM para validar mensagens de Sepolia |
+| ISM Multisig Sepolia | `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa` | ISM para validar mensagens de Sepolia |
 | IGP Oracle | `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` | Oracle de gas (atualizado para Sepolia) |
 | IGP | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Interchain Gas Paymaster (já existe) |
 | ISM Routing | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | ISM Router (já existe) |
-| Warp Route Terra | `terra1...` | Warp route LUNC no Terra Classic |
-| Warp Route Sepolia | `0x...` | Warp route wLUNC no Sepolia |
+| Warp Route Terra | `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` | Warp route LUNC no Terra Classic |
+| Warp Route Sepolia | `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4` | Warp route wLUNC no Sepolia |
 
 ## Logo do Token
 

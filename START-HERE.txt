@@ -1,0 +1,129 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║              🎯 COMECE AQUI - Correção do Erro IGP                    ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+❌ ERRO ATUAL:
+   "destination not supported" ao tentar transferir Sepolia → Terra Classic
+
+✅ CAUSA IDENTIFICADA:
+   IGP com hookType errado (2 em vez de 4)
+
+🎯 SOLUÇÃO EM 3 PASSOS:
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ PASSO 1: Entenda o Problema                                           │
+└────────────────────────────────────────────────────────────────────────┘
+
+   $ cat RESUMO-EXECUTIVO-SOLUCAO.md
+
+   📖 Este documento explica:
+      - O que causou o erro
+      - Por que aconteceu
+      - Como será corrigido
+      - Resultado esperado
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ PASSO 2: Faça o Deploy do IGP Correto                                 │
+└────────────────────────────────────────────────────────────────────────┘
+
+   $ cat DEPLOY-AGORA.md
+
+   📖 Guia visual passo a passo:
+      1. Abrir Remix IDE
+      2. Colar código do contrato
+      3. Compilar
+      4. Deploy (5 minutos)
+      5. Copiar endereço
+
+   🔗 Remix IDE: https://remix.ethereum.org
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ PASSO 3: Associar ao Warp Route e Testar                              │
+└────────────────────────────────────────────────────────────────────────┘
+
+   Após fazer deploy no Remix:
+
+   $ cd /home/lunc/cw-hyperlane
+   $ export IGP_ADDRESS="<endereço_copiado_do_remix>"
+   $ ./deploy-igp-final.sh
+
+   Este script irá:
+   ✅ Verificar hookType = 4
+   ✅ Associar ao Warp Route
+   ✅ Testar funcionamento
+   ✅ Confirmar correção
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTAÇÃO DISPONÍVEL:
+
+   🚀 QUICK START:
+      DEPLOY-AGORA.md                  ← Guia visual de deploy
+
+   📊 EXECUTIVO:
+      RESUMO-EXECUTIVO-SOLUCAO.md      ← Visão geral completa
+
+   🔧 TÉCNICO:
+      SOLUCAO-FINAL-IGP.md             ← Solução técnica detalhada
+      DIAGNOSTICO-PROBLEMA-HOOK.md     ← Análise profunda do problema
+
+   🧪 TESTES:
+      testar-warp-sepolia.sh           ← Verificar erro atual
+      deploy-igp-final.sh              ← Deploy e associação
+
+   📦 CONTRATO:
+      TerraClassicIGPStandalone.sol    ← Contrato corrigido
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TESTAR ERRO ATUAL:
+
+   $ ./testar-warp-sepolia.sh
+
+   Resultado esperado AGORA:
+   ❌ ERRO: 'destination not supported'
+
+   Resultado esperado APÓS DEPLOY:
+   ✅ SUCESSO! Sem erros!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️  TEMPO ESTIMADO: 5-10 minutos
+
+💰 CUSTO: ~$5-7 USD em Sepolia ETH (para deploy)
+
+🎯 RESULTADO: Transferências Sepolia → Terra Classic funcionando
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 PRECISA DE AJUDA?
+
+   1. Leia: DEPLOY-AGORA.md (tem FAQ)
+   2. Verifique: SOLUCAO-FINAL-IGP.md (tem troubleshooting)
+   3. Execute: ./testar-warp-sepolia.sh (diagnóstico)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 EXEMPLO DE TRANSFERÊNCIA (Após Correção):
+
+   No projeto há documentos com exemplos de transferências:
+   - TRANSFER-ULUNA-TERRA-TO-BSC.md   ← Terra → BSC
+   - DEPLOYMENT-TERRACLASSIC.md       ← Exemplos gerais
+
+   Para Sepolia → Terra Classic:
+   - Use o front-end web após a correção
+   - Ou use cast/ethers.js para chamar transferRemote()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 PRÓXIMA AÇÃO:
+
+   1. $ cat DEPLOY-AGORA.md
+   2. Abra: https://remix.ethereum.org
+   3. Faça o deploy (5 minutos)
+   4. Execute: ./deploy-igp-final.sh
+   5. Teste: ./testar-warp-sepolia.sh
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,0 +1,7 @@
+{
+    "wake.compiler.solc.remappings": [
+        "@eth-optimism/=node_modules/@eth-optimism/",
+        "@hyperlane-xyz/=node_modules/@hyperlane-xyz/",
+        "@openzeppelin/=node_modules/@openzeppelin/"
+    ]
+}

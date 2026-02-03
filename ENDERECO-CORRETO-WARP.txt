@@ -1,0 +1,56 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║                     ✅ ENDEREÇO CORRETO IDENTIFICADO                   ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+🎯 WARP ROUTE SEPOLIA (CORRETO):
+   0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+
+📊 DIAGNÓSTICO ATUAL:
+
+   ✅ Contrato Warp existe e está deployado
+   ❌ Hook atual: 0x7D4d3da2cf0c411626280Be6959011d947B9456c
+   ❌ hookType: 2 (AGGREGATION - incorreto!)
+   ❌ Deveria ser: 4 (INTERCHAIN_GAS_PAYMASTER)
+   ❌ Erro: "destination not supported"
+
+🎯 SOLUÇÃO:
+
+   1. Deploy TerraClassicIGPStandalone.sol via Remix
+   2. Associar novo IGP ao Warp (ver abaixo)
+   3. Erro corrigido!
+
+══════════════════════════════════════════════════════════════════════════
+
+📋 APÓS O DEPLOY NO REMIX, EXECUTE:
+
+export IGP_ADDRESS="<cole_aqui_o_endereco_do_remix>"
+
+# Configurar IGP
+cast send $IGP_ADDRESS \
+  "setRemoteGasDataConfig(((uint32,uint128,uint128)[]))" \
+  "([(1325,142244393,38325000000)])" \
+  --rpc-url https://1rpc.io/sepolia \
+  --private-key 0xe6802d288e10e94a9e7910793b6a58328f4011ab622d19ad2636ce28264812e5
+
+# Associar ao Warp (ENDEREÇO CORRETO!)
+cast send 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4 \
+  "setHook(address)" \
+  $IGP_ADDRESS \
+  --rpc-url https://1rpc.io/sepolia \
+  --private-key 0xe6802d288e10e94a9e7910793b6a58328f4011ab622d19ad2636ce28264812e5
+
+# Testar
+cast call 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4 \
+  "quoteTransferRemote(uint32,bytes32,uint256)(uint256)" \
+  1325 \
+  "0x000000000000000000000000133fD7F7094DBd17b576907d052a5aCBd48dB526" \
+  "1000000000000000000" \
+  --rpc-url https://1rpc.io/sepolia
+
+══════════════════════════════════════════════════════════════════════════
+
+✅ RESULTADO ESPERADO: Um número (custo em wei) - SEM ERROS!
+
+══════════════════════════════════════════════════════════════════════════

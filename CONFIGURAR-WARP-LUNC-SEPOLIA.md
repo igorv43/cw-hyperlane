@@ -11,6 +11,7 @@ Este guia fornece instruções passo a passo para configurar o Warp Route do LUN
   - [Passo 2.1: Atualizar IGP Oracle para Sepolia (Direto - Sem Governança)](#passo-21-atualizar-igp-oracle-para-sepolia-direto---sem-governança)
   - [Passo 2.2: Configurar Rota IGP Router para Sepolia (Direto - Sem Governança)](#passo-22-configurar-rota-igp-router-para-sepolia-direto---sem-governança)
 - [Passo 3: Deploy Warp Route no Terra Classic](#passo-3-deploy-warp-route-no-terra-classic)
+- [Passo 3.5: Scripts para Criação e Associação do IGP ao Warp Route (Sepolia)](#passo-35-scripts-para-criação-e-associação-do-igp-ao-warp-route-sepolia) 🎉 **NOVO**
 - [Passo 4: Deploy Warp Route no Sepolia](#passo-4-deploy-warp-route-no-sepolia)
 - [Passo 5: Link Warp Routes](#passo-5-link-warp-routes)
 - [Passo 6: Testar Transferência](#passo-6-testar-transferência)
@@ -74,6 +75,47 @@ Este processo configura:
 **Rotas Vinculadas**:
 - ✅ Terra Classic → Sepolia: Configurado
 - ✅ Sepolia → Terra Classic: Configurado
+
+### 🎉 Sepolia IGP Deployado (03/02/2026)
+
+**StorageGasOracle (Sepolia)**:
+- **Endereço**: `0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c`
+- **TX Deploy**: `0x508f6a4bfbd0e049d5dfc3f69208938118818e351e97290170979189140be347`
+- **TX Config**: `0x93dc53a27c5dbccae3932619425d4328bfd0cf5f746ee8a663bf29fa4a22c5f4`
+- **Owner**: `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` ✅
+- **Status**: Deployado e Configurado ✅
+
+**Configuração do Oracle para Terra Classic**:
+- **Domain**: 1325 (Terra Classic)
+- **Exchange Rate**: `28,444,000,000,000,000` (~$0.50/tx)
+- **Gas Price**: `38,325,000,000` (38.325 uluna)
+- **Status**: Configurado ✅
+
+**Cálculo baseado em** (03/02/2026):
+- LUNC: $0.00003674
+- ETH: $2,292.94
+- Custo alvo: ~$0.50 por transferência de 200k gas
+
+**Etherscan Links**:
+- Oracle: https://sepolia.etherscan.io/address/0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c
+- Warp Route: https://sepolia.etherscan.io/address/0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+
+**Verificar Configuração**:
+```bash
+# Verificar Oracle configurado para Terra Classic
+cast call "0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c" \
+  "getExchangeRateAndGasPrice(uint32)(uint128,uint128)" \
+  1325 \
+  --rpc-url https://1rpc.io/sepolia
+
+# Retorna:
+# 28444000000000000 [2.844e16]
+# 38325000000 [3.832e10]
+```
+
+**⏳ Próximo Passo**: Deploy do IGP (InterchainGasPaymaster) e associação ao Warp Route.
+
+Para completar o deploy do IGP, consulte: `RESUMO-DEPLOY-IGP.md` ou use Remix IDE conforme instruções.
 
 ---
 
@@ -687,6 +729,118 @@ cat context/terraclassic.json | jq '.deployments.warp.native[] | select(.id == "
   "hexed": "000000000000000000000000..."
 }
 ```
+
+---
+
+## Passo 3.5: Scripts para Criação e Associação do IGP ao Warp Route (Sepolia)
+
+Após ter o Oracle deployado e configurado (veja seção acima), você precisa:
+1. Deploy do InterchainGasPaymaster (IGP)
+2. Configurar o IGP com o Oracle
+3. Associar o IGP ao Warp Route
+
+### 📋 Scripts Disponíveis
+
+#### Opção 1: Script Bash Completo (Foundry)
+```bash
+cd /home/lunc/cw-hyperlane
+./deploy-igp-completo.sh
+```
+
+Este script faz:
+- ✅ Deploy do StorageGasOracle
+- ✅ Configuração do Oracle para Terra Classic
+- ✅ Deploy do InterchainGasPaymaster
+- ✅ Configuração do IGP
+- ✅ Associação ao Warp Route
+
+**Variáveis de Ambiente**:
+```bash
+PRIVATE_KEY="0xe6802d288e10e94a9e7910793b6a58328f4011ab622d19ad2636ce28264812e5"
+OWNER_ADDRESS="0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
+WARP_ROUTE="0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4"
+ORACLE_ADDRESS="0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c"
+```
+
+#### Opção 2: Usar IGP Oficial do Hyperlane (Mais Rápido)
+```bash
+# Associar IGP existente ao Warp Route
+cast send "0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4" \
+  "setHook(address)" \
+  "0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56" \
+  --private-key "0xe6802d288e10e94a9e7910793b6a58328f4011ab622d19ad2636ce28264812e5" \
+  --rpc-url "https://1rpc.io/sepolia"
+```
+
+**⚠️ Nota**: O IGP oficial pode não estar configurado para Terra Classic. Use a Opção 3 para ter controle total.
+
+#### Opção 3: Deploy Manual via Remix IDE (Recomendado)
+
+**Passo a Passo Detalhado**:
+
+1. **Acesse**: https://remix.ethereum.org
+
+2. **Crie `SimpleIGP.sol`** com o código fornecido em `RESUMO-DEPLOY-IGP.md`
+
+3. **Compile**: Solidity 0.8.13+, Optimization: Enabled
+
+4. **Deploy** com MetaMask:
+   - Network: Sepolia
+   - Constructor:
+     - `_owner`: `0x133fD7F7094DBd17b576907d052a5aCBd48dB526`
+     - `_beneficiary`: `0x133fD7F7094DBd17b576907d052a5aCBd48dB526`
+
+5. **Configure o IGP** (após deploy):
+   ```
+   Função: setDestinationGasConfig
+   Parâmetros:
+   - remoteDomain: 1325
+   - gasOracle: 0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c
+   - gasOverhead: 200000
+   ```
+
+6. **Associe ao Warp Route**:
+   ```bash
+   cast send "0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4" \
+     "setHook(address)" \
+     "[IGP_DEPLOYADO]" \
+     --private-key "0xe6802d288e10e94a9e7910793b6a58328f4011ab622d19ad2636ce28264812e5" \
+     --rpc-url "https://1rpc.io/sepolia"
+   ```
+
+### 🔍 Verificação Pós-Deploy
+
+Após associar o IGP:
+
+```bash
+# Verificar hook do Warp Route
+cast call "0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4" \
+  "hook()(address)" \
+  --rpc-url "https://1rpc.io/sepolia"
+
+# Deve retornar o endereço do IGP deployado
+
+# Verificar Oracle no IGP (se deployou seu próprio)
+cast call "[IGP_ADDRESS]" \
+  "gasOracles(uint32)(address)" \
+  1325 \
+  --rpc-url "https://1rpc.io/sepolia"
+
+# Deve retornar: 0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c
+
+# Testar quote de gas
+cast call "[IGP_ADDRESS]" \
+  "quoteGasPayment(uint32,uint256)(uint256)" \
+  1325 200000 \
+  --rpc-url "https://1rpc.io/sepolia"
+```
+
+### 📄 Documentação Completa
+
+Para instruções detalhadas sobre cada opção, consulte:
+- `RESUMO-DEPLOY-IGP.md` - Guia completo com 3 opções de deploy
+- `CALCULO-EXCHANGE-RATE.md` - Explicação das fórmulas de cálculo
+- `calcular-exchange-rate.py` - Script para recalcular valores
 
 ---
 
@@ -1443,15 +1597,38 @@ terrad query wasm contract-state smart $IGP_ORACLE \
 
 Após completar todos os passos, você terá:
 
+### Terra Classic (Domain 1325)
+
 | Item | Endereço | Descrição |
 |------|----------|-----------|
 | ISM Multisig Sepolia | `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa` | ISM para validar mensagens de Sepolia |
-| IGP Oracle | `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` | Oracle de gas (atualizado para Sepolia) |
+| IGP Oracle (Terra) | `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds` | Oracle de gas (atualizado para Sepolia) |
 | IGP Router | `terra1mcaqgr7kqs9xr3q6w0e9f2ekrj6sehwcep9shtss6u8pdz2rsw5qzrew7r` | IGP Router (owner: terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze) |
 | IGP (Governance) | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Interchain Gas Paymaster controlado por governança |
 | ISM Routing | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | ISM Router (já existe) |
 | Warp Route Terra | `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` | Warp route LUNC no Terra Classic |
-| Warp Route Sepolia | `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4` | Warp route wLUNC no Sepolia |
+
+### Sepolia (Domain 11155111)
+
+| Item | Endereço | Status | Descrição |
+|------|----------|--------|-----------|
+| **StorageGasOracle** | `0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c` | ✅ Deployado | Oracle de gas para Terra Classic |
+| **IGP (Oficial)** | `0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56` | ⚠️ Parcial | IGP existente (não usa Oracle deployado) |
+| **IGP (Custom)** | *Pendente deploy* | ⏳ Pendente | IGP para usar Oracle deployado |
+| **Warp Route** | `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4` | ✅ Deployado | Warp route wLUNC no Sepolia |
+
+**Configuração do StorageGasOracle**:
+- Domain: 1325 (Terra Classic)
+- Exchange Rate: `28,444,000,000,000,000`
+- Gas Price: `38,325,000,000` (38.325 uluna)
+- TX Deploy: `0x508f6a4bfbd0e049d5dfc3f69208938118818e351e97290170979189140be347`
+- TX Config: `0x93dc53a27c5dbccae3932619425d4328bfd0cf5f746ee8a663bf29fa4a22c5f4`
+
+**Hook do Warp Route**:
+- Hook atual: `0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56` (IGP Oficial do Hyperlane)
+- TX Hook: `0x47b2a34dfdb52774e1b1b35e5b46c4ff459999f75d4ef15fcd35c52350d0c247`
+
+**⚠️ Nota**: Para usar o Oracle deployado (`0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c`) com os valores personalizados, você precisa deployar um novo IGP e associá-lo ao Warp Route. Veja Passo 3.5 para instruções.
 
 ## Logo do Token
 

@@ -1,0 +1,6 @@
+# Ignorar todos os arquivos de deployment
+*.json
+
+# Exceto exemplos (se houver)
+!example-*.json
+!*.example.json

@@ -1,0 +1,93 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║              📁 ARQUIVOS PRINCIPAIS - IGP SEPOLIA                       ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+🚀 PARA EXECUTAR DEPLOY NA SEPOLIA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. deploy-igp-completo-sepolia.sh ⭐⭐⭐
+   → Script shell completo que faz TUDO automaticamente na SEPOLIA
+   
+   Como usar:
+   $ export PRIVATE_KEY_SEPOLIA='0x...'
+   $ ./deploy-igp-completo-sepolia.sh
+
+
+📖 PARA LER DOCUMENTAÇÃO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. README-FINAL-SEPOLIA.md ⭐⭐⭐
+   → Documento de entrada principal
+   → Comece por aqui!
+
+2. DOCUMENTACAO-COMPLETA-IGP-SEPOLIA.md ⭐⭐⭐
+   → Documentação completa com TUDO sobre SEPOLIA
+   → Script automático + comandos individuais
+   → Troubleshooting completo
+
+3. SUCESSO-FINAL-SEPOLIA.md
+   → Relatório do deploy bem-sucedido na SEPOLIA
+   → Informações dos contratos deployados
+
+4. INDICE-ARQUIVOS-SEPOLIA.md
+   → Índice categorizado de todos os arquivos
+
+
+💻 CÓDIGO FONTE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. TerraClassicIGP-Sepolia.sol
+   → Contrato usado no deploy na SEPOLIA
+   → hookType = 4 ✅
+
+
+📊 DADOS DO DEPLOY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. IGP_ADDRESS-SEPOLIA.txt
+   → Endereço do IGP deployado na SEPOLIA
+   → 0xe0f137448c96b5f17759bce44c020db6bdc8e261
+
+2. ENDERECO-CORRETO-WARP.txt
+   → Endereço correto do Warp Route na SEPOLIA
+   → 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+
+
+📋 RELATÓRIOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. DEPLOY-SUCCESS-REPORT-SEPOLIA.txt
+   → Relatório detalhado do deploy na SEPOLIA
+   → Todas as transações
+
+2. DEPLOY-REPORT-*.txt
+   → Relatórios gerados após cada deploy
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ROTEIRO RÁPIDO:
+
+Para fazer novo deploy na SEPOLIA:
+  1. Leia: README-FINAL-SEPOLIA.md
+  2. Execute: deploy-igp-completo-sepolia.sh
+
+Se tiver problemas:
+  1. Consulte: DOCUMENTACAO-COMPLETA-IGP-SEPOLIA.md (Seção Troubleshooting)
+  2. Use: Comandos individuais (Opção 2 na documentação)
+
+Para entender o que foi feito:
+  1. Leia: SUCESSO-FINAL-SEPOLIA.md
+  2. Veja: DEPLOY-SUCCESS-REPORT-SEPOLIA.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ RESULTADO DO DEPLOY NA SEPOLIA:
+   IGP: 0xe0f137448c96b5f17759bce44c020db6bdc8e261
+   Warp: 0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+   Status: FUNCIONANDO ✅
+   Network: Sepolia Testnet ✅
+

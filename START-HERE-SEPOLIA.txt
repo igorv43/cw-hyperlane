@@ -1,0 +1,103 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║           🚀 COMECE AQUI - Deploy IGP na SEPOLIA 🚀                     ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ STATUS ATUAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Network:              Sepolia Testnet
+IGP Deployado:        0xe0f137448c96b5f17759bce44c020db6bdc8e261
+Warp Route:           0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4
+Status:               ✅ FUNCIONANDO
+Último teste:         2026-02-03
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 DOCUMENTAÇÃO PRINCIPAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. README-FINAL-SEPOLIA.md ⭐⭐⭐
+   → Seu ponto de partida principal
+   → Guia completo e rápido
+
+2. DOCUMENTACAO-COMPLETA-IGP-SEPOLIA.md
+   → Documentação técnica completa
+   → Todas as opções de deploy
+
+3. ARQUIVOS-PRINCIPAIS-SEPOLIA.txt
+   → Lista rápida de arquivos importantes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 DEPLOY RÁPIDO (2 COMANDOS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 1. Definir chave privada da SEPOLIA
+export PRIVATE_KEY_SEPOLIA='0xSUA_CHAVE_PRIVADA_DA_SEPOLIA'
+
+# 2. Executar deploy
+./deploy-igp-completo-sepolia.sh
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 ESTRUTURA DE ARQUIVOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Scripts:
+  deploy-igp-completo-sepolia.sh          ← Deploy automático
+  configurar-e-associar-igp-sepolia.sh    ← Configuração manual
+
+Documentação:
+  README-FINAL-SEPOLIA.md                 ← Comece aqui
+  DOCUMENTACAO-COMPLETA-IGP-SEPOLIA.md    ← Docs completa
+  SUCESSO-FINAL-SEPOLIA.md                ← Relatório de sucesso
+
+Contratos:
+  TerraClassicIGP-Sepolia.sol             ← Contrato principal
+
+Dados:
+  IGP_ADDRESS-SEPOLIA.txt                 ← Endereço do IGP
+  DEPLOY-SUCCESS-REPORT-SEPOLIA.txt       ← Relatório detalhado
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 ESCOLHA SEU CAMINHO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Fazer novo deploy?
+  → Execute: ./deploy-igp-completo-sepolia.sh
+  → Leia: README-FINAL-SEPOLIA.md
+
+Entender o que foi feito?
+  → Leia: SUCESSO-FINAL-SEPOLIA.md
+  → Veja: DEPLOY-SUCCESS-REPORT-SEPOLIA.txt
+
+Tem problemas?
+  → Consulte: DOCUMENTACAO-COMPLETA-IGP-SEPOLIA.md
+  → Seção: Troubleshooting
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎊 RESULTADO FINAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ IGP deployado com sucesso na SEPOLIA
+✅ Configurado para Terra Classic (domain 1325)
+✅ Associado ao Warp Route
+✅ Testado e funcionando
+
+Você pode agora fazer transferências de tokens:
+  Sepolia → Terra Classic
+  
+Usando: https://warp.hyperlane.xyz
+
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║  📖 Comece lendo: cat README-FINAL-SEPOLIA.md                          ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝

@@ -153,6 +153,6 @@ Se você só quer fazer o deploy na SEPOLIA:
 
 ---
 
-**Última atualização:** 2026-02-03  
+**Última atualização:** 2026-02-03
 **Network:** Sepolia Testnet  
 **Status:** ✅ Funcionando

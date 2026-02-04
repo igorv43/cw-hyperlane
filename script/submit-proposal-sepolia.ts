@@ -161,12 +161,10 @@ const EXEC_MSGS: ExecuteMsg[] = [
     contractAddress: ISM_ROUTING,
     description: "Add Sepolia Testnet (Domain 11155111) to ISM Routing",
     msg: {
-      router: {
-        set_ism: {
-          set: {
-            domain: DOMAIN_SEPOLIA,              // Sepolia Testnet
-            ism: ISM_MULTISIG_SEPOLIA,           // ISM Multisig Sepolia address
-          },
+      set: {
+        ism: {
+          domain: DOMAIN_SEPOLIA,              // Sepolia Testnet
+          address: ISM_MULTISIG_SEPOLIA,        // ISM Multisig Sepolia address
         },
       },
     },

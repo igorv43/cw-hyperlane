@@ -27,11 +27,10 @@ const DOMAIN_SEPOLIA = 11155111;
 
 // Validators configuration for Sepolia (Abacus Works)
 const SEPOLIA_VALIDATORS = [
-  "b22b65f202558adf86a8bb2847b76ae1036686a5",  // Abacus Works Validator 1
-  "469f0940684d147defc44f3647146cb90dd0bc8e",  // Abacus Works Validator 2
-  "d3c75dcf15056012a4d74c483a0c6ea11d8c2b83",  // Abacus Works Validator 3
+  "0x01227B3361d200722c3656f899b48dE187A32494",  // Abacus Works Validator 1
+
 ];
-const SEPOLIA_THRESHOLD = 2; // 2 out of 3 validators
+const SEPOLIA_THRESHOLD = 1; // 2 out of 3 validators
 
 // ==============================
 // INSTANTIATE CONTRACT

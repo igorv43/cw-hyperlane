@@ -53,28 +53,26 @@ const EXEC_MSGS: ExecuteMsg[] = [
   // MESSAGE 1: Configure ISM Multisig Validators for Sepolia Testnet (Domain 11155111)
   // --------------------------------------------------------------------------
   // Defines the set of validators that will sign messages coming from
-  // domain 11155111 (Sepolia Testnet). The threshold of 2 means at least 2 out of 3
+  // domain 11155111 (Sepolia Testnet). The threshold of 1 means at least 1 out of 1
   // validators must sign for a message to be considered valid.
   //
   // PARAMETERS:
   // - domain: 11155111 (Sepolia Testnet)
-  // - threshold: 2 (minimum of 2 signatures required from 3 validators)
-  // - validators: Array of 3 hexadecimal addresses (20 bytes each) of validators
+  // - threshold: 1 (minimum of 1 signature required from 1 validator)
+  // - validators: Array of 1 hexadecimal address (20 bytes) of validator
   //
-  // CONFIGURED VALIDATORS (Abacus Works):
-  // Each validator is an off-chain node that monitors messages and provides signatures.
-  // Addresses are hexadecimal representations (without 0x) of Ethereum-style addresses.
+  // CONFIGURED VALIDATOR:
+  // The validator is an off-chain node that monitors messages and provides signatures.
+  // Address is hexadecimal representation (without 0x) of Ethereum-style address.
   {
     contractAddress: ISM_MULTISIG_SEPOLIA,
-    description: "Configure multisig validators for domain 11155111 (Sepolia Testnet) with threshold 2/3",
+    description: "Configure multisig validators for domain 11155111 (Sepolia Testnet) with threshold 1/1",
     msg: {
       set_validators: {
         domain: DOMAIN_SEPOLIA,             // Sepolia Testnet domain ID in Hyperlane protocol
-        threshold: 2,                        // Minimum number of required signatures (2 of 3)
+        threshold: 1,                        // Minimum number of required signatures (1 of 1)
         validators: [
-          "b22b65f202558adf86a8bb2847b76ae1036686a5",  // Abacus Works Validator 1
-          "469f0940684d147defc44f3647146cb90dd0bc8e",  // Abacus Works Validator 2
-          "d3c75dcf15056012a4d74c483a0c6ea11d8c2b83",  // Abacus Works Validator 3
+          "01227B3361d200722c3656f899b48dE187A32494",  // Abacus Works Validator 1
         ],
       },
     },

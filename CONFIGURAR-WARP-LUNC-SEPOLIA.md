@@ -24,12 +24,15 @@ Este guia fornece instruções passo a passo para configurar o Warp Route do LUN
 Este processo configura:
 
 1. **ISM Multisig para Sepolia**: Valida mensagens vindas de Sepolia (Domain 11155111)
-   - **Threshold**: 2 de 3 validadores
-   - **Validadores Sepolia**:
-     - `0xb22b65f202558adf86a8bb2847b76ae1036686a5` (Abacus Works)
-     - `0x469f0940684d147defc44f3647146cb90dd0bc8e` (Abacus Works)
-     - `0xd3c75dcf15056012a4d74c483a0c6ea11d8c2b83` (Abacus Works)
    - **Contrato Deployado (Testnet)**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+   - **Owner**: `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze` ⚠️ **IMPORTANTE**: Como você é o owner, pode alterar os validadores **diretamente (sem governança)** ou via proposta de governança
+   - **Threshold Atual**: 1 de 1 validadores
+   - **Validador Configurado**:
+     - `0x01227B3361d200722c3656f899b48dE187A32494` (Abacus Works Validator 1)
+   - **TX Configuração Atual**: `2D18C0500B12E6F0A63A8737881E9FE990D97BFDFAE3E95FB509ADFCB820E5E5`
+   - **Como Alterar Validadores**:
+     - **Direto (Recomendado)**: Use o script `script/configurar-validadores-ism-sepolia.ts` (execução direta, sem governança)
+     - **Via Governança**: Use o script `script/submit-proposal-sepolia.ts` (requer proposta de governança)
 
 2. **IGP Oracle**: Configura taxa de câmbio e gas price para Sepolia
    - **Contrato**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
@@ -49,8 +52,16 @@ Este processo configura:
 
 **ISM Multisig Sepolia**:
 - **Address**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+- **Owner**: `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze` ⚠️ **Pode alterar com ou sem governança**
 - **TX Instanciação**: `E21DAF985480B3A712F50A45B35FDDD0740085013895A7244F3A29FC914F5E37`
-- **TX Configuração**: `EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A`
+- **TX Configuração Inicial**: `EC1FADAD3C8453C1FB7C7698948006967C36F55A200D2A55EB7CB391F3D3F12A`
+- **TX Configuração Atual (Threshold 1/1)**: `2D18C0500B12E6F0A63A8737881E9FE990D97BFDFAE3E95FB509ADFCB820E5E5`
+- **Threshold Atual**: 1 de 1 validadores
+- **Validador Configurado**: `0x01227B3361d200722c3656f899b48dE187A32494`
+- **Scripts Disponíveis**:
+  - **Alteração Direta (Sem Governança)**: `script/configurar-validadores-ism-sepolia.ts`
+  - **Alteração Via Governança**: `script/submit-proposal-sepolia.ts`
+  - **Consulta Validadores**: `script/query-validadores-ism-sepolia.ts`
 
 **IGP Oracle Sepolia**:
 - **Address**: `terra1yew4y2ekzhkwuuz07yt7qufqxxejxhmnr7apehkqk7e8jdw8ffqqs8zhds`
@@ -226,6 +237,53 @@ Init Message: {
 ```
 
 **⚠️ IMPORTANTE**: Salve o endereço do contrato retornado! Você precisará dele nos próximos passos.
+
+### 1.2. Alterar Validadores do ISM Multisig Sepolia (Após Instanciação)
+
+**⚠️ IMPORTANTE**: Como você é o **owner** do contrato ISM Multisig Sepolia (`terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`), você pode alterar os validadores **diretamente (sem governança)** ou via proposta de governança.
+
+#### Opção 1: Alteração Direta (Sem Governança) - Recomendado
+
+Use o script `configurar-validadores-ism-sepolia.ts` para alterar os validadores diretamente:
+
+```bash
+PRIVATE_KEY="sua_chave_privada_terra" npx tsx script/configurar-validadores-ism-sepolia.ts
+```
+
+**Configuração Atual (2025)**:
+- **Threshold**: 1 de 1 validadores
+- **Validador**: `0x01227B3361d200722c3656f899b48dE187A32494`
+- **TX Configuração**: `2D18C0500B12E6F0A63A8737881E9FE990D97BFDFAE3E95FB509ADFCB820E5E5`
+
+**Para alterar**, edite o script `script/configurar-validadores-ism-sepolia.ts` e modifique:
+- `SEPOLIA_THRESHOLD`: Threshold desejado
+- `SEPOLIA_VALIDATORS`: Array de validadores (sem prefixo 0x)
+
+#### Opção 2: Alteração Via Governança
+
+Use o script `submit-proposal-sepolia.ts` para criar uma proposta de governança:
+
+```bash
+PRIVATE_KEY="sua_chave_privada_terra" \
+ISM_MULTISIG_SEPOLIA="terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa" \
+npx tsx script/submit-proposal-sepolia.ts
+```
+
+#### Consultar Validadores Configurados
+
+Para verificar os validadores atualmente configurados:
+
+```bash
+npx tsx script/query-validadores-ism-sepolia.ts
+```
+
+Ou usando `terrad`:
+
+```bash
+terrad query wasm contract-state smart terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa \
+  '{"multisig_ism":{"enrolled_validators":{"domain":11155111}}}' \
+  --node https://rpc.luncblaze.com:443
+```
 
 ### 1.2. Configurar Variável de Ambiente
 
@@ -1561,13 +1619,38 @@ terrad query wasm contract-state smart "$TERRA_WARP" \
 
 #### Terra Classic (ISM Multisig Sepolia)
 
-```bash
-ISM_MULTISIG_SEPOLIA="terra1..."  # Endereço do ISM Multisig Sepolia
+**⚠️ IMPORTANTE**: O contrato ISM Multisig Sepolia (`terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`) é controlado pela sua wallet (`terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze`). Isso significa que você pode alterar os validadores **diretamente (sem governança)** usando o script `script/configurar-validadores-ism-sepolia.ts` ou via proposta de governança usando `script/submit-proposal-sepolia.ts`.
 
+**Configuração Atual (2025)**:
+- **Threshold**: 1 de 1 validadores
+- **Validador**: `0x01227B3361d200722c3656f899b48dE187A32494`
+- **TX Configuração**: `2D18C0500B12E6F0A63A8737881E9FE990D97BFDFAE3E95FB509ADFCB820E5E5`
+
+**Consultar validadores configurados**:
+
+```bash
+ISM_MULTISIG_SEPOLIA="terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa"
+
+# Usando terrad
 terrad query wasm contract-state smart $ISM_MULTISIG_SEPOLIA \
-  '{"validators_and_threshold":{"domain":11155111}}' \
+  '{"multisig_ism":{"enrolled_validators":{"domain":11155111}}}' \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
+
+# Ou usando o script TypeScript
+npx tsx script/query-validadores-ism-sepolia.ts
+```
+
+**Alterar validadores**:
+
+```bash
+# Opção 1: Direto (sem governança) - Recomendado
+PRIVATE_KEY="sua_chave_privada" npx tsx script/configurar-validadores-ism-sepolia.ts
+
+# Opção 2: Via governança
+PRIVATE_KEY="sua_chave_privada" \
+ISM_MULTISIG_SEPOLIA="terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa" \
+npx tsx script/submit-proposal-sepolia.ts
 ```
 
 #### Sepolia (ISM do Warp Route)

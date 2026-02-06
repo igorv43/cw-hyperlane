@@ -22,8 +22,10 @@ const ISM_MULTISIG_SEPOLIA = process.env.ISM_MULTISIG_SEPOLIA || "terra1mzkakdts
 const DOMAIN_SEPOLIA = 11155111;
 
 // Validators configuration for Sepolia
+// NOVO VALIDADOR: 0x133fd7f7094dbd17b576907d052a5acbd48db526
+// IMPORTANTE: Remover o prefixo "0x" - o contrato espera apenas hex
 const SEPOLIA_VALIDATORS = [
-  "01227B3361d200722c3656f899b48dE187A32494",  // Abacus Works Validator 1
+  "133fd7f7094dbd17b576907d052a5acbd48db526",  // Abacus Works Validator (Novo) - sem 0x
 ];
 const SEPOLIA_THRESHOLD = 1; // 1 of 1 validators
 

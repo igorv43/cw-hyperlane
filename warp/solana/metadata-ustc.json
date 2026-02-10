@@ -1,6 +1,6 @@
 {
-  "name": "Terra Classic USTC",
-  "symbol": "wwwUSTC",
+  "name": "Warp Terra Classic USTC",
+  "symbol": "USTC",
   "description": "Warp Route USTC",
   "image": "https://raw.githubusercontent.com/classic-terra/assets/refs/heads/master/icon/svg/Terra/UST.svg",
   "attributes": []

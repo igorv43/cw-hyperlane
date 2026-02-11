@@ -108,7 +108,14 @@
           "hexed": "0x1cc2c0b980c24b5b67ed5ed5c6aeab05dcbb85d4c70b5dd6b118a9ccf86c65a4"
         }
       ],
-      "cw20": []
+      "cw20": [
+        {
+          "id": "juris",
+          "type": "hpl_warp_cw20",
+          "address": "terra1stu3cl7mhtsc2mf9cputawfd6v6e4a2nkmhhphh47lsrr3j6ktdqlcfe2l",
+          "hexed": "0x82f91c7fdbbae1856d25c078beb92dd3359af553b6ef70def5f7e031c65ab2da"
+        }
+      ]
     }
   }
 }

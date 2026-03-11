@@ -84,6 +84,44 @@
           "warp_hexed": "0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1",
           "deployed": true
         }
+      },
+      "xptv": {
+        "_comment": "XPTV CW20 collateral — novo token, warp ainda NÃO deployado na Terra Classic",
+        "id": "xptv",
+        "name": "XPTV Token",
+        "symbol": "XPTV",
+        "decimals": 6,
+        "description": "XPTV Token via Hyperlane Warp Route",
+        "image": "",
+        "terra_warp": {
+          "type": "cw20",
+          "mode": "collateral",
+          "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+          "denom": "",
+          "collateral_address": "terra19ujvy60tjeyehjrwlrdpqlp0gxmtt4qv452nwjqc6w6m38pm8xmq22lux3",
+          "warp_address": "terra1n8y4sj9lrqq66pf7je0nm7s6nhln5z4s3accw9g2aassdh8dzqts9y0928",
+          "warp_hexed": "0x99c95848bf1801ad053e965f3dfa1a9dff3a0ab08f7187150aef6106dced1017",
+          "deployed": true
+        }
+      },
+      "xpv": {
+        "_comment": "XPV CW20 collateral — novo token, warp ainda NÃO deployado na Terra Classic",
+        "id": "xpv",
+        "name": "XPV Token",
+        "symbol": "XPV",
+        "decimals": 6,
+        "description": "XPV Token via Hyperlane Warp Route",
+        "image": "",
+        "terra_warp": {
+          "type": "cw20",
+          "mode": "collateral",
+          "owner": "terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze",
+          "denom": "",
+          "collateral_address": "terra1f2jw36hc7fzeu7dz2fhk250ezec7e80c2s6uxt3ry5ujjjslf9nqwvpu88",
+          "warp_address": "terra1dnflusc7slapvals97em3fj4vrfyx90npr3znq6y45qjy7hhd6jqchqsgx",
+          "warp_hexed": "0x6cd3fe431e87fa1677f02fb3b8a65560d24315f308e2298344ad01227af76ea4",
+          "deployed": true
+        }
       }
     }
   },
@@ -162,6 +200,14 @@
           "igp_custom": "0xf285D5769db5AE6E79Bb3179d03082f6bc47055f",
           "hook_aggregation": "0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC",
           "_hook_note": "AggregationHook=[MerkleTreeHook+igp_custom]. Setado via setHook() no Warp. Necessário para msgs entrarem na merkle tree do validator.",
+          "owner": "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
+        },
+        "xptv": {
+          "deployed": true,
+          "address": "0x7d92c2E01933F1C651845152DBd4222d475Bd9f0",
+          "igp_custom": "0xf285D5769db5AE6E79Bb3179d03082f6bc47055f",
+          "hook_aggregation": "0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC",
+          "_hook_note": "AggregationHook=[MerkleTreeHook+igp_custom]. Mesmo AggHook do XPTO.",
           "owner": "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
         }
       }

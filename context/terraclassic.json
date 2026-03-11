@@ -120,6 +120,18 @@
           "type": "hpl_warp_cw20",
           "address": "terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm",
           "hexed": "0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1"
+        },
+        {
+          "id": "xptv",
+          "type": "hpl_warp_cw20",
+          "address": "terra1n8y4sj9lrqq66pf7je0nm7s6nhln5z4s3accw9g2aassdh8dzqts9y0928",
+          "hexed": "0x99c95848bf1801ad053e965f3dfa1a9dff3a0ab08f7187150aef6106dced1017"
+        },
+        {
+          "id": "xpv",
+          "type": "hpl_warp_cw20",
+          "address": "terra1dnflusc7slapvals97em3fj4vrfyx90npr3znq6y45qjy7hhd6jqchqsgx",
+          "hexed": "0x6cd3fe431e87fa1677f02fb3b8a65560d24315f308e2298344ad01227af76ea4"
         }
       ]
     }

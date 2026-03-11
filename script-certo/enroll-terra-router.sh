@@ -276,13 +276,15 @@ if [ $EXIT_CODE -ne 0 ] && ! echo "$RESULT" | grep -q "^STATUS="; then
     exit 1
 fi
 
-TX_HASH=$(echo "$RESULT"  | grep "^TX_HASH="       | cut -d= -f2)
-HEIGHT=$(echo "$RESULT"   | grep "^HEIGHT="        | cut -d= -f2)
-GAS_USED=$(echo "$RESULT" | grep "^GAS_USED="      | cut -d= -f2)
-SENDER=$(echo "$RESULT"   | grep "^SENDER="        | cut -d= -f2)
-STATUS=$(echo "$RESULT"   | grep "^STATUS="        | cut -d= -f2)
-EXISTING=$(echo "$RESULT" | grep "^EXISTING_ROUTE=" | cut -d= -f2)
-ERR_MSG=$(echo "$RESULT"  | grep "^ERR="           | cut -d= -f2-)
+# IMPORTANTE: usar "|| echo """ para evitar que grep sem match (exit 1) cause
+# saída do script com set -euo pipefail (bug: grep exits 1 when no match found)
+TX_HASH=$(echo "$RESULT"  | grep "^TX_HASH="        | cut -d= -f2  || echo "")
+HEIGHT=$(echo "$RESULT"   | grep "^HEIGHT="         | cut -d= -f2  || echo "")
+GAS_USED=$(echo "$RESULT" | grep "^GAS_USED="       | cut -d= -f2  || echo "")
+SENDER=$(echo "$RESULT"   | grep "^SENDER="         | cut -d= -f2  || echo "")
+STATUS=$(echo "$RESULT"   | grep "^STATUS="         | cut -d= -f2  || echo "")
+EXISTING=$(echo "$RESULT" | grep "^EXISTING_ROUTE=" | cut -d= -f2  || echo "")
+ERR_MSG=$(echo "$RESULT"  | grep "^ERR="            | cut -d= -f2- || echo "")
 
 if [ "$STATUS" = "error" ]; then
     echo -e "${RED}❌ Erro ao executar set_route:${RESET}"

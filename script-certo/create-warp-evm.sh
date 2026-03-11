@@ -86,17 +86,28 @@ EOF
 }
 
 load_state() {
+    # Apenas lê o estado salvo em variáveis globais _STATE_*
+    # Os endereços SÓ são aplicados após confirmar que token+rede batem (ver apply_state)
     [ -f "$STATE_FILE" ] || return 0
-    local sn st sw si
-    sn=$(jq -r '.network      // ""' "$STATE_FILE" 2>/dev/null || echo "")
-    st=$(jq -r '.token        // ""' "$STATE_FILE" 2>/dev/null || echo "")
-    sw=$(jq -r '.warp_address // ""' "$STATE_FILE" 2>/dev/null || echo "")
-    si=$(jq -r '.igp_address  // ""' "$STATE_FILE" 2>/dev/null || echo "")
-    [ -z "${WARP_ADDRESS:-}" ] && [ -n "$sw" ] && export WARP_ADDRESS="$sw"
-    [ -z "${IGP_ADDRESS:-}"  ] && [ -n "$si" ] && export IGP_ADDRESS="$si"
-    if [ -n "$sn" ] && [ -n "$st" ]; then
-        log_warn "Estado anterior: rede=${sn}, token=${st}, warp=${sw:-—}, igp=${si:-—}"
+    _STATE_NET=$(jq -r '.network      // ""' "$STATE_FILE" 2>/dev/null || echo "")
+    _STATE_TOK=$(jq -r '.token        // ""' "$STATE_FILE" 2>/dev/null || echo "")
+    _STATE_WARP=$(jq -r '.warp_address // ""' "$STATE_FILE" 2>/dev/null || echo "")
+    _STATE_IGP=$(jq -r '.igp_address  // ""' "$STATE_FILE" 2>/dev/null || echo "")
+    if [ -n "$_STATE_NET" ] && [ -n "$_STATE_TOK" ]; then
+        log_warn "Estado anterior: rede=${_STATE_NET}, token=${_STATE_TOK}, warp=${_STATE_WARP:-—}, igp=${_STATE_IGP:-—}"
         log "   Para recomeçar: ${Y}rm -f $STATE_FILE${NC}"
+    fi
+}
+
+apply_state() {
+    # Aplica endereços do estado salvo SOMENTE se token+rede batem com a seleção atual
+    [ -z "${_STATE_NET:-}" ] && return 0
+    if [ "${_STATE_NET}" = "${NET_KEY}" ] && [ "${_STATE_TOK}" = "${TOKEN_KEY}" ]; then
+        [ -z "${WARP_ADDRESS:-}" ] && [ -n "${_STATE_WARP:-}" ] && export WARP_ADDRESS="$_STATE_WARP"
+        [ -z "${IGP_ADDRESS:-}"  ] && [ -n "${_STATE_IGP:-}"  ] && export IGP_ADDRESS="$_STATE_IGP"
+        [ -n "${WARP_ADDRESS:-}" ] && log_info "Estado restaurado: warp=${WARP_ADDRESS}, igp=${IGP_ADDRESS:-—}"
+    else
+        log_info "Estado anterior era para ${_STATE_TOK}/${_STATE_NET} — ignorado para ${TOKEN_KEY}/${NET_KEY}."
     fi
 }
 
@@ -124,7 +135,7 @@ cast_tx() {
 # BANNER
 # ─────────────────────────────────────────────────────────────────────────────
 > "$LOG_FILE"
-clear
+clear 2>/dev/null || true
 log "╔══════════════════════════════════════════════════════════════════════════╗"
 log "║                                                                          ║"
 log "║     🚀  CRIAR WARP ROUTE EVM ↔ TERRA CLASSIC — HYPERLANE CLI  🚀       ║"
@@ -526,9 +537,12 @@ IGP_ADDR_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.igp_custom")
 HOOK_AGG_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.hook_aggregation")
 WARP_OWNER_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.owner")
 
-# Usar endereços existentes como padrão
-[ -z "${WARP_ADDRESS:-}" ] && [ -n "$WARP_ADDR_CFG" ] && export WARP_ADDRESS="$WARP_ADDR_CFG"
-[ -z "${IGP_ADDRESS:-}"  ] && [ -n "$IGP_ADDR_CFG"  ] && export IGP_ADDRESS="$IGP_ADDR_CFG"
+# Aplicar estado salvo apenas se token+rede batem (evita usar endereço de outro token)
+apply_state
+
+# Usar endereços do JSON (só se ainda não definidos via state ou env)
+[ -z "${WARP_ADDRESS:-}" ] && [ -n "$WARP_ADDR_CFG" ] && [ "$WARP_ADDR_CFG" != "null" ] && export WARP_ADDRESS="$WARP_ADDR_CFG"
+[ -z "${IGP_ADDRESS:-}"  ] && [ -n "$IGP_ADDR_CFG"  ] && [ "$IGP_ADDR_CFG"  != "null" ] && export IGP_ADDRESS="$IGP_ADDR_CFG"
 [ -z "${HOOK_AGG_ADDRESS:-}" ] && [ -n "$HOOK_AGG_CFG" ] && [ "$HOOK_AGG_CFG" != "null" ] && export HOOK_AGG_ADDRESS="$HOOK_AGG_CFG"
 
 # Owner: derivar da carteira ou usar o configurado
@@ -1065,38 +1079,46 @@ else
 
     TERRA_PRIV_CLEAN="${TERRA_PRIVATE_KEY#0x}"
 
-    SET_ROUTE_RESULT=$(node --no-warnings - 2>&1 <<NODEJS
+    # Gravar script Node.js em arquivo temporário (evita bug bash: heredoc dentro de $() com set -euo pipefail)
+    _NODE_TMP=$(mktemp /tmp/set-route-XXXXXX.js)
+    cat > "$_NODE_TMP" <<'NODEJS_SCRIPT'
 const path = require('path');
-const nm = path.join('${PROJECT_ROOT}', 'node_modules');
+const nm   = path.join(process.env._NM_ROOT, 'node_modules');
 const { SigningCosmWasmClient } = require(path.join(nm, '@cosmjs/cosmwasm-stargate'));
-const { DirectSecp256k1Wallet }  = require(path.join(nm, '@cosmjs/proto-signing'));
-const { GasPrice }               = require(path.join(nm, '@cosmjs/stargate'));
-const { fromHex }                = require(path.join(nm, '@cosmjs/encoding'));
+const { DirectSecp256k1Wallet } = require(path.join(nm, '@cosmjs/proto-signing'));
+const { GasPrice }              = require(path.join(nm, '@cosmjs/stargate'));
+const { fromHex }               = require(path.join(nm, '@cosmjs/encoding'));
 
 async function main() {
-    const wallet = await DirectSecp256k1Wallet.fromKey(fromHex('${TERRA_PRIV_CLEAN}'), 'terra');
+    const privKey    = process.env._NM_PRIV;
+    const rpc        = process.env._NM_RPC;
+    const warpAddr   = process.env._NM_WARP;
+    const evmB32     = process.env._NM_EVM_B32;
+    const netDomain  = parseInt(process.env._NM_DOMAIN, 10);
+
+    const wallet = await DirectSecp256k1Wallet.fromKey(fromHex(privKey), 'terra');
     const [account] = await wallet.getAccounts();
     const client = await SigningCosmWasmClient.connectWithSigner(
-        '${TERRA_RPC}', wallet,
+        rpc, wallet,
         { gasPrice: GasPrice.fromString('28.325uluna') }
     );
 
-    // Verificar usando list_routes (get_route retorna {route:null} quando NÃO existe)
+    // Verificar usando list_routes
     try {
-        const routes = await client.queryContractSmart('${TERRA_WARP_ADDR}', {
+        const routes = await client.queryContractSmart(warpAddr, {
             router: { list_routes: {} }
         });
-        const ex = (routes.routes || []).find(r => r.domain === ${NET_DOMAIN});
+        const ex = (routes.routes || []).find(r => r.domain === netDomain);
         if (ex && ex.route) {
             console.log('STATUS=already_set');
             console.log('EXISTING=' + ex.route);
             return;
         }
-    } catch(e) {}
+    } catch(e) { /* rota ainda nao existe, continuar */ }
 
     const result = await client.execute(
-        account.address, '${TERRA_WARP_ADDR}',
-        { router: { set_route: { set: { domain: ${NET_DOMAIN}, route: '${EVM_B32}' } } } },
+        account.address, warpAddr,
+        { router: { set_route: { set: { domain: netDomain, route: evmB32 } } } },
         'auto',
         'enrollRemoteRouter Terra Classic via create-warp-evm.sh'
     );
@@ -1104,13 +1126,36 @@ async function main() {
     console.log('TX=' + result.transactionHash);
     console.log('HEIGHT=' + result.height);
 }
-main().catch(e => { console.log('STATUS=error'); console.log('ERR=' + e.message); });
-NODEJS
-    ) || true
+main().catch(e => { console.log('STATUS=error'); console.log('ERR=' + e.message); process.exit(0); });
+NODEJS_SCRIPT
 
-    SR_STATUS=$(echo "$SET_ROUTE_RESULT" | grep "^STATUS=" | cut -d= -f2)
-    SR_TX=$(echo "$SET_ROUTE_RESULT"     | grep "^TX="     | cut -d= -f2)
-    SR_ERR=$(echo "$SET_ROUTE_RESULT"    | grep "^ERR="    | cut -d= -f2-)
+    # Executar node passando variáveis via env (sem expansão bash no JS, sem heredoc em $())
+    SET_ROUTE_RESULT=""
+    set +e
+    SET_ROUTE_RESULT=$(
+        _NM_ROOT="$PROJECT_ROOT" \
+        _NM_PRIV="$TERRA_PRIV_CLEAN" \
+        _NM_RPC="$TERRA_RPC" \
+        _NM_WARP="$TERRA_WARP_ADDR" \
+        _NM_EVM_B32="$EVM_B32" \
+        _NM_DOMAIN="$NET_DOMAIN" \
+        node --no-warnings "$_NODE_TMP" 2>&1
+    )
+    _NODE_EXIT=$?
+    set -e
+    rm -f "$_NODE_TMP"
+
+    # Se node crashou de forma inesperada (sem STATUS= no output), capturar como erro
+    if [ $_NODE_EXIT -ne 0 ] && ! echo "$SET_ROUTE_RESULT" | grep -q "^STATUS="; then
+        SR_STATUS="error"
+        SR_ERR="node saiu com código $_NODE_EXIT: $(echo "$SET_ROUTE_RESULT" | tail -3)"
+    else
+        # IMPORTANTE: usar "|| echo """ para evitar que grep sem match (exit 1) cause
+        # saída do script com set -euo pipefail (bug: grep exits 1 when no match found)
+        SR_STATUS=$(echo "$SET_ROUTE_RESULT" | grep "^STATUS=" | cut -d= -f2  || echo "")
+        SR_TX=$(echo "$SET_ROUTE_RESULT"     | grep "^TX="     | cut -d= -f2   || echo "")
+        SR_ERR=$(echo "$SET_ROUTE_RESULT"    | grep "^ERR="    | cut -d= -f2-  || echo "")
+    fi
 
     case "$SR_STATUS" in
         ok)
@@ -1118,15 +1163,18 @@ NODEJS
             log "   TX: ${B}https://finder.hexxagon.io/${TERRA_CHAIN_ID}/tx/${SR_TX}${NC}"
             ;;
         already_set)
-            EXISTING_ROUTE=$(echo "$SET_ROUTE_RESULT" | grep "^EXISTING=" | cut -d= -f2)
-            log_ok "Rota já configurada no Terra Classic (${EXISTING_ROUTE})."
+            EXISTING_ROUTE=$(echo "$SET_ROUTE_RESULT" | grep "^EXISTING=" | cut -d= -f2 || echo "")
+            log_ok "Rota já configurada no Terra Classic (${EXISTING_ROUTE:-já existente})."
             ;;
         error)
             log_warn "set_route Terra Classic falhou: ${SR_ERR}"
+            log "  Detalhes: $(echo "$SET_ROUTE_RESULT" | grep -v "^STATUS=" | head -5)"
             log "  Execute manualmente: ${C}./enroll-terra-router.sh${NC}"
             ;;
         *)
-            log_warn "set_route Terra Classic: resultado inesperado — execute ./enroll-terra-router.sh"
+            log_warn "set_route Terra Classic: resultado inesperado (exit=${_NODE_EXIT})."
+            [ -n "$SET_ROUTE_RESULT" ] && log "  Output: $(echo "$SET_ROUTE_RESULT" | head -5)"
+            log "  Execute manualmente: ${C}./enroll-terra-router.sh${NC}"
             ;;
     esac
 fi

@@ -10,7 +10,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
 # ─── Configurações padrão (editáveis) ────────────────────────────────────────
-CW20_CONTRACT="${CW20_CONTRACT:-terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch}"
+CW20_CONTRACT="${CW20_CONTRACT:-terra1f2jw36hc7fzeu7dz2fhk250ezec7e80c2s6uxt3ry5ujjjslf9nqwvpu88}"
 SENDER="${SENDER:-terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze}"
 RECIPIENT="${RECIPIENT:-terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k}"
 AMOUNT="${AMOUNT:-100000000000}"

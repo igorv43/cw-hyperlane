@@ -1,7 +1,7 @@
 {
   "network":      "sepolia",
-  "token":        "xpto",
-  "warp_address": "0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048",
-  "igp_address":  "0xf285D5769db5AE6E79Bb3179d03082f6bc47055f",
-  "timestamp":    "2026-03-10T16:05:53-03:00"
+  "token":        "xpv",
+  "warp_address": "0x6a573cba0f06B3994bc8B31b737Ab50cdfc0aB8f",
+  "igp_address":  "0x4B3A327560f2838b0cC570D685809D3DBcf11ff5",
+  "timestamp":    "2026-03-11T02:15:39-03:00"
 }

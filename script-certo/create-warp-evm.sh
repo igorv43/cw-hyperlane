@@ -64,7 +64,14 @@ log_info()  { log "${INFO} $*"; }
 log_sep()   { log ""; log "${C}${W}$1${NC}"; log "────────────────────────────────────────────────────────────────"; }
 cfg()       { jq -r "$1" "$CONFIG_FILE" 2>/dev/null || echo ""; }
 is_evm()    { [[ "$1" =~ ^0x[0-9a-fA-F]{40}$ ]]; }
-to_bytes32(){ local a="${1#0x}"; printf "000000000000000000000000%s" "${a,,}"; }
+to_bytes32() {
+    # Converte endereço/hash para bytes32 (64 hex chars, sem 0x).
+    # EVM address (20 bytes / 40 chars): padding esquerdo com zeros.
+    # CosmWasm hash (32 bytes / 64 chars): já tem 64 chars, não adicionar zeros extras.
+    local a="${1#0x}"
+    a="${a,,}"
+    printf '%064s' "$a" | tr ' ' '0' | cut -c1-64
+}
 
 save_state() {
     cat > "$STATE_FILE" <<EOF
@@ -167,6 +174,7 @@ log_sep "PASSO 1/2 — SELECIONAR TOKEN (Terra Classic)"
 
 TERRA_DOMAIN=$(cfg ".terra_classic.domain")
 TERRA_RPC=$(cfg ".terra_classic.rpc")
+TERRA_CHAIN_ID=$(cfg ".terra_classic.chain_id")
 
 log "  Tokens configurados em ${C}warp-evm-config.json${NC}:"
 log ""
@@ -505,6 +513,7 @@ ISM_DEPLOYED_CFG=$(cfg "${N}.ism.deployed_address")
 ISM_VALIDATORS=$(jq -r "${N}.ism.validators[]" "$CONFIG_FILE" 2>/dev/null | tr '\n' ',' | sed 's/,$//')
 ISM_THRESHOLD=$(cfg "${N}.ism.threshold")
 HOOK_MERKLE=$(cfg "${N}.hook.merkle_tree")
+AGG_HOOK_FACTORY=$(cfg "${N}.hook.agg_hook_factory")
 GAS_ORACLE=$(cfg "${N}.igp.gas_oracle")
 GAS_OVERHEAD=$(cfg "${N}.igp.overhead_default")
 IGP_EXCHANGE_RATE=$(cfg "${N}.igp.terra_classic_config.exchange_rate")
@@ -514,11 +523,13 @@ IGP_GAS_PRICE=$(cfg "${N}.igp.terra_classic_config.gas_price_wei")
 WARP_DEPLOYED_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.deployed")
 WARP_ADDR_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.address")
 IGP_ADDR_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.igp_custom")
+HOOK_AGG_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.hook_aggregation")
 WARP_OWNER_CFG=$(cfg "${N}.warp_tokens.${TOKEN_KEY}.owner")
 
 # Usar endereços existentes como padrão
 [ -z "${WARP_ADDRESS:-}" ] && [ -n "$WARP_ADDR_CFG" ] && export WARP_ADDRESS="$WARP_ADDR_CFG"
 [ -z "${IGP_ADDRESS:-}"  ] && [ -n "$IGP_ADDR_CFG"  ] && export IGP_ADDRESS="$IGP_ADDR_CFG"
+[ -z "${HOOK_AGG_ADDRESS:-}" ] && [ -n "$HOOK_AGG_CFG" ] && [ "$HOOK_AGG_CFG" != "null" ] && export HOOK_AGG_ADDRESS="$HOOK_AGG_CFG"
 
 # Owner: derivar da carteira ou usar o configurado
 if command -v cast &>/dev/null && [ -n "${ETH_PRIVATE_KEY:-}" ]; then
@@ -865,36 +876,96 @@ else
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 5 — CONFIGURAR HOOK DO WARP ROUTE (setHook → IGP)
+# ETAPA 5 — CONFIGURAR HOOK DO WARP ROUTE (AggregationHook = MerkleTree + IGP)
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 5 — CONFIGURAR HOOK (setHook → IGP)"
+log_sep "ETAPA 5 — CONFIGURAR HOOK (AggregationHook = MerkleTree + IGP)"
 
-log "  Warp Route:  ${G}${WARP_ADDRESS}${NC}"
-log "  Hook (IGP):  ${G}${IGP_ADDRESS}${NC}"
-log "  ${INFO} O IGP tem hookType=4 (INTERCHAIN_GAS_PAYMASTER)"
+log "  Warp Route:       ${G}${WARP_ADDRESS}${NC}"
+log "  MerkleTree Hook:  ${G}${HOOK_MERKLE}${NC}"
+log "  Custom IGP:       ${G}${IGP_ADDRESS}${NC}"
+log "  AggFactory:       ${G}${AGG_HOOK_FACTORY:-N/A}${NC}"
+log ""
+log "  ${INFO} O AggregationHook garante que as msgs entram na merkle tree"
+log "  ${INFO} (necessário para o validator assinar) E pagam o IGP customizado."
 log ""
 
 if [ "$HAVE_CAST" = "false" ]; then
     log_warn "cast não disponível — execute manualmente:"
-    log "  cast send ${WARP_ADDRESS} \"setHook(address)\" ${IGP_ADDRESS} \\"
+    log "  # 1. Deploy do AggregationHook"
+    log "  cast send ${AGG_HOOK_FACTORY:-<agg_hook_factory>} \"deploy(address[])\" \"[${HOOK_MERKLE},${IGP_ADDRESS}]\" \\"
+    log "    --rpc-url ${NET_RPC} --private-key \$ETH_PRIVATE_KEY --legacy"
+    log "  # 2. Obter endereço via eth_call e setar no Warp"
+    log "  cast send ${WARP_ADDRESS} \"setHook(address)\" <AGG_HOOK_ADDRESS> \\"
     log "    --rpc-url ${NET_RPC} --private-key \$ETH_PRIVATE_KEY --legacy"
 else
+    # Verificar se já temos um AggregationHook deployado no config
+    if [ -n "${HOOK_AGG_ADDRESS:-}" ] && [ "${HOOK_AGG_ADDRESS}" != "null" ]; then
+        log_info "AggregationHook já definido: ${G}${HOOK_AGG_ADDRESS}${NC}"
+    elif [ -z "${AGG_HOOK_FACTORY:-}" ] || [ "${AGG_HOOK_FACTORY}" = "null" ]; then
+        log_warn "agg_hook_factory não configurado — usando apenas IGP como hook (legado)."
+        log_warn "${R}⚠ ATENÇÃO: sem MerkleTree no hook, o validator NÃO verá as mensagens!${NC}"
+        HOOK_AGG_ADDRESS="$IGP_ADDRESS"
+    else
+        log_info "Deployando AggregationHook [MerkleTree + IGP] via factory..."
+        # Simular deploy para obter endereço deterministico
+        HOOK_AGG_ADDRESS=$(cast call "$AGG_HOOK_FACTORY" \
+            "deploy(address[])(address)" \
+            "[$HOOK_MERKLE,$IGP_ADDRESS]" \
+            --rpc-url "$NET_RPC" 2>/dev/null || echo "")
+
+        if [ -z "$HOOK_AGG_ADDRESS" ] || [ "$HOOK_AGG_ADDRESS" = "0x0000000000000000000000000000000000000000" ]; then
+            log_warn "Não foi possível obter endereço via simulação — fazendo deploy real..."
+            TX_AGG=$(cast_tx "$AGG_HOOK_FACTORY" \
+                "deploy(address[])" \
+                "[$HOOK_MERKLE,$IGP_ADDRESS]" \
+                --rpc-url "$NET_RPC" \
+                --private-key "$ETH_PRIVATE_KEY" \
+                --legacy) || { log_err "Deploy AggregationHook falhou!"; exit 1; }
+            log_ok "AggregationHook deployado! TX: ${B}${NET_EXPLORER}/tx/${TX_AGG}${NC}"
+            # Re-obter endereço após deploy
+            HOOK_AGG_ADDRESS=$(cast call "$AGG_HOOK_FACTORY" \
+                "deploy(address[])(address)" \
+                "[$HOOK_MERKLE,$IGP_ADDRESS]" \
+                --rpc-url "$NET_RPC" 2>/dev/null || echo "")
+        else
+            # Deploy real (o endereço já existe deterministicamente, mas precisa estar deployado)
+            TX_AGG=$(cast_tx "$AGG_HOOK_FACTORY" \
+                "deploy(address[])" \
+                "[$HOOK_MERKLE,$IGP_ADDRESS]" \
+                --rpc-url "$NET_RPC" \
+                --private-key "$ETH_PRIVATE_KEY" \
+                --legacy 2>/dev/null) || true
+            [ -n "$TX_AGG" ] && log "   TX AggHook: ${B}${NET_EXPLORER}/tx/${TX_AGG}${NC}"
+        fi
+
+        if [ -n "$HOOK_AGG_ADDRESS" ] && [ "$HOOK_AGG_ADDRESS" != "0x0000000000000000000000000000000000000000" ]; then
+            log_ok "AggregationHook: ${G}${HOOK_AGG_ADDRESS}${NC}"
+            export HOOK_AGG_ADDRESS
+        else
+            log_warn "Endereço do AggregationHook não obtido — usando apenas IGP (legado)."
+            HOOK_AGG_ADDRESS="$IGP_ADDRESS"
+        fi
+    fi
+
+    # Setar o AggregationHook (ou IGP no fallback) no Warp Route
     CURRENT_HOOK=$(cast call "$WARP_ADDRESS" "hook()(address)" \
         --rpc-url "$NET_RPC" 2>/dev/null || echo "")
 
-    if [ "${CURRENT_HOOK,,}" = "${IGP_ADDRESS,,}" ]; then
-        log_ok "Hook já configurado corretamente."
+    if [ "${CURRENT_HOOK,,}" = "${HOOK_AGG_ADDRESS,,}" ]; then
+        log_ok "Hook já configurado corretamente: ${G}${CURRENT_HOOK}${NC}"
     else
         log_info "Hook atual: ${CURRENT_HOOK:-nenhum}"
+        log_info "Setando hook para AggregationHook [MerkleTree + IGP]..."
         TX_HOOK=$(cast_tx "$WARP_ADDRESS" \
-            "setHook(address)" "$IGP_ADDRESS" \
+            "setHook(address)" "$HOOK_AGG_ADDRESS" \
             --rpc-url "$NET_RPC" \
             --private-key "$ETH_PRIVATE_KEY" \
             --legacy) || { log_err "setHook falhou!"; exit 1; }
-        log_ok "Hook atualizado para o IGP!"
+        log_ok "Hook atualizado: ${G}${HOOK_AGG_ADDRESS}${NC}"
         [ -n "$TX_HOOK" ] && log "   TX: ${B}${NET_EXPLORER}/tx/${TX_HOOK}${NC}"
     fi
 fi
+save_state
 
 # ═════════════════════════════════════════════════════════════════════════════
 # ETAPA 6 — CONFIGURAR ISM DO WARP ROUTE
@@ -969,6 +1040,98 @@ else
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
+# ETAPA 7B — ENROLL REMOTE ROUTER NO TERRA CLASSIC (set_route)
+#   Registra o Warp EVM no contrato Warp da Terra Classic.
+#   Sem este passo, transfer_remote do Terra Classic falha com "route not found"
+# ═════════════════════════════════════════════════════════════════════════════
+log_sep "ETAPA 7B — VINCULAR ROTA EVM NO TERRA CLASSIC (set_route)"
+
+if [ -n "${SKIP_ENROLL:-}" ]; then
+    log_warn "set_route Terra Classic pulado (SKIP_ENROLL definido)."
+    log "  Execute manualmente com: ./enroll-terra-router.sh"
+elif [ -z "${TERRA_WARP_ADDR:-}" ]; then
+    log_warn "Warp Terra Classic não deployado — set_route será pulado."
+    log "  Após fazer o deploy do Warp Terra Classic, execute: ./enroll-terra-router.sh"
+elif [ -z "${TERRA_PRIVATE_KEY:-}" ]; then
+    log_warn "TERRA_PRIVATE_KEY não definida — set_route Terra Classic pulado."
+    log "  Execute: export TERRA_PRIVATE_KEY='chave_hex' && ./enroll-terra-router.sh"
+else
+    # Converter endereço EVM Warp para bytes32 (sem 0x)
+    EVM_B32_HEX="${WARP_ADDRESS#0x}"
+    EVM_B32=$(printf '%064s' "$EVM_B32_HEX" | tr ' ' '0')
+    log "  Terra Classic Warp: ${G}${TERRA_WARP_ADDR}${NC}"
+    log "  EVM (${NET_KEY}) domain ${NET_DOMAIN} → bytes32: ${G}${EVM_B32}${NC}"
+    log ""
+
+    TERRA_PRIV_CLEAN="${TERRA_PRIVATE_KEY#0x}"
+
+    SET_ROUTE_RESULT=$(node --no-warnings - 2>&1 <<NODEJS
+const path = require('path');
+const nm = path.join('${PROJECT_ROOT}', 'node_modules');
+const { SigningCosmWasmClient } = require(path.join(nm, '@cosmjs/cosmwasm-stargate'));
+const { DirectSecp256k1Wallet }  = require(path.join(nm, '@cosmjs/proto-signing'));
+const { GasPrice }               = require(path.join(nm, '@cosmjs/stargate'));
+const { fromHex }                = require(path.join(nm, '@cosmjs/encoding'));
+
+async function main() {
+    const wallet = await DirectSecp256k1Wallet.fromKey(fromHex('${TERRA_PRIV_CLEAN}'), 'terra');
+    const [account] = await wallet.getAccounts();
+    const client = await SigningCosmWasmClient.connectWithSigner(
+        '${TERRA_RPC}', wallet,
+        { gasPrice: GasPrice.fromString('28.325uluna') }
+    );
+
+    // Verificar usando list_routes (get_route retorna {route:null} quando NÃO existe)
+    try {
+        const routes = await client.queryContractSmart('${TERRA_WARP_ADDR}', {
+            router: { list_routes: {} }
+        });
+        const ex = (routes.routes || []).find(r => r.domain === ${NET_DOMAIN});
+        if (ex && ex.route) {
+            console.log('STATUS=already_set');
+            console.log('EXISTING=' + ex.route);
+            return;
+        }
+    } catch(e) {}
+
+    const result = await client.execute(
+        account.address, '${TERRA_WARP_ADDR}',
+        { router: { set_route: { set: { domain: ${NET_DOMAIN}, route: '${EVM_B32}' } } } },
+        'auto',
+        'enrollRemoteRouter Terra Classic via create-warp-evm.sh'
+    );
+    console.log('STATUS=ok');
+    console.log('TX=' + result.transactionHash);
+    console.log('HEIGHT=' + result.height);
+}
+main().catch(e => { console.log('STATUS=error'); console.log('ERR=' + e.message); });
+NODEJS
+    ) || true
+
+    SR_STATUS=$(echo "$SET_ROUTE_RESULT" | grep "^STATUS=" | cut -d= -f2)
+    SR_TX=$(echo "$SET_ROUTE_RESULT"     | grep "^TX="     | cut -d= -f2)
+    SR_ERR=$(echo "$SET_ROUTE_RESULT"    | grep "^ERR="    | cut -d= -f2-)
+
+    case "$SR_STATUS" in
+        ok)
+            log_ok "set_route executado! Terra Classic conhece o Warp ${NET_KEY}."
+            log "   TX: ${B}https://finder.hexxagon.io/${TERRA_CHAIN_ID}/tx/${SR_TX}${NC}"
+            ;;
+        already_set)
+            EXISTING_ROUTE=$(echo "$SET_ROUTE_RESULT" | grep "^EXISTING=" | cut -d= -f2)
+            log_ok "Rota já configurada no Terra Classic (${EXISTING_ROUTE})."
+            ;;
+        error)
+            log_warn "set_route Terra Classic falhou: ${SR_ERR}"
+            log "  Execute manualmente: ${C}./enroll-terra-router.sh${NC}"
+            ;;
+        *)
+            log_warn "set_route Terra Classic: resultado inesperado — execute ./enroll-terra-router.sh"
+            ;;
+    esac
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
 # ETAPA 8 — VERIFICAÇÃO FINAL
 # ═════════════════════════════════════════════════════════════════════════════
 log_sep "ETAPA 8 — VERIFICAÇÃO FINAL"
@@ -989,21 +1152,26 @@ if [ "$HAVE_CAST" = "true" ]; then
     WP_CODE=$(cast code "$WARP_ADDRESS" --rpc-url "$NET_RPC" 2>/dev/null || echo "0x")
     [ "$WP_CODE" != "0x" ] && log_ok "Warp Route existe" || { log_err "Warp Route não encontrado!"; ERROS=$((ERROS+1)); }
 
-    # 3. Hook = IGP
+    # 3. Hook = AggregationHook (ou IGP no fallback)
     log_info "3. Hook do Warp Route..."
     HOOK=$(cast call "$WARP_ADDRESS" "hook()(address)" --rpc-url "$NET_RPC" 2>/dev/null || echo "")
-    if [ "${HOOK,,}" = "${IGP_ADDRESS,,}" ]; then
-        log_ok "Hook = IGP ✅  (${HOOK})"
+    EXPECTED_HOOK="${HOOK_AGG_ADDRESS:-${IGP_ADDRESS}}"
+    if [ "${HOOK,,}" = "${EXPECTED_HOOK,,}" ]; then
+        log_ok "Hook = AggregationHook ✅  (${HOOK})"
+    elif [ "${HOOK,,}" = "${IGP_ADDRESS,,}" ]; then
+        log_warn "Hook = IGP (legado) — sem MerkleTree! Msgs não serão assinadas pelo validator."
+        log_warn "Execute novamente para corrigir com AggregationHook."
+        ERROS=$((ERROS+1))
     else
-        log_warn "Hook: ${HOOK} ≠ ${IGP_ADDRESS}"
+        log_warn "Hook: ${HOOK} ≠ ${EXPECTED_HOOK}"
         ERROS=$((ERROS+1))
     fi
 
-    # 4. hookType = 4
-    log_info "4. hookType do IGP..."
+    # 4. hookType do IGP customizado
+    log_info "4. hookType do IGP customizado..."
     HTYPE=$(cast call "$IGP_ADDRESS" "hookType()(uint8)" --rpc-url "$NET_RPC" 2>/dev/null || echo "")
-    [ "$HTYPE" = "4" ] && log_ok "hookType = 4 (INTERCHAIN_GAS_PAYMASTER) ✅" \
-                       || { log_err "hookType=$HTYPE (deve ser 4)"; ERROS=$((ERROS+1)); }
+    [ "$HTYPE" = "4" ] && log_ok "hookType IGP = 4 (INTERCHAIN_GAS_PAYMASTER) ✅" \
+                       || { log_err "hookType IGP=$HTYPE (deve ser 4)"; ERROS=$((ERROS+1)); }
 
     # 5. ISM
     log_info "5. ISM do Warp Route..."

@@ -121,8 +121,9 @@
         "threshold": 1
       },
       "hook": {
-        "_comment": "Merkle Tree Hook: gera provas merkle para cada mensagem. O IGP customizado sobrescreve o hook do Warp Route",
-        "merkle_tree": "0x9786A0B3A7D53cb7D5F65c14cBb4E91f25Ba7C13"
+        "_comment": "MerkleTree Hook oficial Sepolia. IMPORTANTE: o Warp deve usar AggregationHook=[merkle_tree+igp_custom] para que as msgs entrem na merkle tree e sejam assinadas pelo validator",
+        "merkle_tree": "0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d",
+        "agg_hook_factory": "0x160C28C92cA453570aD7C031972b58d5Dd128F72"
       },
       "igp": {
         "_comment": "IGP: Gas Paymaster — permite pagar gas da Terra Classic usando ETH. gas_oracle é o contrato Hyperlane que fornece preços",
@@ -159,6 +160,8 @@
           "deployed": true,
           "address": "0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048",
           "igp_custom": "0xf285D5769db5AE6E79Bb3179d03082f6bc47055f",
+          "hook_aggregation": "0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC",
+          "_hook_note": "AggregationHook=[MerkleTreeHook+igp_custom]. Setado via setHook() no Warp. Necessário para msgs entrarem na merkle tree do validator.",
           "owner": "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
         }
       }
@@ -196,8 +199,9 @@
         "threshold": 1
       },
       "hook": {
-        "_comment": "Merkle Tree Hook BSC Testnet",
-        "merkle_tree": "0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f"
+        "_comment": "Merkle Tree Hook BSC Testnet. Usar AggregationHook=[merkle_tree+igp_custom]",
+        "merkle_tree": "0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f",
+        "agg_hook_factory": "0x0a71AcC99967829eE305a285750017C4916Ca269"
       },
       "igp": {
         "_comment": "IGP BSC Testnet — gas oracle fornece preços BNB/gas",
@@ -265,7 +269,9 @@
         "threshold": 1
       },
       "hook": {
-        "merkle_tree": "0x19DC3De9E2E8b69975F775b18dF7a2c2B2C0b8e2"
+        "_comment": "Usar AggregationHook=[merkle_tree+igp_custom]",
+        "merkle_tree": "0x19DC3De9E2E8b69975F775b18dF7a2c2B2C0b8e2",
+        "agg_hook_factory": "0x160C28C92cA453570aD7C031972b58d5Dd128F72"
       },
       "igp": {
         "official_address": "0x9e6B1022bE9BBF5aFd152483DAD9b88911bC8611",

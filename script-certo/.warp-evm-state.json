@@ -1,7 +1,7 @@
 {
-  "network":      "sepolia",
+  "network":      "bsctestnet",
   "token":        "xpv",
-  "warp_address": "0x6a573cba0f06B3994bc8B31b737Ab50cdfc0aB8f",
-  "igp_address":  "0x4B3A327560f2838b0cC570D685809D3DBcf11ff5",
-  "timestamp":    "2026-03-11T02:15:39-03:00"
+  "warp_address": "0x11D6aa52d60611a513ab783842Dc397C86E7fff0",
+  "igp_address":  "0x7d17d237c74Fa1bA3B5B56d94E414a4eAa41cE1e",
+  "timestamp":    "2026-03-11T12:14:50-03:00"
 }

@@ -28,6 +28,9 @@
 11. [Scripts auxiliares](#11-scripts-auxiliares)
 12. [Usando em outro projeto (portabilidade)](#12-usando-em-outro-projeto-portabilidade)
 13. [Troubleshooting](#13-troubleshooting)
+14. [Correção manual do AggregationHook (sem o script)](#14-correção-manual-do-aggregationhook-sem-o-script)
+15. [Referência de endereços deployados](#15-referência-de-endereços-deployados)
+16. [Como encontrar endereços Hyperlane de qualquer rede](#16-como-encontrar-endereços-hyperlane-de-qualquer-rede)
 
 ---
 
@@ -1200,10 +1203,339 @@ cast send $WARP_EVM \
 |---|---|
 | Hyperlane Docs | [docs.hyperlane.xyz](https://docs.hyperlane.xyz/) |
 | Hyperlane Explorer | [explorer.hyperlane.xyz](https://explorer.hyperlane.xyz) |
+| Hyperlane Registry (GitHub) | [github.com/hyperlane-xyz/hyperlane-registry](https://github.com/hyperlane-xyz/hyperlane-registry) |
 | Foundry (forge/cast) | [book.getfoundry.sh](https://book.getfoundry.sh/) |
 | Remix IDE | [remix.ethereum.org](https://remix.ethereum.org) |
 | Sepolia Etherscan | [sepolia.etherscan.io](https://sepolia.etherscan.io) |
 | BSC Testnet Explorer | [testnet.bscscan.com](https://testnet.bscscan.com) |
-| Terra Classic Finder | [finder.terra-classic.hexxagon.dev/testnet](https://finder.terra-classic.hexxagon.dev/testnet) |
+| Terra Classic Finder (Hexxagon) | [finder.hexxagon.io/rebel-2](https://finder.hexxagon.io/rebel-2) |
+| Terra Classic RPC (Hexxagon) | [rpc.terra-classic.hexxagon.dev](https://rpc.terra-classic.hexxagon.dev/status) |
 | Faucet Sepolia | [sepoliafaucet.com](https://sepoliafaucet.com) |
-| Faucet BSC Testnet | [testnet.binance.org/faucet-smart](https://testnet.binance.org/faucet-smart) |
+| Faucet BSC Testnet | [www.bnbchain.org/en/testnet-faucet](https://www.bnbchain.org/en/testnet-faucet) |
+
+---
+
+## 14. Correção manual do AggregationHook (sem o script)
+
+Esta seção mostra como corrigir o hook de um Warp Route já deployado **manualmente via `cast`**, sem precisar reexecutar o script completo. Use quando mensagens de **EVM → Terra Classic** não chegam e o diagnóstico mostra que o hook está configurado diretamente com o `IGP` (sem o `MerkleTreeHook`).
+
+### Diagnóstico rápido
+
+```bash
+# Verificar o hook atual do Warp (deve ser o AggregationHook, não o IGP)
+cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
+
+# Verificar o owner (somente o owner pode chamar setHook)
+cast call $WARP_ADDRESS "owner()(address)" --rpc-url $RPC
+```
+
+Se o `hook` retornado for igual ao endereço do seu `IGP customizado` → o problema está confirmado.
+
+---
+
+### Sepolia — Corrigir hook manualmente
+
+```bash
+export ETH_PRIVATE_KEY="0xSUA_CHAVE_PRIVADA"
+RPC="https://ethereum-sepolia-rpc.publicnode.com"
+
+# Endereços Sepolia
+AGG_FACTORY="0x160C28C92cA453570aD7C031972b58d5Dd128F72"  # StaticAggregationHookFactory
+MERKLE="0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d"        # MerkleTreeHook oficial
+IGP_CUSTOM="0xSEU_IGP_CUSTOM"                              # seu IGP deployado
+WARP_ADDRESS="0xSEU_WARP"
+
+# Passo 1 — Obter endereço deterministico do AggHook
+AGG_HOOK=$(cast call $AGG_FACTORY \
+  "deploy(address[])(address)" "[$MERKLE,$IGP_CUSTOM]" \
+  --rpc-url $RPC)
+echo "AggHook será: $AGG_HOOK"
+
+# Passo 2 — Deploy do AggregationHook
+cast send $AGG_FACTORY \
+  "deploy(address[])" "[$MERKLE,$IGP_CUSTOM]" \
+  --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
+
+# Passo 3 — Setar o AggregationHook no Warp
+cast send $WARP_ADDRESS "setHook(address)" $AGG_HOOK \
+  --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
+
+# Verificação final
+cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
+```
+
+> **Endereços reais do XPTO Sepolia** (para referência):
+> - `AGG_FACTORY` = `0x160C28C92cA453570aD7C031972b58d5Dd128F72`
+> - `MERKLE` = `0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d`
+> - `IGP_CUSTOM` = `0xf285D5769db5AE6E79Bb3179d03082f6bc47055f`
+> - `AGG_HOOK` resultante = `0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC`
+
+---
+
+### BSC Testnet — Corrigir hook manualmente
+
+```bash
+export ETH_PRIVATE_KEY="0xSUA_CHAVE_PRIVADA"
+RPC="https://bsc-testnet.publicnode.com"
+
+# Endereços BSC Testnet
+AGG_FACTORY="0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942"  # StaticAggregationHookFactory ✅
+MERKLE="0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f"        # MerkleTreeHook oficial
+IGP_CUSTOM="0xSEU_IGP_CUSTOM"                              # seu IGP deployado
+WARP_ADDRESS="0xSEU_WARP"
+
+# Passo 1 — Obter endereço deterministico do AggHook
+AGG_HOOK=$(cast call $AGG_FACTORY \
+  "deploy(address[])(address)" "[$MERKLE,$IGP_CUSTOM]" \
+  --rpc-url $RPC)
+echo "AggHook será: $AGG_HOOK"
+
+# Passo 2 — Deploy do AggregationHook
+cast send $AGG_FACTORY \
+  "deploy(address[])" "[$MERKLE,$IGP_CUSTOM]" \
+  --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
+
+# Passo 3 — Setar o AggregationHook no Warp
+cast send $WARP_ADDRESS "setHook(address)" $AGG_HOOK \
+  --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
+
+# Verificação final
+cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
+```
+
+> **Endereços reais do XPV BSC Testnet** (para referência):
+> - `AGG_FACTORY` = `0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942`
+> - `MERKLE` = `0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f`
+> - `IGP_CUSTOM` = `0x7d17d237c74Fa1bA3B5B56d94E414a4eAa41cE1e`
+> - `AGG_HOOK` resultante = `0x3F11a590B50F959E52a660567865f1B65C913C5D`
+
+> ⚠️ **Atenção:** A factory para BSC Testnet é `0xa1145B39F...`, **não** `0x0a71AcC99...` (esta última não tem código e resultará em erro silencioso). Sempre confirme o endereço da factory via registry antes de usar (veja [Seção 16](#16-como-encontrar-endereços-hyperlane-de-qualquer-rede)).
+
+---
+
+### Reexecutar o script para Warp já deployado (alternativa mais simples)
+
+Se preferir usar o script ao invés dos comandos manuais, basta definir os endereços já deployados e reexecutar — o script pula as etapas já concluídas e executa apenas o que falta (como o deploy do AggHook):
+
+```bash
+cd ~/cw-hyperlane/script-certo
+export ETH_PRIVATE_KEY="0xSUA_CHAVE"
+export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
+
+# O estado anterior é lido automaticamente do .warp-evm-state.json
+# Se não existir, defina manualmente:
+export WARP_ADDRESS="0xSEU_WARP"
+export IGP_ADDRESS="0xSEU_IGP"
+
+./create-warp-evm.sh
+# Selecione o token e a rede — o script pulará deploy do Warp e IGP
+# e irá direto para o deploy do AggHook (Etapa 5)
+```
+
+---
+
+## 15. Referência de endereços deployados
+
+Endereços de todos os contratos ativos neste projeto, para consulta rápida e diagnóstico manual.
+
+### Sepolia (chain 11155111 / domain 11155111)
+
+| Contrato | Endereço | Explorer |
+|---|---|---|
+| **Mailbox** | `0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766` | [🔗](https://sepolia.etherscan.io/address/0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766) |
+| **MerkleTreeHook** | `0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d` | [🔗](https://sepolia.etherscan.io/address/0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d) |
+| **AggHook Factory** | `0x160C28C92cA453570aD7C031972b58d5Dd128F72` | [🔗](https://sepolia.etherscan.io/address/0x160C28C92cA453570aD7C031972b58d5Dd128F72) |
+| **Gas Oracle** | `0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c` | [🔗](https://sepolia.etherscan.io/address/0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c) |
+| **ISM Factory** | `0xFEb9585b2f948c1eD74034205a7439261a9d27DD` | [🔗](https://sepolia.etherscan.io/address/0xFEb9585b2f948c1eD74034205a7439261a9d27DD) |
+| **Validator Announce** | `0xE6105C59480a1B8CF6db0D655571767f4b31Ef3C` | [🔗](https://sepolia.etherscan.io/address/0xE6105C59480a1B8CF6db0D655571767f4b31Ef3C) |
+
+#### Warps Sepolia
+
+| Token | Warp EVM | IGP Custom | AggHook | ISM |
+|---|---|---|---|---|
+| **XPTO** | [`0xbF43aA...`](https://sepolia.etherscan.io/address/0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048) | [`0xf285D5...`](https://sepolia.etherscan.io/address/0xf285D5769db5AE6E79Bb3179d03082f6bc47055f) | [`0x1a13d7...`](https://sepolia.etherscan.io/address/0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC) | — |
+| **XPTV** | [`0x7d92c2...`](https://sepolia.etherscan.io/address/0x7d92c2E01933F1C651845152DBd4222d475Bd9f0) | `0xf285D5...` (mesmo XPTO) | `0x1a13d7...` (mesmo XPTO) | — |
+
+#### Validator Sepolia (S3)
+
+| Item | Valor |
+|---|---|
+| Endereço | `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` |
+| Mailbox domain | `11155111` |
+| S3 Bucket | [hyperlane-validator-signatures-igorveras-sepolia](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/) |
+| Announcement | [announcement.json](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/announcement.json) |
+| Último checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
+
+---
+
+### BSC Testnet (chain 97 / domain 97)
+
+| Contrato | Endereço | Explorer |
+|---|---|---|
+| **Mailbox** | `0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D` | [🔗](https://testnet.bscscan.com/address/0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D) |
+| **MerkleTreeHook** | `0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f` | [🔗](https://testnet.bscscan.com/address/0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f) |
+| **AggHook Factory** ✅ | `0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942` | [🔗](https://testnet.bscscan.com/address/0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942) |
+| **Gas Oracle** | `0x124EBCBC018A5D4Efe639f02ED86f95cdC3f6498` | [🔗](https://testnet.bscscan.com/address/0x124EBCBC018A5D4Efe639f02ED86f95cdC3f6498) |
+| **ISM Factory** | `0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763` | [🔗](https://testnet.bscscan.com/address/0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763) |
+| **Validator Announce** | `0xf09701B0a93210113D175461b6135a96773B5465` | [🔗](https://testnet.bscscan.com/address/0xf09701B0a93210113D175461b6135a96773B5465) |
+
+#### Warps BSC Testnet
+
+| Token | Warp EVM | IGP Custom | AggHook | ISM |
+|---|---|---|---|---|
+| **XPV** | [`0x11D6aa...`](https://testnet.bscscan.com/address/0x11D6aa52d60611a513ab783842Dc397C86E7fff0) | [`0x7d17d2...`](https://testnet.bscscan.com/address/0x7d17d237c74Fa1bA3B5B56d94E414a4eAa41cE1e) | [`0x3F11a5...`](https://testnet.bscscan.com/address/0x3F11a590B50F959E52a660567865f1B65C913C5D) | [`0x2b31a0...`](https://testnet.bscscan.com/address/0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA) |
+
+#### Validator BSC Testnet (S3)
+
+| Item | Valor |
+|---|---|
+| Endereço | `0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA` |
+| Mailbox domain | `97` |
+| S3 Bucket | [hyperlane-validator-signatures-igorveras-bsctestnet](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/) |
+| Announcement | [announcement.json](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/announcement.json) |
+| Último checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
+
+---
+
+### Terra Classic (chain rebel-2 / domain 1325)
+
+| Item | Valor |
+|---|---|
+| RPC | `https://rpc.terra-classic.hexxagon.dev` |
+| LCD | `https://lcd.terra-classic.hexxagon.dev` |
+| Explorer | [finder.hexxagon.io/rebel-2](https://finder.hexxagon.io/rebel-2) |
+
+#### Warps Terra Classic
+
+| Token | Warp Terra Classic | Hex bytes32 | CW20 Collateral |
+|---|---|---|---|
+| **XPTO** | [`terra16ql6l4...`](https://finder.hexxagon.io/rebel-2/address/terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm) | `0xd03fafd5...e26a1` | `terra1zle6pw...` |
+| **XPTV** | [`terra1n8y4s...`](https://finder.hexxagon.io/rebel-2/address/terra1n8y4sj9lrqq66pf7je0nm7s6nhln5z4s3accw9g2aassdh8dzqts9y0928) | `0x99c95848...d1017` | `terra19ujvy...` |
+| **XPV** | [`terra1dnflu...`](https://finder.hexxagon.io/rebel-2/address/terra1dnflusc7slapvals97em3fj4vrfyx90npr3znq6y45qjy7hhd6jqchqsgx) | `0x6cd3fe43...6ea4` | `terra1f2jw3...` |
+| **wLUNC** | [`terra1zlm0h...`](https://finder.hexxagon.io/rebel-2/address/terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml) | `0x17f6fba8...120b` | `uluna` (native) |
+
+---
+
+### Verificações rápidas via cast
+
+```bash
+# Verificar hook de qualquer Warp (deve ser o AggHook, não o IGP)
+cast call $WARP "hook()(address)" --rpc-url $RPC
+
+# Verificar owner de qualquer contrato
+cast call $WARP "owner()(address)" --rpc-url $RPC
+
+# Verificar router Terra Classic configurado no Warp EVM
+cast call $WARP "routers(uint32)(bytes32)" 1325 --rpc-url $RPC
+
+# Verificar router BSC Testnet configurado no Warp EVM
+cast call $WARP "routers(uint32)(bytes32)" 97 --rpc-url $RPC
+
+# Verificar ISM do Warp
+cast call $WARP "interchainSecurityModule()(address)" --rpc-url $RPC
+
+# Verificar saldo de uma carteira
+cast balance $ENDERECO --rpc-url $RPC --ether
+
+# Verificar último checkpoint do validator no S3
+curl -s "https://SEU-BUCKET.s3.REGIAO.amazonaws.com/checkpoint_latest_index.json"
+```
+
+---
+
+## 16. Como encontrar endereços Hyperlane de qualquer rede
+
+Quando for configurar uma nova rede EVM (mainnet ou testnet), os endereços dos contratos Hyperlane oficiais estão disponíveis em duas fontes principais.
+
+### Fonte 1 — Hyperlane Registry (npm)
+
+O pacote `@hyperlane-xyz/registry` contém todos os endereços oficiais por rede:
+
+```bash
+# Instalar (já está no projeto como dependência)
+npm install @hyperlane-xyz/registry
+
+# Consultar endereços de uma rede específica
+node -e "
+const addresses = require('@hyperlane-xyz/registry/dist/chains/bsctestnet/addresses.json');
+console.log(JSON.stringify(addresses, null, 2));
+"
+
+# Ou via arquivo direto no node_modules
+cat node_modules/@hyperlane-xyz/registry/dist/chains/bsctestnet/addresses.json
+cat node_modules/@hyperlane-xyz/registry/dist/chains/sepolia/addresses.json
+```
+
+**Campos importantes que você precisa para o `warp-evm-config.json`:**
+
+| Campo no JSON | Chave no registry |
+|---|---|
+| `mailbox.address` | `mailbox` |
+| `hook.merkle_tree` | `merkleTreeHook` |
+| `hook.agg_hook_factory` | `staticAggregationHookFactory` |
+| `igp.official_address` | `interchainGasPaymaster` |
+| `igp.gas_oracle` | `storageGasOracle` |
+| `ism.factory` | `staticMessageIdMultisigIsmFactory` |
+
+### Fonte 2 — GitHub Hyperlane Registry
+
+Acesse diretamente pelo GitHub:
+
+```
+https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/<NOME_DA_REDE>
+```
+
+Exemplo para BSC Testnet:
+- Endereços: [chains/bsctestnet/addresses.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/bsctestnet/addresses.yaml)
+- Metadados: [chains/bsctestnet/metadata.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/bsctestnet/metadata.yaml)
+
+Exemplo para Sepolia:
+- Endereços: [chains/sepolia/addresses.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/sepolia/addresses.yaml)
+
+### Fonte 3 — Hyperlane CLI
+
+```bash
+# Listar todas as redes suportadas
+hyperlane config show --chains
+
+# Ver contratos de uma rede específica
+hyperlane config show --chains sepolia
+```
+
+### Verificar se um endereço tem código (contrato deployado)
+
+Antes de usar qualquer endereço de factory ou contrato Hyperlane, **sempre confirme** que tem código:
+
+```bash
+# Se retornar "0x" → sem código, endereço errado ou rede errada
+cast code $ENDERECO --rpc-url $RPC
+
+# Verificar múltiplos endereços de uma vez
+for ADDR in 0xADDR1 0xADDR2 0xADDR3; do
+    CODE=$(cast code $ADDR --rpc-url $RPC 2>/dev/null | wc -c)
+    [ $CODE -gt 5 ] && echo "✅ $ADDR" || echo "❌ $ADDR (sem código)"
+done
+```
+
+### Encontrar o domain ID de uma rede
+
+O domain ID Hyperlane geralmente é igual ao `chainId` da rede. Confirme em:
+
+```bash
+# Consultar no registry
+node -e "
+const meta = require('@hyperlane-xyz/registry/dist/chains/bsctestnet/metadata.json');
+console.log('chainId:', meta.chainId, '| domainId:', meta.domainId || meta.chainId);
+"
+```
+
+| Rede | chainId | domain Hyperlane |
+|---|---|---|
+| Ethereum | 1 | 1 |
+| Sepolia | 11155111 | 11155111 |
+| BSC | 56 | 56 |
+| BSC Testnet | 97 | 97 |
+| Polygon | 137 | 137 |
+| Arbitrum | 42161 | 42161 |
+| Optimism | 10 | 10 |
+| **Terra Classic** | rebel-2 | **1325** |

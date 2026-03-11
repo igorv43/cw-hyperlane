@@ -247,7 +247,7 @@
       "hook": {
         "_comment": "Merkle Tree Hook BSC Testnet. Usar AggregationHook=[merkle_tree+igp_custom]",
         "merkle_tree": "0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f",
-        "agg_hook_factory": "0x0a71AcC99967829eE305a285750017C4916Ca269"
+        "agg_hook_factory": "0xa1145B39F1c7Ef9aA593BC1DB1634b00CC020942"
       },
       "igp": {
         "_comment": "IGP BSC Testnet — gas oracle fornece preços BNB/gas",
@@ -265,25 +265,37 @@
           "deployed": true,
           "address": "0x2144Be4477202ba2d50c9A8be3181241878cf7D8",
           "igp_custom": "",
+          "hook_aggregation": "",
           "owner": "0x133fD7F7094DBd17b576907d052a5aCBd48dB526"
         },
         "ustc": {
           "deployed": false,
           "address": "",
           "igp_custom": "",
+          "hook_aggregation": "",
           "owner": ""
         },
         "juris": {
           "deployed": false,
           "address": "",
           "igp_custom": "",
+          "hook_aggregation": "",
           "owner": ""
         },
         "xpto": {
           "deployed": false,
           "address": "",
           "igp_custom": "",
+          "hook_aggregation": "",
           "owner": ""
+        },
+        "xpv": {
+          "deployed": true,
+          "address": "0x11D6aa52d60611a513ab783842Dc397C86E7fff0",
+          "igp_custom": "0x7d17d237c74Fa1bA3B5B56d94E414a4eAa41cE1e",
+          "hook_aggregation": "0x3F11a590B50F959E52a660567865f1B65C913C5D",
+          "_hook_note": "AggregationHook=[MerkleTreeHook+igp_custom]. Setado via setHook() no Warp. Necessário para msgs entrarem na merkle tree do validator.",
+          "owner": "0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA"
         }
       }
     },

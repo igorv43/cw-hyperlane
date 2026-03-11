@@ -1,0 +1,32 @@
+{
+  "sealevel": {
+    "keypair": "/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json",
+    "rpc": "https://api.testnet.solana.com",
+    "domain": "1399811150"
+  },
+  "cosmos": {
+    "domain": "1325",
+    "keyName": "hypelane-val-testnet",
+    "chainId": "rebel-2",
+    "rpc": "https://rpc.terra-classic.hexxagon.dev",
+    "fees": "12000000uluna"
+  },
+  "token": {
+    "metadataUri": "https://raw.githubusercontent.com/igorv43/cw-hyperlane/refs/heads/main/warp/solana/metadata-juris.json",
+    "decimals": 6
+  },
+  "ism": {
+    "programId": "5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh"
+  },
+  "terraWarp": {
+    "bech32": "terra1stu3cl7mhtsc2mf9cputawfd6v6e4a2nkmhhphh47lsrr3j6ktdqlcfe2l",
+    "hex": "0x82f91c7fdbbae1856d25c078beb92dd3359af553b6ef70def5f7e031c65ab2da"
+  },
+  "igp": {
+    "programId": "5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2",
+    "account": "E9i32KsKGQZMYTguZ81VHUueNvpTGh7nb9J5bRif4xT1"
+  },
+  "owner": {
+    "address": "EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd"
+  }
+}

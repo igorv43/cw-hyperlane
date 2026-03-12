@@ -362,7 +362,7 @@ async function main() {
 
     const client = await SigningCosmWasmClient.connectWithSigner(
         RPC, wallet,
-        { gasPrice: GasPrice.fromString('0.015uluna') }
+        { gasPrice: GasPrice.fromString('28.325uluna') }
     );
 
     let txHash;

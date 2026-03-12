@@ -40,7 +40,9 @@ OK="${G}✅${NC}"; ERR="${R}❌${NC}"; WARN="${Y}⚠️ ${NC}"; INFO="${B}ℹ️
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVM_CONFIG="$SCRIPT_DIR/warp-evm-config.json"        # tokens Terra Classic
 SOL_CONFIG="$SCRIPT_DIR/warp-sealevel-config.json"   # redes Solana
-LOG_FILE="$SCRIPT_DIR/create-warp-sealevel.log"
+LOG_DIR="$SCRIPT_DIR/log"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/create-warp-sealevel.log"
 STATE_FILE="$SCRIPT_DIR/.warp-sealevel-state.json"
 
 # Auto-detectar PROJECT_ROOT (para node_modules / cosmjs)
@@ -1040,7 +1042,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 TOKEN_UPPER=$(echo "$TOKEN_KEY" | tr '[:lower:]' '[:upper:]')
 NET_UPPER=$(echo "$NET_KEY" | tr '[:lower:]' '[:upper:]')
-INFO_FILE="$SCRIPT_DIR/WARP-${NET_UPPER}-${TOKEN_UPPER}.txt"
+INFO_FILE="$LOG_DIR/WARP-${NET_UPPER}-${TOKEN_UPPER}.txt"
 
 cat > "$INFO_FILE" <<EOF
 ═══════════════════════════════════════════════════════════

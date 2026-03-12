@@ -18,6 +18,8 @@ TOKEN_SYMBOL="${TOKEN_SYMBOL:-XPTO}"
 
 # RPC / LCD da Terra Classic (lê do warp-evm-config.json se existir)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG_DIR="$SCRIPT_DIR/log"
+mkdir -p "$LOG_DIR"
 CONFIG_JSON="$SCRIPT_DIR/warp-evm-config.json"
 
 if command -v jq &>/dev/null && [ -f "$CONFIG_JSON" ]; then
@@ -282,7 +284,7 @@ echo -e "   ${CYAN}https://finder.terra-classic.hexxagon.dev/testnet/tx/${TX_HAS
 echo -e ""
 
 # ─── Salvar relatório ──────────────────────────────────────────────────────────
-REPORT_FILE="$SCRIPT_DIR/TRANSFER-CW20-$(date +%Y%m%d-%H%M%S).txt"
+REPORT_FILE="$LOG_DIR/TRANSFER-CW20-$(date +%Y%m%d-%H%M%S).txt"
 cat > "$REPORT_FILE" <<REPORT
 TRANSFERÊNCIA CW20 — TERRA CLASSIC
 ====================================

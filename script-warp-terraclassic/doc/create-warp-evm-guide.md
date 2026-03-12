@@ -1,7 +1,7 @@
 # Guia Completo: `create-warp-evm.sh`
 
 > Script interativo para criar e configurar Warp Routes Hyperlane em redes EVM conectadas à Terra Classic.  
-> Totalmente portável — basta copiar a pasta `script-certo/` para qualquer projeto `cw-hyperlane`.
+> Totalmente portável — basta copiar a pasta `script-warp-terraclassic/` para qualquer projeto `cw-hyperlane`.
 
 ---
 
@@ -86,10 +86,10 @@ Para cada par **token + rede EVM** escolhido, o script executa de forma automati
 
 ## 3. Estrutura de arquivos
 
-A pasta `script-certo/` é autocontida. Copie-a inteira para qualquer projeto `cw-hyperlane`:
+A pasta `script-warp-terraclassic/` é autocontida. Copie-a inteira para qualquer projeto `cw-hyperlane`:
 
 ```
-script-certo/
+script-warp-terraclassic/
 │
 ├── create-warp-evm.sh                     ← script principal de deploy (executável)
 ├── enroll-terra-router.sh                 ← vincula rota EVM no Warp Terra Classic
@@ -101,11 +101,16 @@ script-certo/
 ├── context/
 │   └── terraclassic.json                  ← deployments existentes na Terra Classic
 │
-├── example/warp/
-│   ├── terraclassic-cw20-xpto.json        ← exemplo CW20 collateral
-│   ├── terraclassic-cw20-juris.json       ← exemplo CW20 collateral
-│   ├── terraclassic-native-ustc.json      ← exemplo native collateral
-│   └── terraclassic-native.json           ← exemplo native collateral (genérico)
+├── warp/
+│   ├── terraclassic-cw20-xpto.json        ← config CW20 collateral (gerado/editável)
+│   ├── terraclassic-cw20-juris.json       ← config CW20 collateral
+│   ├── terraclassic-native-ustc.json      ← config native collateral
+│   ├── terraclassic-native.json           ← config native collateral (genérico)
+│   └── warp-<rede>-<token>.yaml           ← YAMLs do Hyperlane CLI (gerados automaticamente)
+│
+├── log/
+│   ├── create-warp-evm.log                ← log completo de execução
+│   └── WARP-<REDE>-<TOKEN>.txt            ← relatórios de deploy
 │
 └── doc/
     ├── create-warp-evm-guide.md           ← este documento
@@ -116,9 +121,9 @@ script-certo/
 
 | Arquivo | Conteúdo |
 |---|---|
-| `create-warp-evm.log` | Log completo da execução |
-| `warp-<rede>-<token>.yaml` | YAML gerado para o CLI Hyperlane |
-| `WARP-<REDE>-<TOKEN>.txt` | Relatório com todos os endereços |
+| `log/create-warp-evm.log` | Log completo da execução |
+| `warp/warp-<rede>-<token>.yaml` | YAML gerado para o CLI Hyperlane |
+| `log/WARP-<REDE>-<TOKEN>.txt` | Relatório com todos os endereços |
 | `.warp-evm-state.json` | Estado salvo (permite retomar após falha) |
 
 ---
@@ -338,8 +343,8 @@ networks:
 ### 6.1 Execução completa (do zero)
 
 ```bash
-# 1. Entrar na pasta script-certo (ou na raiz do projeto)
-cd ~/cw-hyperlane/script-certo
+# 1. Entrar na pasta script-warp-terraclassic (ou na raiz do projeto)
+cd ~/cw-hyperlane/script-warp-terraclassic
 
 # 2. Dar permissão de execução (apenas na primeira vez)
 chmod +x create-warp-evm.sh
@@ -391,7 +396,7 @@ export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"  ← chave sem prefixo 0x
 ```
 
 O script irá automaticamente:
-1. Gerar o arquivo de configuração `example/warp/terraclassic-<tipo>-<token>.json`
+1. Gerar o arquivo de configuração `warp/terraclassic-<tipo>-<token>.json`
 2. Copiar o `config.yaml` para a raiz do projeto (necessário para o `yarn cw-hpl`)
 3. Executar `yarn cw-hpl warp create ... -n terraclassic`
 4. Extrair o endereço `terra1...` do output
@@ -407,7 +412,7 @@ Sem `TERRA_PRIVATE_KEY`, o script exibe as instruções e aguarda:
 cd ~/cw-hyperlane
 export PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"
 yarn cw-hpl warp create \
-  ./example/warp/terraclassic-cw20-novotoken.json \
+  ./warp/terraclassic-cw20-novotoken.json \
   -n terraclassic
 ```
 
@@ -457,10 +462,10 @@ export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 
 ### Etapa 1 — Gerar Warp YAML
 
-Gera o arquivo `warp-<rede>-<token>.yaml` para o Hyperlane CLI:
+Gera o arquivo `warp/warp-<rede>-<token>.yaml` para o Hyperlane CLI:
 
 ```yaml
-# Exemplo: warp-sepolia-xpto.yaml
+# Exemplo: warp/warp-sepolia-xpto.yaml
 sepolia:
   isNft: false
   type: synthetic
@@ -484,7 +489,7 @@ Executa o deploy do token sintético na rede EVM via Hyperlane CLI:
 
 ```bash
 hyperlane warp deploy \
-  --config warp-sepolia-xpto.yaml \
+  --config warp/warp-sepolia-xpto.yaml \
   --key $ETH_PRIVATE_KEY \
   --yes
 ```
@@ -707,8 +712,8 @@ Para fazer o deploy manualmente (sem `TERRA_PRIVATE_KEY`):
 ### Token CW20
 
 ```bash
-# 1. Criar o arquivo de configuração (já existe em example/warp/)
-cat example/warp/terraclassic-cw20-novotoken.json
+# 1. Criar o arquivo de configuração (já existe em warp/)
+cat warp/terraclassic-cw20-novotoken.json
 
 # 2. Definir chave privada
 export PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"  ← sem prefixo 0x
@@ -716,17 +721,17 @@ export PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"  ← sem prefixo 0x
 # 3. Deploy (rodar da raiz do projeto)
 cd ~/cw-hyperlane
 yarn cw-hpl warp create \
-  ./example/warp/terraclassic-cw20-novotoken.json \
+  ./warp/terraclassic-cw20-novotoken.json \
   -n terraclassic
 ```
 
 ### Token Native
 
 ```bash
-cat example/warp/terraclassic-native-novotoken.json
+cat warp/terraclassic-native-novotoken.json
 export PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"
 yarn cw-hpl warp create \
-  ./example/warp/terraclassic-native-novotoken.json \
+  ./warp/terraclassic-native-novotoken.json \
   -n terraclassic
 ```
 
@@ -795,7 +800,7 @@ EOF
 
 ## 11. Scripts auxiliares
 
-A pasta `script-certo/` contém scripts de suporte para operações pontuais — úteis tanto para correções manuais quanto para uso após o deploy inicial.
+A pasta `script-warp-terraclassic/` contém scripts de suporte para operações pontuais — úteis tanto para correções manuais quanto para uso após o deploy inicial.
 
 ---
 
@@ -809,7 +814,7 @@ Chama `router.set_route` no contrato Warp da **Terra Classic** para registrar um
 - Precisa re-registrar a rota após troca do contrato EVM
 
 ```bash
-cd ~/cw-hyperlane/script-certo
+cd ~/cw-hyperlane/script-warp-terraclassic
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 ./enroll-terra-router.sh
 ```
@@ -834,7 +839,7 @@ Realiza uma transferência simples de tokens CW20 entre contas na Terra Classic.
 | `AMOUNT` | `100000000000` |
 
 ```bash
-cd ~/cw-hyperlane/script-certo
+cd ~/cw-hyperlane/script-warp-terraclassic
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 
 # Transferência padrão (100 XPTO)
@@ -846,22 +851,22 @@ export RECIPIENT_ADDRESS="terra1OUTRO..."
 ./transfer-cw20-terra.sh
 ```
 
-O script exibe saldos antes e depois, salva relatório em `TRANSFER-CW20-<timestamp>.txt`.
+O script exibe saldos antes e depois, salva relatório em `log/TRANSFER-CW20-<timestamp>.txt`.
 
 ---
 
 ## 12. Usando em outro projeto (portabilidade)
 
-A pasta `script-certo/` foi projetada para ser **100% portável**. O script detecta automaticamente a raiz do projeto (onde está o `package.json`) subindo os diretórios.
+A pasta `script-warp-terraclassic/` foi projetada para ser **100% portável**. O script detecta automaticamente a raiz do projeto (onde está o `package.json`) subindo os diretórios.
 
 ### Copiar para um novo projeto
 
 ```bash
 # Copiar a pasta inteira
-cp -r script-certo/ /caminho/do/novo-projeto/script-certo/
+cp -r script-warp-terraclassic/ /caminho/do/novo-projeto/script-warp-terraclassic/
 
 # Entrar na pasta
-cd /caminho/do/novo-projeto/script-certo/
+cd /caminho/do/novo-projeto/script-warp-terraclassic/
 
 # Executar
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
@@ -874,7 +879,7 @@ export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 | Situação | O que acontece |
 |---|---|
 | `package.json` está no diretório pai | `PROJECT_ROOT` é definido como o pai |
-| `config.yaml` está em `script-certo/` mas o `yarn cw-hpl` precisa na raiz | O script copia automaticamente antes de executar |
+| `config.yaml` está em `script-warp-terraclassic/` mas o `yarn cw-hpl` precisa na raiz | O script copia automaticamente antes de executar |
 | `context/terraclassic.json` é escrito pelo `cw-hpl` na raiz | O script lê do `PROJECT_ROOT/context/` |
 
 ### Requisito único
@@ -1318,7 +1323,7 @@ cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 Se preferir usar o script ao invés dos comandos manuais, basta definir os endereços já deployados e reexecutar — o script pula as etapas já concluídas e executa apenas o que falta (como o deploy do AggHook):
 
 ```bash
-cd ~/cw-hyperlane/script-certo
+cd ~/cw-hyperlane/script-warp-terraclassic
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 

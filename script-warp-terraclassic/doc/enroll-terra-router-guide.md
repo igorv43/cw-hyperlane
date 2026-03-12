@@ -67,10 +67,10 @@ O script:
 
 ```bash
 # Token XPTO — verificar se warp_address está preenchido
-jq '.terra_classic.tokens.xpto.terra_warp' script-certo/warp-evm-config.json
+jq '.terra_classic.tokens.xpto.terra_warp' script-warp-terraclassic/warp-evm-config.json
 
 # Rede Sepolia — verificar se warp xpto está deployado
-jq '.networks.sepolia.warp_tokens.xpto' script-certo/warp-evm-config.json
+jq '.networks.sepolia.warp_tokens.xpto' script-warp-terraclassic/warp-evm-config.json
 ```
 
 ---
@@ -78,8 +78,8 @@ jq '.networks.sepolia.warp_tokens.xpto' script-certo/warp-evm-config.json
 ## 4. Como executar
 
 ```bash
-# 1. Entrar na pasta script-certo
-cd ~/cw-hyperlane/script-certo
+# 1. Entrar na pasta script-warp-terraclassic
+cd ~/cw-hyperlane/script-warp-terraclassic
 
 # 2. Dar permissão (apenas primeira vez)
 chmod +x enroll-terra-router.sh
@@ -332,10 +332,10 @@ domain 11155111 → null
 
 ```bash
 # ✅ Correto:
-export TERRA_PRIVATE_KEY="a5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6"
+export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # ❌ Com 0x — o script remove automaticamente, mas verifique se não há espaços:
-export TERRA_PRIVATE_KEY="0xa5123190601045e1266e57c5d5b1a77f0897b39ea63ed2c761946686939c3cb6"
+export TERRA_PRIVATE_KEY="0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
 ---

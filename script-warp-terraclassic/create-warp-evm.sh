@@ -38,7 +38,9 @@ OK="${G}✅${NC}"; ERR="${R}❌${NC}"; WARN="${Y}⚠️ ${NC}"; INFO="${B}ℹ️
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/warp-evm-config.json"
 IGP_SOL="$SCRIPT_DIR/TerraClassicIGPStandalone-Sepolia.sol"
-LOG_FILE="$SCRIPT_DIR/create-warp-evm.log"
+LOG_DIR="$SCRIPT_DIR/log"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/create-warp-evm.log"
 STATE_FILE="$SCRIPT_DIR/.warp-evm-state.json"
 
 # Auto-detectar PROJECT_ROOT (diretório que contém package.json e yarn)
@@ -292,7 +294,7 @@ if [ "$TERRA_WARP_DEPLOYED" != "true" ] || [ -z "$TERRA_WARP_ADDR" ]; then
     log ""
 
     # ── Gerar arquivo de configuração para a Terra Classic ──────────────────
-    TERRA_WARP_CONFIG="$SCRIPT_DIR/example/warp/terraclassic-${TERRA_WARP_TYPE}-${TOKEN_KEY}.json"
+    TERRA_WARP_CONFIG="$SCRIPT_DIR/warp/terraclassic-${TERRA_WARP_TYPE}-${TOKEN_KEY}.json"
     mkdir -p "$(dirname "$TERRA_WARP_CONFIG")"
 
     if [ "$TERRA_WARP_TYPE" = "cw20" ]; then
@@ -658,7 +660,7 @@ log_ok "RPC OK: $NET_RPC"
 # ═════════════════════════════════════════════════════════════════════════════
 log_sep "ETAPA 1 — GERAR WARP YAML"
 
-WARP_YAML="$SCRIPT_DIR/warp-${NET_KEY}-${TOKEN_KEY}.yaml"
+WARP_YAML="$SCRIPT_DIR/warp/warp-${NET_KEY}-${TOKEN_KEY}.yaml"
 
 VALIDATORS_YAML=""
 while IFS= read -r VAL; do
@@ -1290,7 +1292,7 @@ log "${INFO} Log: ${Y}${LOG_FILE}${NC}"
 log ""
 
 # Salvar relatório
-REPORT_FILE="$SCRIPT_DIR/WARP-${NET_KEY^^}-${TOKEN_KEY^^}.txt"
+REPORT_FILE="$LOG_DIR/WARP-${NET_KEY^^}-${TOKEN_KEY^^}.txt"
 cat > "$REPORT_FILE" <<TXT
 ═══════════════════════════════════════════════════════════
   WARP: ${TOKEN_SYMBOL} em ${NET_DISPLAY^^}

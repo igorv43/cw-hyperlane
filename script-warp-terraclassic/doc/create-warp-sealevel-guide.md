@@ -1,7 +1,7 @@
 # Guia Completo: `create-warp-sealevel.sh`
 
 > Script interativo para criar e configurar Warp Routes Hyperlane em **Solana (Sealevel)** conectados à Terra Classic.  
-> Totalmente portável — basta copiar a pasta `script-certo/` para qualquer projeto `cw-hyperlane`.
+> Totalmente portável — basta copiar a pasta `script-warp-terraclassic/` para qualquer projeto `cw-hyperlane`.
 
 ---
 
@@ -123,13 +123,14 @@ export TERRA_PRIVATE_KEY="sua_chave_privada_terra_em_hex"
 ## 4. Estrutura de arquivos
 
 ```
-script-certo/
+script-warp-terraclassic/
 ├── create-warp-sealevel.sh       # Script principal
 ├── warp-sealevel-config.json     # Config redes Solana + tokens warp
 ├── warp-evm-config.json          # Config tokens Terra Classic (compartilhado com EVM)
 ├── .warp-sealevel-state.json     # Estado do último deploy (gerado automaticamente)
-├── create-warp-sealevel.log      # Log de execução
-├── WARP-SOLANATESTNET-XPTO.txt   # Relatório final gerado após deploy (exemplo)
+├── log/
+│   ├── create-warp-sealevel.log      # Log de execução
+│   └── WARP-SOLANATESTNET-XPTO.txt   # Relatório final gerado após deploy (exemplo)
 └── doc/
     └── create-warp-sealevel-guide.md  # Este documento
 
@@ -331,7 +332,7 @@ https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/refs/heads/main/warp/sola
 ### 8.1 Execução completa (do zero)
 
 ```bash
-cd ~/cw-hyperlane/script-certo
+cd ~/cw-hyperlane/script-warp-terraclassic
 
 # Exportar chaves
 export TERRA_PRIVATE_KEY="sua_chave_privada_terra_hex"
@@ -346,7 +347,7 @@ O script vai:
 2. Exibir menu para selecionar o **token** (da Terra Classic)
 3. Exibir menu para selecionar a **rede Solana**
 4. Executar os 6 passos automaticamente
-5. Gravar um relatório `WARP-SOLANATESTNET-TOKEN.txt`
+5. Gravar um relatório `log/WARP-SOLANATESTNET-TOKEN.txt`
 
 ### 8.2 Pulando etapas já executadas
 
@@ -380,7 +381,7 @@ O script salva o estado em `.warp-sealevel-state.json`. Se houver falha, o estad
 Para descartar o estado e começar do zero:
 
 ```bash
-rm -f ~/cw-hyperlane/script-certo/.warp-sealevel-state.json
+rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
 ```
 
 ---
@@ -521,7 +522,7 @@ Após o deploy bem-sucedido, **atualize o `warp-sealevel-config.json`** para reg
 }
 ```
 
-> O script grava um relatório `WARP-SOLANATESTNET-TOKEN.txt` com todos os endereços. Use-o como referência.
+> O script grava um relatório `log/WARP-SOLANATESTNET-TOKEN.txt` com todos os endereços. Use-o como referência.
 
 ---
 
@@ -927,7 +928,7 @@ cargo build --release -p hyperlane-sealevel-client
 
 ### ❌ `error: Found argument '--use-rpc' which wasn't expected`
 
-**Causa:** A Solana CLI instalada é **anterior à v1.16** e não reconhece o flag `--use-rpc` que o cliente Rust do Hyperlane adiciona por padrão. O deploy falha em todas as tentativas, mas o script pode ter gerado um `WARP-*.txt` com Program IDs locais **que nunca chegaram à testnet** (os endereços são dos keypairs gerados localmente, não de contas reais on-chain).
+**Causa:** A Solana CLI instalada é **anterior à v1.16** e não reconhece o flag `--use-rpc` que o cliente Rust do Hyperlane adiciona por padrão. O deploy falha em todas as tentativas, mas o script pode ter gerado um `log/WARP-*.txt` com Program IDs locais **que nunca chegaram à testnet** (os endereços são dos keypairs gerados localmente, não de contas reais on-chain).
 
 **Como verificar se o deploy realmente aconteceu:**
 
@@ -951,7 +952,7 @@ cargo build --release -p hyperlane-sealevel-client
 rm -f environments/testnet/warp-routes/TOKEN/keys/*.json
 
 # 4. Resetar o state e o config
-rm -f ~/cw-hyperlane/script-certo/.warp-sealevel-state.json
+rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
 # Em warp-sealevel-config.json: setar deployed:false, program_id:"", mint_address:""
 
 # 5. Reexecutar o script
@@ -982,7 +983,7 @@ solana balance PUBKEY --url https://api.testnet.solana.com
 ls /home/lunc/hyperlane-monorepo/rust/sealevel/target/deploy/*.so
 
 # Ver log completo
-cat ~/cw-hyperlane/script-certo/create-warp-sealevel.log
+cat ~/cw-hyperlane/script-warp-terraclassic/log/create-warp-sealevel.log
 ```
 
 **Solução para .so ausente:**

@@ -11,7 +11,7 @@
       "domain": 1399811150,
       "rpc": "https://api.testnet.solana.com",
       "explorer": "https://explorer.solana.com/?cluster=testnet",
-      "keypair": "/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json",
+      "keypair": "/home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json",
       "monorepo_dir": "/home/lunc/hyperlane-monorepo/rust/sealevel",
       "ism": {
         "_comment": "MultisigISM program — valida mensagens da Terra Classic recebidas no Solana",

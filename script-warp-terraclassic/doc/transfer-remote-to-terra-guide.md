@@ -14,6 +14,7 @@ Envio de tokens **EVM → Terra Classic** e **Sealevel (Solana) → Terra Classi
 6. [Variáveis de ambiente](#6-variáveis-de-ambiente)
 7. [Fluxo EVM → Terra Classic](#7-fluxo-evm--terra-classic)
 8. [Fluxo Sealevel → Terra Classic](#8-fluxo-sealevel--terra-classic)
+   - [Importar keypair do Phantom](#importar-keypair-de-uma-carteira-phantom)
 9. [Como verificar a entrega](#9-como-verificar-a-entrega)
 10. [Consultar saldos](#10-consultar-saldos)
 11. [Logs e relatórios](#11-logs-e-relatórios)
@@ -155,7 +156,7 @@ TOKEN_KEY=xpto \
 SOURCE_NETWORK=solanatestnet \
 RECIPIENT="terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k" \
 AMOUNT=1000000 \
-SOL_KEYPAIR="/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json" \
+SOL_KEYPAIR="/home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json" \
 AUTO_CONFIRM=s \
 ./transfer-remote-to-terra.sh
 ```
@@ -269,15 +270,17 @@ O `RECIPIENT_B32` é o endereço `terra1...` convertido para hex de 64 caractere
 
 ```bash
 # Saldo do token XPTO (SPL) no Solana Testnet
-spl-token balance \
-    --address Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
-    --owner EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd \
+# Sintaxe correta: <MINT_ADDRESS> --owner <OWNER> --url <RPC>
+spl-token balance Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
+    --owner BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 
 # Saldo nativo de SOL (necessário para pagar IGP fee)
-solana balance EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd \
+solana balance BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 ```
+
+> **ℹ️ Nota sobre token accounts:** Se o comando retornar `Could not find token account`, significa que a carteira ainda não recebeu esse token e portanto não pode enviá-lo. É necessário primeiro receber o token via transferência TC → Solana.
 
 ### Keypair Solana configurado no script
 
@@ -285,12 +288,95 @@ O campo `keypair` em `warp-sealevel-config.json` define o caminho padrão do key
 
 ```json
 "solanatestnet": {
-  "keypair": "/home/lunc/keys/solana-keypair-EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd.json",
+  "keypair": "/home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json",
   ...
 }
 ```
 
 Para usar um keypair diferente, passe `SOL_KEYPAIR=/caminho/para/keypair.json` como variável de ambiente.
+
+---
+
+### Importar keypair de uma carteira Phantom
+
+Se você tem tokens SPL em uma carteira criada pelo **Phantom** (ou outra wallet de browser), você pode exportar a chave privada e converter para o formato JSON que o Solana CLI e o `hyperlane-sealevel-client` esperam.
+
+#### Passo 1 — Exportar a chave do Phantom
+
+1. Abra o **Phantom** e selecione a conta desejada
+2. Clique nos **3 pontos** (`···`) ao lado do nome da conta → **Account Details**
+3. Clique em **Show Private Key**
+4. Confirme a senha da carteira
+5. Copie a string exibida — é uma chave em formato **base58** (ex: `5K...abc`)
+
+#### Passo 2 — Converter para keypair JSON
+
+Crie o script de conversão:
+
+```bash
+cat << 'EOF' > /tmp/convert-phantom-key.py
+import sys, json, base58
+
+if len(sys.argv) < 2:
+    print("Uso: python3 convert-phantom-key.py <CHAVE_PRIVADA_BASE58>")
+    sys.exit(1)
+
+private_key_b58 = sys.argv[1].strip()
+try:
+    key_bytes = base58.b58decode(private_key_b58)
+    if len(key_bytes) == 64:
+        keypair_array = list(key_bytes)
+    elif len(key_bytes) == 32:
+        try:
+            from nacl.signing import SigningKey
+            sk = SigningKey(key_bytes)
+            vk = sk.verify_key
+            keypair_array = list(key_bytes) + list(bytes(vk))
+        except ImportError:
+            keypair_array = list(key_bytes) + [0]*32
+            print("AVISO: nacl não disponível, instale com: pip3 install pynacl")
+    else:
+        print(f"Tamanho inesperado: {len(key_bytes)} bytes"); sys.exit(1)
+    print(json.dumps(keypair_array))
+except Exception as e:
+    print(f"Erro: {e}"); sys.exit(1)
+EOF
+```
+
+Execute a conversão (substitua `COLE_SUA_CHAVE` pela chave exportada do Phantom):
+
+```bash
+# Instalar dependências se necessário
+pip3 install base58 pynacl
+
+# Converter e salvar (substitua BirXd4... pelo pubkey da sua carteira)
+python3 /tmp/convert-phantom-key.py "COLE_SUA_CHAVE" \
+    > /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
+
+# Verificar — deve exibir o pubkey correto da sua carteira
+solana-keygen pubkey /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
+```
+
+#### Passo 3 — Atualizar o config
+
+Edite `warp-sealevel-config.json` e aponte o campo `keypair` para o novo arquivo:
+
+```json
+"solanatestnet": {
+  "keypair": "/home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json",
+  ...
+}
+```
+
+> **⚠️ Segurança:** O arquivo `.json` do keypair contém a chave privada completa. Mantenha-o com permissões restritas (`chmod 600`) e nunca o compartilhe ou comite em repositórios.
+
+```bash
+chmod 600 /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
+```
+
+#### Por que usar uma carteira Phantom e não uma gerada pelo CLI?
+
+Uma carteira criada com `solana-keygen new` começa vazia — ela não tem token accounts criadas para nenhum token SPL. Para enviar XPTO de Solana → TC, a carteira **precisa ter XPTO** previamente recebido (via transferência TC → Solana). Uma carteira Phantom que já recebeu tokens tem as token accounts criadas e o saldo disponível para queimar na transferência cross-chain.
 
 ---
 
@@ -525,16 +611,58 @@ cast balance <SUA_CARTEIRA_EVM> --rpc-url https://ethereum-sepolia-rpc.publicnod
 
 ---
 
-### ❌ `insufficient balance` (Sealevel)
+### ❌ `SEM SALDO SPL — TRANSFERÊNCIA CANCELADA` (Sealevel)
 
-O programa de warp não encontrou tokens SPL suficientes para queimar. Verifique:
+O script detectou que a carteira não tem tokens SPL do token desejado. Isso ocorre quando:
 
+1. **A carteira nunca recebeu esse token** — a token account não existe ainda
+2. **O saldo é zero** — todos os tokens foram queimados em transferências anteriores
+
+**Diagnóstico:**
 ```bash
-spl-token balance \
-    --address <MINT_ADDRESS> \
-    --owner <SUA_CARTEIRA> \
+# Sintaxe correta do spl-token balance (mint + owner + url)
+spl-token balance Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
+    --owner BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 ```
+
+**Solução:** Primeiro envie tokens do Terra Classic para o Solana:
+```bash
+# Passo 1: TC → Solana (mint tokens na carteira Solana)
+TOKEN_KEY=xpto DEST_NETWORK=solanatestnet \
+  RECIPIENT="BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j" \
+  AMOUNT=2000000 AUTO_CONFIRM=s \
+  ./transfer-remote-terra.sh
+
+# Passo 2: após chegar (~2-5 min), enviar Solana → TC
+TOKEN_KEY=xpto SOURCE_NETWORK=solanatestnet \
+  RECIPIENT="terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k" \
+  AMOUNT=1000000 AUTO_CONFIRM=s \
+  ./transfer-remote-to-terra.sh
+```
+
+---
+
+### ❌ `InvalidAccountData` / `BurnChecked` falha (Sealevel)
+
+Erro mais detalhado que indica o mesmo problema: token account inexistente ou sem saldo.
+
+```
+Transaction simulation failed: Error processing Instruction 1: invalid account data for instruction
+Program log: Instruction: BurnChecked
+Program log: Error: InvalidAccountData
+```
+
+**Causa:** A carteira não tem token account criada para o mint em questão.  
+**Solução:** Igual ao caso acima — primeiro receber tokens via TC → Solana.
+
+---
+
+### ❌ Usar carteira criada via `solana-keygen` vs Phantom
+
+Carteiras criadas com `solana-keygen new` começam completamente vazias — sem nenhuma token account SPL. Para enviar tokens Solana → TC, a carteira **precisa ter tokens** previamente recebidos.
+
+Se você tem uma carteira Phantom com saldo, importe-a conforme descrito na [seção 8 — Importar keypair do Phantom](#importar-keypair-de-uma-carteira-phantom).
 
 ---
 

@@ -125,7 +125,8 @@ while IFS= read -r entry; do
     KEYPAIR_V=$(echo "$entry" | cut -d'|' -f6)
     SYM=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].symbol // $t' "$EVM_CFG")
     DISP=$(jq -r --arg n "$NET" '.networks[$n].display_name // $n' "$SOL_CFG")
-    OPTIONS+=("${TOKEN}|${NET}|${PROG_ID}|${DOMAIN}|sealevel|${SOL_RPC_V}|${KEYPAIR_V}")
+    MINT_V=$(echo "$entry" | cut -d'|' -f7)
+    OPTIONS+=("${TOKEN}|${NET}|${PROG_ID}|${DOMAIN}|sealevel|${SOL_RPC_V}|${KEYPAIR_V}|${MINT_V}")
     LABELS+=("  ${SYM} ← ${DISP}  (domain ${DOMAIN})")
 done < <(jq -r '
   .networks | to_entries[]
@@ -136,7 +137,7 @@ done < <(jq -r '
   | .value.keypair as $kp
   | .value.warp_tokens | to_entries[]
   | select(.value.deployed == true and (.value.program_id // "") != "")
-  | [$net, .key, .value.program_id, ($dom|tostring), $rpc, $kp] | join("|")
+  | [$net, .key, .value.program_id, ($dom|tostring), $rpc, $kp, (.value.mint_address // "")] | join("|")
 ' "$SOL_CFG" 2>/dev/null)
 
 if [ ${#OPTIONS[@]} -eq 0 ]; then
@@ -176,6 +177,7 @@ SRC_DOMAIN=$(echo "$SEL_OPT"  | cut -d'|' -f4)
 SRC_TYPE=$(echo "$SEL_OPT"    | cut -d'|' -f5)   # evm | sealevel
 SRC_RPC=$(echo "$SEL_OPT"     | cut -d'|' -f6)
 SOL_KEYPAIR_CFG=$(echo "$SEL_OPT" | cut -d'|' -f7 2>/dev/null || echo "")
+SOL_MINT=$(echo "$SEL_OPT"       | cut -d'|' -f8 2>/dev/null || echo "")
 
 TOKEN_UPPER="${TOKEN_KEY^^}"
 NET_UPPER="${SOURCE_NET^^}"
@@ -228,20 +230,24 @@ if [ "$SRC_TYPE" = "evm" ]; then
     fi
 
     echo -e "${DIM}  Consultando quoteGasPayment para TC (domain ${TC_DOMAIN})...${RESET}"
+    # cast call retorna "109030327234501 [1.09e14]" — extrair só o número com awk
     EVM_GAS_FEE=$(cast call "$WARP_SRC" \
         "quoteGasPayment(uint32)(uint256)" \
         "$TC_DOMAIN" \
-        --rpc-url "$SRC_RPC" 2>/dev/null || echo "")
+        --rpc-url "$SRC_RPC" 2>/dev/null | awk '{print $1}' || echo "")
 
     if [ -z "$EVM_GAS_FEE" ] || ! [[ "$EVM_GAS_FEE" =~ ^[0-9]+$ ]]; then
-        # Fallback: tentar RPC alternativo
+        # Fallback: tentar RPCs alternativos da lista rpc_urls
         for RPC_ALT in $(jq -r --arg n "$SOURCE_NET" '.networks[$n].rpc_urls[]' "$EVM_CFG" 2>/dev/null); do
+            [ "$RPC_ALT" = "$SRC_RPC" ] && continue
+            echo -e "${DIM}  Tentando RPC alternativo: ${RPC_ALT}${RESET}"
             EVM_GAS_FEE=$(cast call "$WARP_SRC" \
                 "quoteGasPayment(uint32)(uint256)" \
                 "$TC_DOMAIN" \
-                --rpc-url "$RPC_ALT" 2>/dev/null || echo "")
+                --rpc-url "$RPC_ALT" 2>/dev/null | awk '{print $1}' || echo "")
             if [ -n "$EVM_GAS_FEE" ] && [[ "$EVM_GAS_FEE" =~ ^[0-9]+$ ]]; then
                 SRC_RPC="$RPC_ALT"
+                echo -e "${DIM}  RPC ativo: ${SRC_RPC}${RESET}"
                 break
             fi
         done
@@ -258,9 +264,18 @@ if [ "$SRC_TYPE" = "evm" ]; then
         done
     fi
 
-    # Converter para ETH para exibição
+    # Converter para ETH para exibição — usar precisão dinâmica para evitar "0.00000000"
     CHAIN_NATIVE=$(jq -r --arg n "$SOURCE_NET" '.networks[$n].native_token.symbol // "ETH"' "$EVM_CFG")
-    EVM_FEE_ETH=$(python3 -c "print(f'{${EVM_GAS_FEE}/1e18:.8f}')" 2>/dev/null || echo "?")
+    EVM_FEE_ETH=$(python3 -c "
+v = ${EVM_GAS_FEE} / 1e18
+# Escolher precisão suficiente para mostrar pelo menos 4 dígitos significativos
+if v >= 0.0001:
+    print(f'{v:.6f}')
+elif v >= 0.000001:
+    print(f'{v:.8f}')
+else:
+    print(f'{v:.12f}')
+" 2>/dev/null || echo "?")
     echo -e "${GREEN}✅ Gas fee: ${EVM_GAS_FEE} wei  (~${EVM_FEE_ETH} ${CHAIN_NATIVE})${RESET}"
 
     # Chave privada EVM
@@ -270,6 +285,76 @@ if [ "$SRC_TYPE" = "evm" ]; then
         read -rs ETH_PRIVATE_KEY; echo ""
     fi
     [ -z "$ETH_PRIVATE_KEY" ] && echo -e "${RED}❌ ETH_PRIVATE_KEY não fornecida.${RESET}" && exit 1
+
+    # ── Verificação prévia de saldos (preflight) ──────────────────────────────
+    SENDER_ADDR=$(cast wallet address "$ETH_PRIVATE_KEY" 2>/dev/null || echo "")
+    if [ -n "$SENDER_ADDR" ]; then
+        echo ""
+        echo -e "${DIM}  Verificando saldos da carteira ${SENDER_ADDR}...${RESET}"
+
+        # Saldo ETH nativo (em wei)
+        ETH_BAL_WEI=$(cast balance "$SENDER_ADDR" --rpc-url "$SRC_RPC" 2>/dev/null | awk '{print $1}' || echo "0")
+        ETH_BAL_WEI=${ETH_BAL_WEI:-0}
+        ETH_BAL_DISP=$(python3 -c "
+v = ${ETH_BAL_WEI} / 1e18
+print(f'{v:.6f}') if v >= 0.0001 else print(f'{v:.8f}') if v >= 0.000001 else print(f'{v:.12f}')
+" 2>/dev/null || echo "?")
+
+        # Saldo do token EVM synthetic
+        TOKEN_BAL=$(cast call "$WARP_SRC" \
+            "balanceOf(address)(uint256)" "$SENDER_ADDR" \
+            --rpc-url "$SRC_RPC" 2>/dev/null | awk '{print $1}' || echo "0")
+        TOKEN_BAL=${TOKEN_BAL:-0}
+
+        echo -e "  Carteira         : ${BOLD}${SENDER_ADDR}${RESET}"
+        echo -e "  Saldo ${CHAIN_NATIVE}        : ${ETH_BAL_DISP} ${CHAIN_NATIVE}"
+        echo -e "  Saldo ${TOKEN_UPPER}       : ${TOKEN_BAL}"
+        echo ""
+
+        PREFLIGHT_OK=true
+
+        # Checar ETH suficiente (fee + buffer de 0.001 ETH para gas da tx)
+        ETH_NEEDED=$((EVM_GAS_FEE + 1000000000000000))  # fee + ~0.001 ETH buffer
+        if [ "$ETH_BAL_WEI" -lt "$ETH_NEEDED" ] 2>/dev/null; then
+            FEE_DISP=$(python3 -c "
+v=${EVM_GAS_FEE}/1e18; print(f'{v:.6f}') if v>=0.0001 else print(f'{v:.8f}')
+" 2>/dev/null || echo "?")
+            echo -e "${RED}  ❌ Saldo ${CHAIN_NATIVE} insuficiente!${RESET}"
+            echo -e "     Necessário : ~${FEE_DISP} ${CHAIN_NATIVE}  (fee IGP + gas da tx)"
+            echo -e "     Disponível : ${ETH_BAL_DISP} ${CHAIN_NATIVE}"
+            echo -e ""
+            echo -e "  ${YELLOW}  💡 Obter ${CHAIN_NATIVE} testnet:${RESET}"
+            if [[ "$SOURCE_NET" == "sepolia" ]]; then
+                echo -e "       https://sepoliafaucet.com"
+                echo -e "       https://www.alchemy.com/faucets/ethereum-sepolia"
+            elif [[ "$SOURCE_NET" == "bsctestnet" ]]; then
+                echo -e "       https://testnet.bnbchain.org/faucet-smart"
+            fi
+            PREFLIGHT_OK=false
+        fi
+
+        # Checar saldo do token
+        if [ "$TOKEN_BAL" = "0" ] || [ -z "$TOKEN_BAL" ] 2>/dev/null; then
+            echo -e "${RED}  ❌ Sem saldo de ${TOKEN_UPPER} nesta carteira!${RESET}"
+            echo -e "     O token ${TOKEN_UPPER} sintético (HypERC20) precisa estar na carteira de origem."
+            echo -e "     Para obter tokens: envie primeiro de Terra Classic → ${NET_UPPER} com recipient ${SENDER_ADDR}"
+            PREFLIGHT_OK=false
+        elif python3 -c "exit(0 if int('${TOKEN_BAL}') >= int('${AMOUNT}') else 1)" 2>/dev/null; then
+            echo -e "${GREEN}  ✅ Saldo ${TOKEN_UPPER}: ${TOKEN_BAL}  (necessário: ${AMOUNT})${RESET}"
+        else
+            echo -e "${RED}  ❌ Saldo ${TOKEN_UPPER} insuficiente!${RESET}"
+            echo -e "     Necessário : ${AMOUNT}"
+            echo -e "     Disponível : ${TOKEN_BAL}"
+            PREFLIGHT_OK=false
+        fi
+
+        if [ "$PREFLIGHT_OK" = "false" ]; then
+            echo ""
+            echo -e "${RED}  Transferência cancelada por falta de saldo.${RESET}"
+            exit 1
+        fi
+        echo ""
+    fi
 fi
 
 # ─── Sealevel: keypair ────────────────────────────────────────────────────────
@@ -408,14 +493,47 @@ if [ "$SRC_TYPE" = "sealevel" ]; then
     # TOKEN_TYPE = synthetic (SealevelHypSynthetic)
     TOKEN_TYPE_SOL="synthetic"
 
+    # ── Preflight: verificar saldo SPL antes de tentar ────────────────────────
+    if [ -n "$SOL_MINT" ]; then
+        SPL_BAL_RAW=$(spl-token balance "$SOL_MINT" \
+            --owner "$SENDER_PUBKEY" \
+            --url "$SRC_RPC" 2>&1 || true)
+        # Se retornar erro de "account not found" ou saldo 0, avisar
+        if echo "$SPL_BAL_RAW" | grep -qi "not found\|Error\|failed"; then
+            echo -e "${RED}╔═══════════════════════════════════════════════════════════╗${RESET}"
+            echo -e "${RED}║  ❌  SEM SALDO SPL — TRANSFERÊNCIA CANCELADA              ║${RESET}"
+            echo -e "${RED}╚═══════════════════════════════════════════════════════════╝${RESET}"
+            echo ""
+            echo -e "${YELLOW}  Carteira  : ${SENDER_PUBKEY}${RESET}"
+            echo -e "${YELLOW}  Mint      : ${SOL_MINT}${RESET}"
+            echo -e "${YELLOW}  Resposta  : ${SPL_BAL_RAW}${RESET}"
+            echo ""
+            echo -e "  💡 Para obter tokens XPTO no Solana, primeiro envie do Terra Classic:"
+            echo -e "     ./transfer-remote-terra.sh"
+            echo ""
+            exit 1
+        fi
+        SPL_BAL=$(echo "$SPL_BAL_RAW" | tr -d '[:space:]')
+        echo -e "   Saldo SPL (${TOKEN_KEY^^}) : ${SPL_BAL}"
+        # Verificar se saldo é zero
+        if [ "$SPL_BAL" = "0" ]; then
+            echo -e "${RED}❌ Saldo SPL é zero. Envie tokens do Terra Classic primeiro.${RESET}"
+            echo -e "   Mint: ${SOL_MINT}"
+            echo -e "   Owner: ${SENDER_PUBKEY}"
+            exit 1
+        fi
+    fi
+
+    # SENDER deve ser o caminho do arquivo keypair (.json), não a public key
+    # RECIPIENT deve ter prefixo 0x para ser interpretado como hex (não como base58 Solana)
     SOL_OUT=$("$SEALEVEL_CLIENT" \
         --url "$SRC_RPC" \
         --keypair "$SOL_KEYPAIR" \
         token transfer-remote \
-        "$SENDER_PUBKEY" \
+        "$SOL_KEYPAIR" \
         "$AMOUNT" \
         "$TC_DOMAIN" \
-        "$RECIPIENT_B32" \
+        "0x${RECIPIENT_B32}" \
         "$TOKEN_TYPE_SOL" \
         --program-id "$WARP_SRC" \
         2>&1 || true)
@@ -433,7 +551,9 @@ if [ "$SRC_TYPE" = "sealevel" ]; then
         echo ""
         echo -e "${YELLOW}  Dicas:${RESET}"
         echo -e "  • Verifique saldo de SOL na wallet para IGP fee"
-        echo -e "  • Confirme saldo do token SPL: spl-token balance --address <MINT> --owner ${SENDER_PUBKEY}"
+        if [ -n "$SOL_MINT" ]; then
+            echo -e "  • Saldo SPL: spl-token balance ${SOL_MINT} --owner ${SENDER_PUBKEY} --url ${SRC_RPC}"
+        fi
         echo -e "  • Confirme RPC: ${SRC_RPC}"
         exit 1
     fi

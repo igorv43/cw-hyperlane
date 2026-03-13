@@ -67,10 +67,10 @@ The script:
 
 ```bash
 # XPTO token — check if warp_address is filled
-jq '.terra_classic.tokens.xpto.terra_warp' script-warp-terraclassic/warp-evm-config.json
+jq '.terra_classic.tokens.xpto.terra_warp' terraclassic/warp-evm-config.json
 
 # Sepolia network — check if xpto warp is deployed
-jq '.networks.sepolia.warp_tokens.xpto' script-warp-terraclassic/warp-evm-config.json
+jq '.networks.sepolia.warp_tokens.xpto' terraclassic/warp-evm-config.json
 ```
 
 ---
@@ -78,8 +78,8 @@ jq '.networks.sepolia.warp_tokens.xpto' script-warp-terraclassic/warp-evm-config
 ## 4. How to run
 
 ```bash
-# 1. Enter the script-warp-terraclassic folder
-cd ~/cw-hyperlane/script-warp-terraclassic
+# 1. Enter the terraclassic folder
+cd ~/cw-hyperlane/terraclassic
 
 # 2. Grant permission (first time only)
 chmod +x enroll-terra-router.sh

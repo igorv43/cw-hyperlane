@@ -1,7 +1,7 @@
 # Complete Guide: `create-warp-evm.sh`
 
 > Interactive script to create and configure Hyperlane Warp Routes on EVM networks connected to Terra Classic.  
-> Fully portable — just copy the `script-warp-terraclassic/` folder to any `cw-hyperlane` project.
+> Fully portable — just copy the `terraclassic/` folder to any `cw-hyperlane` project.
 
 ---
 
@@ -86,10 +86,10 @@ Para cada par **token + rede EVM** escolhido, o script executa de forma automati
 
 ## 3. File structure
 
-A pasta `script-warp-terraclassic/` é autocontida. Copie-a inteira para qualquer projeto `cw-hyperlane`:
+A pasta `terraclassic/` é autocontida. Copie-a inteira para qualquer projeto `cw-hyperlane`:
 
 ```
-script-warp-terraclassic/
+terraclassic/
 │
 ├── create-warp-evm.sh                     ← script principal de deploy (executável)
 ├── enroll-terra-router.sh                 ← vincula rota EVM no Warp Terra Classic
@@ -112,7 +112,7 @@ script-warp-terraclassic/
 │   ├── create-warp-evm.log                ← log completo de execução
 │   └── WARP-<REDE>-<TOKEN>.txt            ← relatórios de deploy
 │
-└── doc/
+└── docs/
     ├── create-warp-evm-guide.md           ← este documento
     └── enroll-terra-router-guide.md       ← guia do enroll-terra-router.sh
 ```
@@ -343,8 +343,8 @@ networks:
 ### 6.1 Full execution (from scratch)
 
 ```bash
-# 1. Enter the script-warp-terraclassic folder (or project root)
-cd ~/cw-hyperlane/script-warp-terraclassic
+# 1. Enter the terraclassic folder (or project root)
+cd ~/cw-hyperlane/terraclassic
 
 # 2. Give execution permission (first time only)
 chmod +x create-warp-evm.sh
@@ -800,7 +800,7 @@ EOF
 
 ## 11. Helper scripts
 
-The `script-warp-terraclassic/` folder contains support scripts for specific operations — useful for manual corrections and post-deploy use.
+The `terraclassic/` folder contains support scripts for specific operations — useful for manual corrections and post-deploy use.
 
 ---
 
@@ -814,14 +814,14 @@ Calls `router.set_route` on the **Terra Classic** Warp contract to register an E
 - Need to re-register the route after replacing the EVM contract
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 ./enroll-terra-router.sh
 ```
 
 The script presents interactive menus to select token and network, shows the operation summary, and asks for confirmation before sending.
 
-> 📄 Documentação completa: [`doc/enroll-terra-router-guide.md`](./enroll-terra-router-guide.md)
+> 📄 Documentação completa: [`docs/enroll-terra-router-guide.md`](./enroll-terra-router-guide.md)
 
 ---
 
@@ -839,7 +839,7 @@ Performs a simple CW20 token transfer between accounts on Terra Classic.
 | `AMOUNT` | `100000000000` |
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 
 # Default transfer (100 XPTO)
@@ -857,16 +857,16 @@ The script displays balances before and after, saves report in `log/TRANSFER-CW2
 
 ## 12. Using in another project (portability)
 
-The `script-warp-terraclassic/` folder is designed to be **100% portable**. The script automatically detects the project root (where `package.json` is) by traversing parent directories.
+The `terraclassic/` folder is designed to be **100% portable**. The script automatically detects the project root (where `package.json` is) by traversing parent directories.
 
 ### Copy to a new project
 
 ```bash
 # Copy the entire folder
-cp -r script-warp-terraclassic/ /caminho/do/novo-projeto/script-warp-terraclassic/
+cp -r terraclassic/ /caminho/do/novo-projeto/terraclassic/
 
 # Enter the folder
-cd /caminho/do/novo-projeto/script-warp-terraclassic/
+cd /caminho/do/novo-projeto/terraclassic/
 
 # Run
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
@@ -879,7 +879,7 @@ export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 | Situation | What happens |
 |---|---|
 | `package.json` is in the parent directory | `PROJECT_ROOT` is set as the parent |
-| `config.yaml` is in `script-warp-terraclassic/` but `yarn cw-hpl` needs it at root | The script automatically copies it before running |
+| `config.yaml` is in `terraclassic/` but `yarn cw-hpl` needs it at root | The script automatically copies it before running |
 | `context/terraclassic.json` is written by `cw-hpl` at root | The script reads from `PROJECT_ROOT/context/` |
 
 ### Single requirement
@@ -1323,7 +1323,7 @@ cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 If you prefer to use the script instead of manual commands, just set the already deployed addresses and re-run — the script skips completed steps and only executes what remains (like the AggHook deploy):
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 

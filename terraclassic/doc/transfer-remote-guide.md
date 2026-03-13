@@ -45,7 +45,7 @@ The script automatically locates `node_modules` by traversing parent directories
 ## 2 — File structure
 
 ```
-script-warp-terraclassic/
+terraclassic/
 ├── transfer-remote-terra.sh        ← main script
 ├── warp-evm-config.json            ← EVM config + Terra Classic tokens
 ├── warp-sealevel-config.json       ← Solana Testnet config
@@ -80,7 +80,7 @@ If not set, the script will prompt interactively (hidden input).
 The simplest mode: the script guides step by step.
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 
 export TERRA_PRIVATE_KEY="your_key_hex"
 ./transfer-remote-terra.sh

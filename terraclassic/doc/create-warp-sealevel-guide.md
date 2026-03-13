@@ -1,7 +1,7 @@
 # Complete Guide: `create-warp-sealevel.sh`
 
 > Interactive script to create and configure Hyperlane Warp Routes on **Solana (Sealevel)** connected to Terra Classic.  
-> Fully portable — just copy the `script-warp-terraclassic/` folder to any `cw-hyperlane` project.
+> Fully portable — just copy the `terraclassic/` folder to any `cw-hyperlane` project.
 
 ---
 
@@ -123,7 +123,7 @@ export TERRA_PRIVATE_KEY="your_terra_private_key_in_hex"
 ## 4. File structure
 
 ```
-script-warp-terraclassic/
+terraclassic/
 ├── create-warp-sealevel.sh       # Main script
 ├── warp-sealevel-config.json     # Solana networks config + warp tokens
 ├── warp-evm-config.json          # Terra Classic tokens config (shared with EVM)
@@ -131,7 +131,7 @@ script-warp-terraclassic/
 ├── log/
 │   ├── create-warp-sealevel.log      # Execution log
 │   └── WARP-SOLANATESTNET-XPTO.txt   # Final report generated after deploy (example)
-└── doc/
+└── docs/
     └── create-warp-sealevel-guide.md  # This document
 
 warp/solana/
@@ -332,7 +332,7 @@ https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/refs/heads/main/warp/sola
 ### 8.1 Full execution (from scratch)
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 
 # Export keys
 export TERRA_PRIVATE_KEY="your_terra_private_key_hex"
@@ -381,7 +381,7 @@ The script saves state in `.warp-sealevel-state.json`. If there is a failure, th
 To discard the state and start from scratch:
 
 ```bash
-rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
+rm -f ~/cw-hyperlane/terraclassic/.warp-sealevel-state.json
 ```
 
 ---
@@ -952,7 +952,7 @@ cargo build --release -p hyperlane-sealevel-client
 rm -f environments/testnet/warp-routes/TOKEN/keys/*.json
 
 # 4. Reset the state and config
-rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
+rm -f ~/cw-hyperlane/terraclassic/.warp-sealevel-state.json
 # In warp-sealevel-config.json: set deployed:false, program_id:"", mint_address:""
 
 # 5. Re-run the script
@@ -983,7 +983,7 @@ solana balance PUBKEY --url https://api.testnet.solana.com
 ls /home/lunc/hyperlane-monorepo/rust/sealevel/target/deploy/*.so
 
 # View full log
-cat ~/cw-hyperlane/script-warp-terraclassic/log/create-warp-sealevel.log
+cat ~/cw-hyperlane/terraclassic/log/create-warp-sealevel.log
 ```
 
 **Fix for missing .so:**

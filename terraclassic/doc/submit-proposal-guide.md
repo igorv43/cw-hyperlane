@@ -1,7 +1,7 @@
 # Guide — Hyperlane Governance Proposal Submission (Terra Classic Testnet)
 
 > **Script**: `submit-proposal-testnet.ts`  
-> **Location**: `/home/lunc/cw-hyperlane/script-warp-terraclassic/submit-proposal-testnet.ts`  
+> **Location**: `/home/lunc/cw-hyperlane/terraclassic/submit-proposal-testnet.ts`  
 > **Network**: Terra Classic Testnet (`rebel-2`)
 
 ---
@@ -98,7 +98,7 @@ node --version
 npm install -g tsx
 
 # Project dependencies (install in the script folder)
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 
@@ -125,11 +125,11 @@ export PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## 3 — File Structure
 
 ```
-script-warp-terraclassic/
+terraclassic/
 ├── submit-proposal-testnet.ts     ← Main script
 ├── exec_msgs_testnet.json         ← Generated: individual messages
 ├── proposal_testnet.json          ← Generated: proposal formatted for terrad
-└── doc/
+└── docs/
     └── submit-proposal-guide.md  ← This document
 ```
 
@@ -168,7 +168,7 @@ npx tsx submit-proposal-testnet.ts
 ### Step 1 — Install dependencies
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 
@@ -971,7 +971,7 @@ terrad tx gov submit-proposal proposal_testnet.json \
 
 **Solution**:
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 

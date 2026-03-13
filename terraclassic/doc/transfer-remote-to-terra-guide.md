@@ -79,7 +79,7 @@ Solana Testnet                        Terra Classic
 ## 3. File structure
 
 ```
-script-warp-terraclassic/
+terraclassic/
 ├── transfer-remote-to-terra.sh        ← this script
 ├── warp-evm-config.json               ← deployed EVM contracts
 ├── warp-sealevel-config.json          ← deployed Sealevel programs
@@ -95,7 +95,7 @@ script-warp-terraclassic/
 Run without environment variables. The script presents a numbered menu with all available tokens and networks:
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 ./transfer-remote-to-terra.sh
 ```
 
@@ -135,7 +135,7 @@ Pass all information via environment variables for automation or CI scripts.
 ### EVM → Terra Classic
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 
 export ETH_PRIVATE_KEY="0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxab"
 
@@ -150,7 +150,7 @@ AUTO_CONFIRM=s \
 ### Sealevel → Terra Classic
 
 ```bash
-cd ~/cw-hyperlane/script-warp-terraclassic
+cd ~/cw-hyperlane/terraclassic
 
 TOKEN_KEY=xpto \
 SOURCE_NETWORK=solanatestnet \
@@ -529,12 +529,12 @@ TX Hash        : 0xabc123...
 
 **View history:**
 ```bash
-cat ~/cw-hyperlane/script-warp-terraclassic/log/transfer-remote-to-terra.log
+cat ~/cw-hyperlane/terraclassic/log/transfer-remote-to-terra.log
 ```
 
 **List all reports:**
 ```bash
-ls ~/cw-hyperlane/script-warp-terraclassic/log/TRANSFER-TO-TERRA-*.txt
+ls ~/cw-hyperlane/terraclassic/log/TRANSFER-TO-TERRA-*.txt
 ```
 
 ---

@@ -1,99 +1,99 @@
-# Guia Completo: `create-warp-sealevel.sh`
+# Complete Guide: `create-warp-sealevel.sh`
 
-> Script interativo para criar e configurar Warp Routes Hyperlane em **Solana (Sealevel)** conectados à Terra Classic.  
-> Totalmente portável — basta copiar a pasta `script-warp-terraclassic/` para qualquer projeto `cw-hyperlane`.
+> Interactive script to create and configure Hyperlane Warp Routes on **Solana (Sealevel)** connected to Terra Classic.  
+> Fully portable — just copy the `script-warp-terraclassic/` folder to any `cw-hyperlane` project.
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-1. [O que o script faz](#1-o-que-o-script-faz)
-2. [Diferenças Sealevel vs EVM](#2-diferenças-sealevel-vs-evm)
-3. [Pré-requisitos](#3-pré-requisitos)
-4. [Estrutura de arquivos](#4-estrutura-de-arquivos)
-5. [Configurando o `warp-sealevel-config.json`](#5-configurando-o-warp-sealevel-configjson)
-   - [Seção `networks`](#51-seção-networks)
-   - [Seção `warp_tokens`](#52-seção-warp_tokens)
-   - [Adicionando um novo token](#53-adicionando-um-novo-token)
-   - [Habilitando Solana Mainnet](#54-habilitando-solana-mainnet)
-6. [Configurando o `warp-evm-config.json` (tokens Terra Classic)](#6-configurando-o-warp-evm-configjson-tokens-terra-classic)
-7. [Metadata dos tokens (Solana)](#7-metadata-dos-tokens-solana)
-8. [Executando o script](#8-executando-o-script)
-   - [Execução completa (do zero)](#81-execução-completa-do-zero)
-   - [Pulando etapas já executadas](#82-pulando-etapas-já-executadas)
-   - [Retomando após falha](#83-retomando-após-falha)
-9. [O que o script configura — Passos detalhados](#9-o-que-o-script-configura--passos-detalhados)
-10. [Atualizando o JSON após o deploy](#10-atualizando-o-json-após-o-deploy)
-11. [Deploy e configuração manual (sem o script)](#11-deploy-e-configuração-manual-sem-o-script)
-12. [Como verificar o estado após o deploy](#12-como-verificar-o-estado-após-o-deploy)
-13. [Como encontrar endereços Hyperlane no Solana](#13-como-encontrar-endereços-hyperlane-no-solana)
-14. [Como verificar o recebimento de tokens após transferência](#14-como-verificar-o-recebimento-de-tokens-após-transferência)
+1. [What the script does](#1-what-the-script-does)
+2. [Sealevel vs EVM differences](#2-sealevel-vs-evm-differences)
+3. [Prerequisites](#3-prerequisites)
+4. [File structure](#4-file-structure)
+5. [Configuring `warp-sealevel-config.json`](#5-configuring-warp-sealevel-configjson)
+   - [Section `networks`](#51-section-networks)
+   - [Section `warp_tokens`](#52-section-warp_tokens)
+   - [Adding a new token](#53-adding-a-new-token)
+   - [Enabling Solana Mainnet](#54-enabling-solana-mainnet)
+6. [Configuring `warp-evm-config.json` (Terra Classic tokens)](#6-configuring-warp-evm-configjson-terra-classic-tokens)
+7. [Token metadata (Solana)](#7-token-metadata-solana)
+8. [Running the script](#8-running-the-script)
+   - [Full execution (from scratch)](#81-full-execution-from-scratch)
+   - [Skipping already executed steps](#82-skipping-already-executed-steps)
+   - [Resuming after failure](#83-resuming-after-failure)
+9. [What the script configures — Detailed steps](#9-what-the-script-configures--detailed-steps)
+10. [Updating the JSON after deploy](#10-updating-the-json-after-deploy)
+11. [Manual deploy and configuration (without the script)](#11-manual-deploy-and-configuration-without-the-script)
+12. [How to verify state after deploy](#12-how-to-verify-state-after-deploy)
+13. [How to find Hyperlane addresses on Solana](#13-how-to-find-hyperlane-addresses-on-solana)
+14. [How to verify token receipt after transfer](#14-how-to-verify-token-receipt-after-transfer)
 15. [Troubleshooting](#15-troubleshooting)
-16. [Referência de endereços deployados](#16-referência-de-endereços-deployados)
-17. [Links úteis](#17-links-úteis)
+16. [Deployed address reference](#16-deployed-address-reference)
+17. [Useful links](#17-useful-links)
 
 ---
 
-## 1. O que o script faz
+## 1. What the script does
 
-O `create-warp-sealevel.sh` automatiza o deploy e a configuração completa de um Warp Route Hyperlane no **Solana (Sealevel)**, conectado à Terra Classic.
+The `create-warp-sealevel.sh` automates the full deploy and configuration of a Hyperlane Warp Route on **Solana (Sealevel)**, connected to Terra Classic.
 
-Para cada par **token + rede Solana** escolhido, o script executa automaticamente:
+For each chosen **token + Solana network** pair, the script automatically executes:
 
-| Passo | Componente | O que é | Por que é necessário |
+| Step | Component | What it is | Why it is needed |
 |-------|-----------|---------|---------------------|
-| 1 | **Warp Route (Program)** | Programa Solana SPL implantado via `warp-route deploy` | Ponto de entrada/saída no Solana |
-| 2 | **ISM** | MultisigISM (`multisig-ism-message-id`) | Valida que as mensagens vieram da Terra Classic |
-| 3 | **IGP** | Interchain Gas Paymaster (Overhead IGP) | Estima e cobra gas para execução na Terra Classic |
-| 4 | **Destination Gas** | `set-destination-gas-amount` | Configura o custo de gas para o domínio Terra Classic |
-| 5 | **enrollRemoteRouter** | Enrola o Warp Terra Classic no Solana | Autoriza o Solana a aceitar mensagens da Terra Classic |
-| 6 | **set_route (Terra)** | Chama `router.set_route` no Warp Terra Classic | Autoriza a Terra Classic a enviar para o Solana |
+| 1 | **Warp Route (Program)** | Solana SPL program deployed via `warp-route deploy` | Entry/exit point on Solana |
+| 2 | **ISM** | MultisigISM (`multisig-ism-message-id`) | Validates that messages came from Terra Classic |
+| 3 | **IGP** | Interchain Gas Paymaster (Overhead IGP) | Estimates and charges gas for execution on Terra Classic |
+| 4 | **Destination Gas** | `set-destination-gas-amount` | Configures gas cost for the Terra Classic domain |
+| 5 | **enrollRemoteRouter** | Enrolls the Terra Classic Warp on Solana | Authorizes Solana to accept messages from Terra Classic |
+| 6 | **set_route (Terra)** | Calls `router.set_route` on the Terra Classic Warp | Authorizes Terra Classic to send to Solana |
 
 ---
 
-## 2. Diferenças Sealevel vs EVM
+## 2. Sealevel vs EVM differences
 
-| Aspecto | EVM (Sepolia, BSC...) | Sealevel (Solana) |
+| Aspect | EVM (Sepolia, BSC...) | Sealevel (Solana) |
 |---------|----------------------|-------------------|
-| Deploy do Warp | `hyperlane warp deploy` (CLI TS) | `warp-route deploy` (cliente Rust) |
-| Endereço do router | Endereço hex 20 bytes (EVM address) | Program ID base58 (32 bytes) |
-| Hook | AggregationHook = MerkleTree + IGP | Sem AggregationHook — IGP é configurado diretamente |
+| Warp Deploy | `hyperlane warp deploy` (TS CLI) | `warp-route deploy` (Rust client) |
+| Router address | 20-byte hex address (EVM address) | Program ID base58 (32 bytes) |
+| Hook | AggregationHook = MerkleTree + IGP | No AggregationHook — IGP configured directly |
 | ISM | `messageIdMultisigIsm` (EVM contract) | `multisig-ism-message-id` (Solana program) |
-| IGP | `TerraClassicIGPStandalone.sol` | Overhead IGP nativo do Hyperlane Solana |
-| Token SPL | — | Mint Address criado automaticamente pelo deploy |
-| Ferramentas | Foundry (cast/forge), hyperlane CLI | Rust (cargo), solana-cli |
-| Metadata imagem | Não exigida | URL deve existir e ser acessível (ou campo vazio `""`) |
+| IGP | `TerraClassicIGPStandalone.sol` | Native Overhead IGP of Hyperlane Solana |
+| SPL Token | — | Mint Address automatically created during deploy |
+| Tools | Foundry (cast/forge), hyperlane CLI | Rust (cargo), solana-cli |
+| Image metadata | Not required | URL must exist and be accessible (or empty string `""`) |
 
-> **Importante:** No Sealevel, o **AggregationHook não é necessário**. O validator do Solana usa o `MerkleTree` internamente — o IGP é configurado como programa separado, não como hook do Warp.
+> **Important:** On Sealevel, the **AggregationHook is not needed**. The Solana validator uses `MerkleTree` internally — the IGP is configured as a separate program, not as a Warp hook.
 
 ---
 
-## 3. Pré-requisitos
+## 3. Prerequisites
 
-### Ferramentas obrigatórias
+### Required tools
 
-| Ferramenta | Versão mínima | Instalação |
+| Tool | Min version | Installation |
 |-----------|--------------|-----------|
-| `bash` | 4+ | nativo no Linux/macOS |
+| `bash` | 4+ | native on Linux/macOS |
 | `jq` | 1.6+ | `apt install jq` |
-| `python3` | 3.8+ | nativo no Linux |
+| `python3` | 3.8+ | native on Linux |
 | `node` + `npm` | Node 18+ | `nvm install 18` |
 | `cargo` (Rust) | 1.70+ | `curl https://sh.rustup.rs -sSf \| sh` |
 | `solana` CLI | 1.18+ | [https://docs.solana.com/cli/install-solana-cli-tools](https://docs.solana.com/cli/install-solana-cli-tools) |
 
-### Pacotes Node.js necessários
+### Required Node.js packages
 
-O script usa `@cosmjs/cosmwasm-stargate` para executar transações na Terra Classic.  
-Instale na raiz do projeto `cw-hyperlane`:
+The script uses `@cosmjs/cosmwasm-stargate` to execute transactions on Terra Classic.  
+Install at the root of the `cw-hyperlane` project:
 
 ```bash
 cd ~/cw-hyperlane
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing
 ```
 
-### Binário Rust do cliente Sealevel
+### Sealevel Rust client binary
 
-O deploy do Warp no Solana usa o cliente Rust do Hyperlane Monorepo:
+The Solana Warp deploy uses the Hyperlane Monorepo Rust client:
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
@@ -101,54 +101,54 @@ cargo build --release -p hyperlane-sealevel-client
 # Binário: target/release/hyperlane-sealevel-client
 ```
 
-### Keypair Solana
+### Solana Keypair
 
-Precisa de um arquivo JSON de keypair Solana com saldo suficiente (mínimo ~1 SOL para deploy):
+You need a Solana keypair JSON file with sufficient balance (minimum ~1 SOL for deploy):
 
 ```bash
 solana-keygen new --outfile /home/lunc/keys/solana-keypair-MEU_PUBKEY.json
 solana airdrop 2 --url https://api.testnet.solana.com MEU_PUBKEY
 ```
 
-### Chave privada Terra Classic
+### Terra Classic private key
 
-Exportar antes de executar o script:
+Export before running the script:
 
 ```bash
-export TERRA_PRIVATE_KEY="sua_chave_privada_terra_em_hex"
+export TERRA_PRIVATE_KEY="your_terra_private_key_in_hex"
 ```
 
 ---
 
-## 4. Estrutura de arquivos
+## 4. File structure
 
 ```
 script-warp-terraclassic/
-├── create-warp-sealevel.sh       # Script principal
-├── warp-sealevel-config.json     # Config redes Solana + tokens warp
-├── warp-evm-config.json          # Config tokens Terra Classic (compartilhado com EVM)
-├── .warp-sealevel-state.json     # Estado do último deploy (gerado automaticamente)
+├── create-warp-sealevel.sh       # Main script
+├── warp-sealevel-config.json     # Solana networks config + warp tokens
+├── warp-evm-config.json          # Terra Classic tokens config (shared with EVM)
+├── .warp-sealevel-state.json     # Last deploy state (automatically generated)
 ├── log/
-│   ├── create-warp-sealevel.log      # Log de execução
-│   └── WARP-SOLANATESTNET-XPTO.txt   # Relatório final gerado após deploy (exemplo)
+│   ├── create-warp-sealevel.log      # Execution log
+│   └── WARP-SOLANATESTNET-XPTO.txt   # Final report generated after deploy (example)
 └── doc/
-    └── create-warp-sealevel-guide.md  # Este documento
+    └── create-warp-sealevel-guide.md  # This document
 
 warp/solana/
-├── metadata-xpto.json            # Metadata SPL para XPTO
-├── metadata-xptv.json            # Metadata SPL para XPTV
-├── metadata-xpv.json             # Metadata SPL para XPV
-├── metadata-ustc.json            # Metadata SPL para USTC
-└── metadata.json                 # Metadata SPL para wLUNC
+├── metadata-xpto.json            # SPL metadata for XPTO
+├── metadata-xptv.json            # SPL metadata for XPTV
+├── metadata-xpv.json             # SPL metadata for XPV
+├── metadata-ustc.json            # SPL metadata for USTC
+└── metadata.json                 # SPL metadata for wLUNC
 ```
 
 ---
 
-## 5. Configurando o `warp-sealevel-config.json`
+## 5. Configuring `warp-sealevel-config.json`
 
-Este arquivo centraliza toda a configuração das redes Solana e os tokens Warp deploados.
+This file centralizes all configuration for Solana networks and deployed Warp tokens.
 
-### 5.1 Seção `networks`
+### 5.1 Section `networks`
 
 ```json
 {
@@ -160,7 +160,7 @@ Este arquivo centraliza toda a configuração das redes Solana e os tokens Warp 
       "domain": 1399811150,
       "rpc": "https://api.testnet.solana.com",
       "explorer": "https://explorer.solana.com/?cluster=testnet",
-      "keypair": "/caminho/para/solana-keypair.json",
+      "keypair": "/path/to/solana-keypair.json",
       "monorepo_dir": "/home/lunc/hyperlane-monorepo/rust/sealevel",
       "ism": {
         "program_id": "5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh",
@@ -177,19 +177,19 @@ Este arquivo centraliza toda a configuração das redes Solana e os tokens Warp 
 }
 ```
 
-| Campo | Descrição |
+| Field | Description |
 |-------|-----------|
-| `enabled` | `true` para habilitar a rede no menu. Use `false` para ocultar |
-| `domain` | Domínio Hyperlane da rede. Solana Testnet = `1399811150`, Mainnet = `1399811149` |
-| `keypair` | Caminho absoluto para o arquivo `.json` da keypair Solana |
-| `monorepo_dir` | Caminho para `hyperlane-monorepo/rust/sealevel` (onde fica o binário) |
-| `ism.program_id` | Program ID do MultisigISM que valida msgs da Terra Classic |
-| `ism.threshold` | Número mínimo de validadores para aceitar a mensagem |
-| `igp.program_id` | Program ID do IGP Overhead |
-| `igp.account` | Conta pública do IGP (usada como `interchainGasPaymaster` no token-config) |
-| `igp.destination_gas_terra` | Unidades de gas usadas na Terra Classic (padrão: `3000000`) |
+| `enabled` | `true` to enable the network in the menu. Use `false` to hide |
+| `domain` | Hyperlane domain of the network. Solana Testnet = `1399811150`, Mainnet = `1399811149` |
+| `keypair` | Absolute path to the Solana keypair `.json` file |
+| `monorepo_dir` | Path to `hyperlane-monorepo/rust/sealevel` (where the binary lives) |
+| `ism.program_id` | MultisigISM Program ID that validates messages from Terra Classic |
+| `ism.threshold` | Minimum number of validators to accept the message |
+| `igp.program_id` | Overhead IGP Program ID |
+| `igp.account` | Public IGP account (used as `interchainGasPaymaster` in token-config) |
+| `igp.destination_gas_terra` | Gas units used on Terra Classic (default: `3000000`) |
 
-### 5.2 Seção `warp_tokens`
+### 5.2 Section `warp_tokens`
 
 ```json
 "warp_tokens": {
@@ -206,55 +206,55 @@ Este arquivo centraliza toda a configuração das redes Solana e os tokens Warp 
 }
 ```
 
-| Campo | Descrição |
+| Field | Description |
 |-------|-----------|
-| `deployed` | `true` após o deploy bem-sucedido. O script pula o deploy se for `true` e `program_id` estiver preenchido |
-| `type` | `"synthetic"` para tokens CW20/native que viram SPL no Solana |
-| `program_id` | Program ID base58 do Warp Route no Solana (preenchido após deploy) |
-| `program_hex` | Mesmo Program ID em hex bytes32 com `0x` (preenchido automaticamente) |
-| `mint_address` | Endereço base58 do token SPL criado (preenchido após deploy) |
-| `metadata_uri` | URL da metadata JSON do token (ver seção 7). Pode ser `""` para omitir |
-| `decimals` | Decimais do token (deve coincidir com o token na Terra Classic) |
-| `owner` | Pubkey do dono/deployer da Solana |
+| `deployed` | `true` after successful deploy. Script skips deploy if `true` and `program_id` is filled |
+| `type` | `"synthetic"` for CW20/native tokens that become SPL on Solana |
+| `program_id` | Base58 Program ID of the Warp Route on Solana (filled after deploy) |
+| `program_hex` | Same Program ID in hex bytes32 with `0x` (filled automatically) |
+| `mint_address` | Base58 address of the created SPL token (filled after deploy) |
+| `metadata_uri` | URL of the token JSON metadata (see section 7). Can be `""` to omit |
+| `decimals` | Token decimals (must match the token on Terra Classic) |
+| `owner` | Pubkey of the Solana owner/deployer |
 
-### 5.3 Adicionando um novo token
+### 5.3 Adding a new token
 
-1. Adicione a entrada em `warp-evm-config.json` → `.terra_classic.tokens.MEU_TOKEN` (ver [seção 6](#6-configurando-o-warp-evm-configjson-tokens-terra-classic))
+1. Add the entry in `warp-evm-config.json` → `.terra_classic.tokens.MY_TOKEN` (see [section 6](#6-configuring-warp-evm-configjson-terra-classic-tokens))
 
-2. Adicione em `warp-sealevel-config.json` → `.networks.solanatestnet.warp_tokens`:
+2. Add in `warp-sealevel-config.json` → `.networks.solanatestnet.warp_tokens`:
 
 ```json
 "meu_token": {
-  "_comment": "MEU_TOKEN CW20 → token sintético no Solana",
+  "_comment": "MY_TOKEN CW20 → synthetic token on Solana",
   "deployed": false,
   "type": "synthetic",
   "program_id": "",
   "program_hex": "",
   "mint_address": "",
-  "metadata_uri": "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/warp/solana/metadata-meu_token.json",
+  "metadata_uri": "https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/warp/solana/metadata-my_token.json",
   "decimals": 6,
-  "owner": "SEU_PUBKEY_SOLANA"
+  "owner": "YOUR_SOLANA_PUBKEY"
 }
 ```
 
-3. Crie o arquivo de metadata `warp/solana/metadata-meu_token.json` (ver [seção 7](#7-metadata-dos-tokens-solana))
+3. Create the metadata file `warp/solana/metadata-my_token.json` (see [section 7](#7-token-metadata-solana))
 
-4. Execute o script normalmente.
+4. Run the script normally.
 
-### 5.4 Habilitando Solana Mainnet
+### 5.4 Enabling Solana Mainnet
 
-1. Preencha todos os campos da seção `"solana"` em `warp-sealevel-config.json` com os endereços reais da mainnet
-2. Mude `"enabled": false` para `"enabled": true`
-3. Configure o `keypair` com um caminho para uma keypair Solana Mainnet com saldo
-4. O script vai mostrar a rede no menu automaticamente
+1. Fill all fields of the `"solana"` section in `warp-sealevel-config.json` with real mainnet addresses
+2. Change `"enabled": false` to `"enabled": true`
+3. Configure `keypair` with a path to a Solana Mainnet keypair with balance
+4. The script will show the network in the menu automatically
 
 ---
 
-## 6. Configurando o `warp-evm-config.json` (tokens Terra Classic)
+## 6. Configuring `warp-evm-config.json` (Terra Classic tokens)
 
-O script usa o `warp-evm-config.json` para obter os dados dos tokens na Terra Classic (endereço do Warp TC, domínio, tipo de token etc.). Este é o mesmo arquivo compartilhado com o script EVM.
+The script uses `warp-evm-config.json` to get Terra Classic token data (TC Warp address, domain, token type, etc.). This is the same file shared with the EVM script.
 
-Estrutura relevante para Sealevel:
+Relevant structure for Sealevel:
 
 ```json
 {
@@ -284,15 +284,15 @@ Estrutura relevante para Sealevel:
 }
 ```
 
-> O Warp Terra Classic (`warp_address`) precisa estar deployado antes de executar o script Sealevel, pois o script precisa registrar a rota Solana ↔ Terra em ambos os lados.
+> The Terra Classic Warp (`warp_address`) must be deployed before running the Sealevel script, since the script needs to register the Solana ↔ Terra route on both sides.
 
 ---
 
-## 7. Metadata dos tokens (Solana)
+## 7. Token metadata (Solana)
 
-O cliente Rust valida a metadata ao fazer o deploy do token SPL. O arquivo deve estar disponível via HTTP(S).
+The Rust client validates the metadata when deploying the SPL token. The file must be available via HTTP(S).
 
-### Formato do arquivo (`warp/solana/metadata-xpto.json`)
+### File format (`warp/solana/metadata-xpto.json`)
 
 ```json
 {
@@ -304,22 +304,22 @@ O cliente Rust valida a metadata ao fazer o deploy do token SPL. O arquivo deve 
 }
 ```
 
-| Campo | Obrigatório | Descrição |
+| Field | Required | Description |
 |-------|-------------|-----------|
-| `name` | ✅ Sim | Nome completo do token |
-| `symbol` | ✅ Sim | Símbolo (ticker) |
-| `description` | ✅ Sim | Descrição breve |
-| `image` | ❌ Opcional | URL de imagem (PNG/SVG). Pode ser `""` para omitir |
-| `attributes` | ❌ Opcional | Array de atributos adicionais |
+| `name` | ✅ Yes | Full token name |
+| `symbol` | ✅ Yes | Symbol (ticker) |
+| `description` | ✅ Yes | Brief description |
+| `image` | ❌ Optional | Image URL (PNG/SVG). Can be `""` to omit |
+| `attributes` | ❌ Optional | Array of additional attributes |
 
-> **Nota:** Se `image` for `""` (string vazia), o cliente Rust aceita sem validação (comportamento corrigido no patch local). Se quiser logo, use uma URL pública direta (ex: raw.githubusercontent.com).
+> **Note:** If `image` is `""` (empty string), the Rust client accepts it without validation (behavior fixed in the local patch). If you want a logo, use a direct public URL (e.g.: raw.githubusercontent.com).
 
-### O script auto-detecta a acessibilidade da URI
+### The script auto-detects URI accessibility
 
-- Se `metadata_uri` retornar **HTTP 200** → o campo `uri` é incluído no `token-config.json` → token SPL terá metadata on-chain
-- Se `metadata_uri` retornar **HTTP 404** ou estiver **vazio** → o campo `uri` é **omitido** → token SPL é criado sem metadata on-chain (você pode atualizar depois)
+- If `metadata_uri` returns **HTTP 200** → the `uri` field is included in `token-config.json` → SPL token will have on-chain metadata
+- If `metadata_uri` returns **HTTP 404** or is **empty** → the `uri` field is **omitted** → SPL token is created without on-chain metadata (you can update later)
 
-Para hospedar a metadata no GitHub, faça o commit do arquivo e use a URL raw:
+To host the metadata on GitHub, commit the file and use the raw URL:
 
 ```
 https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/refs/heads/main/warp/solana/metadata-TOKEN.json
@@ -327,42 +327,42 @@ https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/refs/heads/main/warp/sola
 
 ---
 
-## 8. Executando o script
+## 8. Running the script
 
-### 8.1 Execução completa (do zero)
+### 8.1 Full execution (from scratch)
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 
-# Exportar chaves
-export TERRA_PRIVATE_KEY="sua_chave_privada_terra_hex"
-# (não precisa de ETH_PRIVATE_KEY — o script é só Solana + Terra Classic)
+# Export keys
+export TERRA_PRIVATE_KEY="your_terra_private_key_hex"
+# (ETH_PRIVATE_KEY not needed — the script is Solana + Terra Classic only)
 
 chmod +x create-warp-sealevel.sh
 ./create-warp-sealevel.sh
 ```
 
-O script vai:
-1. Verificar ferramentas e configurações
-2. Exibir menu para selecionar o **token** (da Terra Classic)
-3. Exibir menu para selecionar a **rede Solana**
-4. Executar os 6 passos automaticamente
-5. Gravar um relatório `log/WARP-SOLANATESTNET-TOKEN.txt`
+The script will:
+1. Check tools and configurations
+2. Display menu to select the **token** (from Terra Classic)
+3. Display menu to select the **Solana network**
+4. Execute the 6 steps automatically
+5. Write a report `log/WARP-SOLANATESTNET-TOKEN.txt`
 
-### 8.2 Pulando etapas já executadas
+### 8.2 Skipping already executed steps
 
-Use variáveis de ambiente para pular etapas específicas:
+Use environment variables to skip specific steps:
 
-| Variável | Efeito |
+| Variable | Effect |
 |----------|--------|
-| `export WARP_PROGRAM_ID="Base58ID"` | Pula deploy do Warp Solana (usa o programa existente) |
-| `export SKIP_ISM="1"` | Pula configuração do ISM |
-| `export SKIP_IGP="1"` | Pula configuração do IGP |
-| `export SKIP_GAS="1"` | Pula `set-destination-gas-amount` |
-| `export SKIP_ENROLL="1"` | Pula `enroll-remote-router` (Solana → Terra Classic) |
-| `export SKIP_TC_ROUTE="1"` | Pula `set_route` na Terra Classic (Terra → Solana) |
+| `export WARP_PROGRAM_ID="Base58ID"` | Skips Solana Warp deploy (uses existing program) |
+| `export SKIP_ISM="1"` | Skips ISM configuration |
+| `export SKIP_IGP="1"` | Skips IGP configuration |
+| `export SKIP_GAS="1"` | Skips `set-destination-gas-amount` |
+| `export SKIP_ENROLL="1"` | Skips `enroll-remote-router` (Solana → Terra Classic) |
+| `export SKIP_TC_ROUTE="1"` | Skips `set_route` on Terra Classic (Terra → Solana) |
 
-Exemplo: token já deployado, só reconfigurar a rota Terra Classic:
+Example: token already deployed, only reconfigure the Terra Classic route:
 
 ```bash
 export TERRA_PRIVATE_KEY="..."
@@ -374,11 +374,11 @@ export SKIP_ENROLL="1"
 ./create-warp-sealevel.sh
 ```
 
-### 8.3 Retomando após falha
+### 8.3 Resuming after failure
 
-O script salva o estado em `.warp-sealevel-state.json`. Se houver falha, o estado é restaurado automaticamente na próxima execução **para o mesmo token + rede**.
+The script saves state in `.warp-sealevel-state.json`. If there is a failure, the state is automatically restored on the next execution **for the same token + network**.
 
-Para descartar o estado e começar do zero:
+To discard the state and start from scratch:
 
 ```bash
 rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
@@ -386,11 +386,11 @@ rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
 
 ---
 
-## 9. O que o script configura — Passos detalhados
+## 9. What the script configures — Detailed steps
 
-### Passo 1 — Deploy do Warp Route no Solana
+### Step 1 — Deploy Warp Route on Solana
 
-O script gera um `token-config.json` e chama:
+The script generates a `token-config.json` and calls:
 
 ```bash
 hyperlane-sealevel-client \
@@ -406,9 +406,9 @@ hyperlane-sealevel-client \
   --ata-payer-funding-amount 5000000
 ```
 
-**Resultado:** Program ID + Mint Address do token SPL.
+**Result:** Program ID + Mint Address of the SPL token.
 
-O `token-config.json` gerado tem o formato:
+The generated `token-config.json` has the format:
 
 ```json
 {
@@ -424,9 +424,9 @@ O `token-config.json` gerado tem o formato:
 }
 ```
 
-### Passo 2 — Configurar ISM
+### Step 2 — Configure ISM
 
-Define qual programa ISM o Warp Route deve usar para validar mensagens recebidas. O script usa o comando `token set-interchain-security-module` do cliente Rust:
+Defines which ISM program the Warp Route should use to validate received messages. The script uses the `token set-interchain-security-module` command of the Rust client:
 
 ```bash
 hyperlane-sealevel-client \
@@ -437,11 +437,11 @@ hyperlane-sealevel-client \
   --ism ISM_PROGRAM_ID
 ```
 
-> **Diferença importante:** Este comando associa o ISM *ao Warp token*, não cadastra validadores no ISM. O ISM Solana (`5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh`) já deve ter os validadores da Terra Classic pré-cadastrados via `multisig-ism-message-id enroll-validators` (feito uma única vez, separadamente, ao configurar a infraestrutura Hyperlane).
+> **Important difference:** This command associates the ISM *with the Warp token*, it does not register validators in the ISM. The Solana ISM (`5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh`) must already have the Terra Classic validators pre-registered via `multisig-ism-message-id enroll-validators` (done once, separately, when setting up the Hyperlane infrastructure).
 
-### Passo 3 — Configurar IGP
+### Step 3 — Configure IGP
 
-Associa o programa IGP e a conta IGP ao Warp Route, para que o cálculo de gas seja feito corretamente no lado Solana:
+Associates the IGP program and IGP account with the Warp Route, so gas calculation is done correctly on the Solana side:
 
 ```bash
 hyperlane-sealevel-client \
@@ -452,9 +452,9 @@ hyperlane-sealevel-client \
   set IGP_PROGRAM_ID igp IGP_ACCOUNT
 ```
 
-### Passo 4 — Destination Gas
+### Step 4 — Destination Gas
 
-Define a quantidade de gas (em unidades da Terra Classic) que o Warp Solana vai estimar para as mensagens que vão para a Terra Classic:
+Defines the gas amount (in Terra Classic units) that the Solana Warp will estimate for messages going to Terra Classic:
 
 ```bash
 hyperlane-sealevel-client \
@@ -463,12 +463,12 @@ hyperlane-sealevel-client \
   token set-destination-gas \
   --program-id WARP_PROGRAM_ID \
   TERRA_DOMAIN DEST_GAS_AMOUNT
-# ex: TERRA_DOMAIN = 1325, DEST_GAS_AMOUNT = 3000000
+# e.g.: TERRA_DOMAIN = 1325, DEST_GAS_AMOUNT = 3000000
 ```
 
-### Passo 5 — Enroll Remote Router (Solana → Terra Classic)
+### Step 5 — Enroll Remote Router (Solana → Terra Classic)
 
-Registra o Warp Terra Classic como rota autorizada no Warp Solana:
+Registers the Terra Classic Warp as an authorized route on the Solana Warp:
 
 ```bash
 hyperlane-sealevel-client \
@@ -477,16 +477,16 @@ hyperlane-sealevel-client \
   token enroll-remote-router \
   --program-id WARP_PROGRAM_ID \
   TERRA_DOMAIN 0xTERRA_WARP_HEX_32BYTES
-# ex: 1325 0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
+# e.g.: 1325 0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
 ```
 
-### Passo 6 — Set Route (Terra Classic → Solana)
+### Step 6 — Set Route (Terra Classic → Solana)
 
-Registra o Warp Solana como rota autorizada no Warp Terra Classic (via Node.js + CosmJS):
+Registers the Solana Warp as an authorized route on the Terra Classic Warp (via Node.js + CosmJS):
 
 ```js
-// Mensagem executada no contrato terra_warp_address
-// ⚠️ IMPORTANTE: o campo "route" deve ser o hex de 32 bytes SEM o prefixo "0x"
+// Message executed on the terra_warp_address contract
+// ⚠️ IMPORTANT: the "route" field must be 32-byte hex WITHOUT the "0x" prefix
 {
   "router": {
     "set_route": {
@@ -499,15 +499,15 @@ Registra o Warp Solana como rota autorizada no Warp Terra Classic (via Node.js +
 }
 ```
 
-> **Nota:** O contrato CosmWasm da Terra Classic **rejeita** o prefixo `0x` na rota — use apenas os 64 caracteres hex sem prefixo.
+> **Note:** The Terra Classic CosmWasm contract **rejects** the `0x` prefix in the route — use only the 64 hex characters without prefix.
 
-> **Verificação inteligente:** O script verifica não apenas se a rota existe, mas também se ela aponta para o Program ID correto. Se estiver apontando para um Program ID antigo (de um deploy anterior fracassado), a rota é **atualizada automaticamente**.
+> **Smart verification:** The script checks not only whether the route exists, but also whether it points to the correct Program ID. If it points to an old Program ID (from a previous failed deploy), the route is **automatically updated**.
 
 ---
 
-## 10. Atualizando o JSON após o deploy
+## 10. Updating the JSON after deploy
 
-Após o deploy bem-sucedido, **atualize o `warp-sealevel-config.json`** para registrar os endereços:
+After a successful deploy, **update `warp-sealevel-config.json`** to record the addresses:
 
 ```json
 "xpto": {
@@ -522,13 +522,13 @@ Após o deploy bem-sucedido, **atualize o `warp-sealevel-config.json`** para reg
 }
 ```
 
-> O script grava um relatório `log/WARP-SOLANATESTNET-TOKEN.txt` com todos os endereços. Use-o como referência.
+> The script writes a report `log/WARP-SOLANATESTNET-TOKEN.txt` with all addresses. Use it as a reference.
 
 ---
 
-## 11. Deploy e configuração manual (sem o script)
+## 11. Manual deploy and configuration (without the script)
 
-### 11.1 Gerar token-config.json manualmente
+### 11.1 Generate token-config.json manually
 
 ```json
 {
@@ -538,15 +538,15 @@ Após o deploy bem-sucedido, **atualize o `warp-sealevel-config.json`** para reg
     "symbol": "SYM",
     "decimals": 6,
     "totalSupply": "0",
-    "interchainGasPaymaster": "CONTA_IGP_BASE58",
-    "uri": "https://URL_DA_METADATA.json"
+    "interchainGasPaymaster": "IGP_ACCOUNT_BASE58",
+    "uri": "https://METADATA_URL.json"
   }
 }
 ```
 
-Salve em: `environments/testnet/warp-routes/TOKEN/token-config.json`
+Save to: `environments/testnet/warp-routes/TOKEN/token-config.json`
 
-### 11.2 Deploy do Warp Solana
+### 11.2 Deploy Solana Warp
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
@@ -564,12 +564,12 @@ cd /home/lunc/hyperlane-monorepo/rust/sealevel
   --ata-payer-funding-amount 5000000
 ```
 
-Após o deploy, o Program ID e Mint Address ficam salvos em:
+After deploy, the Program ID and Mint Address are saved in:
 ```
 environments/testnet/warp-routes/TOKEN/program-ids.json
 ```
 
-### 11.3 Configurar ISM manualmente
+### 11.3 Configure ISM manually
 
 ```bash
 ./target/release/hyperlane-sealevel-client \
@@ -578,14 +578,14 @@ environments/testnet/warp-routes/TOKEN/program-ids.json
   multisig-ism-message-id enroll-validators \
   --program-id 5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh \
   --domains 1325 \
-  --validators 0xENDERECO_VALIDATOR_TERRA \
+  --validators 0xTERRA_VALIDATOR_ADDRESS \
   --threshold 1
 ```
 
-> Para encontrar o endereço do validador da Terra Classic:  
-> Consulte `ValidatorAnnounce` na Terra Classic ou veja o `agent-config.json`.
+> To find the Terra Classic validator address:  
+> Consult `ValidatorAnnounce` on Terra Classic or see `agent-config.json`.
 
-### 11.4 Configurar Destination Gas manualmente
+### 11.4 Configure Destination Gas manually
 
 ```bash
 ./target/release/hyperlane-sealevel-client \
@@ -597,7 +597,7 @@ environments/testnet/warp-routes/TOKEN/program-ids.json
   --gas-amount 3000000
 ```
 
-### 11.5 Enroll Remote Router (Solana → Terra Classic) manualmente
+### 11.5 Enroll Remote Router (Solana → Terra Classic) manually
 
 ```bash
 ./target/release/hyperlane-sealevel-client \
@@ -609,8 +609,8 @@ environments/testnet/warp-routes/TOKEN/program-ids.json
   --router 0xTERRA_WARP_HEX_32BYTES
 ```
 
-> O hex do Warp Terra Classic pode ser obtido em `warp-evm-config.json` → `terra_classic.tokens.TOKEN.terra_warp.warp_hexed`  
-> Ou convertendo manualmente:
+> The Terra Classic Warp hex can be obtained from `warp-evm-config.json` → `terra_classic.tokens.TOKEN.terra_warp.warp_hexed`  
+> Or converting manually:
 > ```bash
 > python3 -c "
 > import bech32
@@ -619,25 +619,25 @@ environments/testnet/warp-routes/TOKEN/program-ids.json
 > "
 > ```
 
-### 11.6 Set Route (Terra Classic → Solana) manualmente
+### 11.6 Set Route (Terra Classic → Solana) manually
 
-> ⚠️ **Importante:** O campo `route` deve ser o hex de 32 bytes do Program ID Solana **sem o prefixo `0x`**. O contrato CosmWasm rejeita o formato `0x...` com erro `invalid hex`.
+> ⚠️ **Important:** The `route` field must be the 32-byte hex of the Solana Program ID **without the `0x` prefix**. The CosmWasm contract rejects the `0x...` format with an `invalid hex` error.
 
-Para converter o Program ID base58 para hex sem `0x`:
+To convert the base58 Program ID to hex without `0x`:
 
 ```bash
 python3 -c "
 import base58
 program_id = 'jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9'
 print(base58.b58decode(program_id).hex())
-# saída: 0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6
+# output: 0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6
 "
 ```
 
-Usando Node.js diretamente (não precisa de chave no keyring — método recomendado):
+Using Node.js directly (no keyring key needed — recommended method):
 
 ```bash
-export TERRA_PRIVATE_KEY="sua_chave_privada_hex"
+export TERRA_PRIVATE_KEY="your_private_key_hex"
 
 node - <<'EOF'
 const { SigningCosmWasmClient } = require("@cosmjs/cosmwasm-stargate");
@@ -655,12 +655,12 @@ async function main() {
     { gasPrice: GasPrice.fromString("0.015uluna") }
   );
 
-  // ⚠️ route = hex de 32 bytes SEM "0x"
+  // ⚠️ route = 32-byte hex WITHOUT "0x"
   const programHex = "0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6";
 
   const result = await client.execute(
     account.address,
-    "TERRA_WARP_ADDRESS",                           // ex: terra16ql6l4fu...
+    "TERRA_WARP_ADDRESS",                           // e.g.: terra16ql6l4fu...
     { router: { set_route: { set: { domain: 1399811150, route: programHex } } } },
     "auto",
     "set_route TC → Solana"
@@ -671,16 +671,16 @@ main().catch(e => { console.error(e); process.exit(1); });
 EOF
 ```
 
-Verificar se a rota foi gravada corretamente:
+Verify if the route was saved correctly:
 
 ```bash
 terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
   '{"router":{"get_route":{"domain":1399811150}}}' \
   --node https://rpc.terra-classic.hexxagon.dev
-# Saída esperada: route: "0adafdae..." (sem 0x, ou com 0x dependendo da versão do contrato)
+# Expected output: route: "0adafdae..." (without 0x, or with 0x depending on contract version)
 ```
 
-> Para verificar usando a lista completa de rotas:
+> To verify using the full route list:
 > ```bash
 > terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
 >   '{"router":{"list_routes":{}}}' \
@@ -689,9 +689,9 @@ terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
 
 ---
 
-## 12. Como verificar o estado após o deploy
+## 12. How to verify state after deploy
 
-### Verificar o Warp Solana (token query)
+### Verify Solana Warp (token query)
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
@@ -704,9 +704,9 @@ cd /home/lunc/hyperlane-monorepo/rust/sealevel
   synthetic
 ```
 
-**Saída esperada:** Nome, símbolo, decimais, mint address, ISM program.
+**Expected output:** Name, symbol, decimals, mint address, ISM program.
 
-### Verificar o ISM Solana
+### Verify Solana ISM
 
 ```bash
 ./target/release/hyperlane-sealevel-client \
@@ -717,9 +717,9 @@ cd /home/lunc/hyperlane-monorepo/rust/sealevel
   --domains 1325
 ```
 
-**Saída esperada:** Threshold = 1, validador registrado = endereço do validator Terra Classic.
+**Expected output:** Threshold = 1, registered validator = Terra Classic validator address.
 
-### Verificar rota na Terra Classic
+### Verify route on Terra Classic
 
 ```bash
 terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
@@ -727,19 +727,19 @@ terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
   --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-**Saída esperada:** `route: "0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6"` (hex de 32 bytes do Program ID Solana).
+**Expected output:** `route: "0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6"` (32-byte hex of the Solana Program ID).
 
-> ⚠️ **Atenção:** Verifique que o hex retornado corresponde ao **Program ID real no Solana** (não a um deploy anterior fracassado). Para confirmar:
+> ⚠️ **Attention:** Verify that the returned hex corresponds to the **real Program ID on Solana** (not a previous failed deploy). To confirm:
 > ```bash
 > solana account PROGRAM_ID_BASE58 --url https://api.testnet.solana.com
-> # Deve retornar dados da conta. "AccountNotFound" = deploy não aconteceu.
+> # Should return account data. "AccountNotFound" = deploy did not happen.
 > ```
-> Se a rota estiver apontando para um Program ID antigo, corrija usando o método manual da seção 11.6.
+> If the route points to an old Program ID, fix it using the manual method in section 11.6.
 
-### Verificar a rota no Warp Solana (Remote Router)
+### Verify route on Solana Warp (Remote Router)
 
-No Explorer do Solana, acesse o Program ID do Warp e verifique as contas associadas.  
-Ou use a query Rust:
+In the Solana Explorer, access the Warp Program ID and check the associated accounts.  
+Or use the Rust query:
 
 ```bash
 ./target/release/hyperlane-sealevel-client \
@@ -751,27 +751,27 @@ Ou use a query Rust:
 
 ---
 
-## 13. Como encontrar endereços Hyperlane no Solana
+## 13. How to find Hyperlane addresses on Solana
 
-### Usando o Hyperlane Registry
+### Using the Hyperlane Registry
 
-O Hyperlane Registry está em `~/.hyperlane/registry/` após instalar o CLI:
+The Hyperlane Registry is at `~/.hyperlane/registry/` after installing the CLI:
 
 ```bash
 npm install -g @hyperlane-xyz/cli@latest
 ```
 
-Para listar endereços do Solana Testnet:
+To list Solana Testnet addresses:
 
 ```bash
 hyperlane registry list
-# ou consultando diretamente:
+# or querying directly:
 cat ~/.hyperlane/registry/chains/solanatestnet/addresses.yaml
 ```
 
-### Endereços oficiais Solana Testnet (Hyperlane)
+### Official Solana Testnet addresses (Hyperlane)
 
-| Contrato | Program ID |
+| Contract | Program ID |
 |---------|-----------|
 | Mailbox | `692KZJaoe2KRcD6uhCTDTeHbkoxHSFDMm5TKAwA7v2fE` |
 | IGP (Overhead) | `5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2` |
@@ -779,9 +779,9 @@ cat ~/.hyperlane/registry/chains/solanatestnet/addresses.yaml
 | MultisigISM | `5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh` |
 | ValidatorAnnounce | `DH43ae1LwemXAboWwSh8zc9pG8j72gKUEXNi57w8SPSN` |
 
-### Domínios Hyperlane
+### Hyperlane Domains
 
-| Rede | Domain ID |
+| Network | Domain ID |
 |------|-----------|
 | Terra Classic (rebel-2) | `1325` |
 | Solana Testnet | `1399811150` |
@@ -789,26 +789,26 @@ cat ~/.hyperlane/registry/chains/solanatestnet/addresses.yaml
 | Sepolia | `11155111` |
 | BSC Testnet | `97` |
 
-> Fonte oficial: [https://docs.hyperlane.xyz/docs/reference/domains](https://docs.hyperlane.xyz/docs/reference/domains)
+> Official source: [https://docs.hyperlane.xyz/docs/reference/domains](https://docs.hyperlane.xyz/docs/reference/domains)
 
 ---
 
-## 14. Como verificar o recebimento de tokens após transferência
+## 14. How to verify token receipt after transfer
 
-> ⚠️ **Atenção:** Tokens que chegam via Warp Route são **tokens CW20** (Terra Classic) ou **tokens SPL** (Solana). Eles **não aparecem como saldo nativo** (LUNA / SOL) na carteira — você precisa consultar o contrato específico.
+> ⚠️ **Attention:** Tokens arriving via Warp Route are **CW20 tokens** (Terra Classic) or **SPL tokens** (Solana). They **do not appear as native balance** (LUNA / SOL) in the wallet — you need to query the specific contract.
 
 ---
 
-### 14.1 Verificar saldo CW20 na Terra Classic (destino: Solana → Terra Classic)
+### 14.1 Check CW20 balance on Terra Classic (destination: Solana → Terra Classic)
 
-Quando você envia tokens do Solana para a Terra Classic, os tokens chegam como CW20 no Warp Collateral (endereço do colateral que foi travado antes).
+When you send tokens from Solana to Terra Classic, the tokens arrive as CW20 in the Warp Collateral (the collateral address that was locked before).
 
-**Verificar via terminal:**
+**Verify via terminal:**
 
 ```bash
-# Substitua:
-# - CW20_CONTRACT = endereço do contrato CW20 (terra1zle6...)
-# - RECIPIENT      = endereço do destinatário na Terra Classic
+# Replace:
+# - CW20_CONTRACT = CW20 contract address (terra1zle6...)
+# - RECIPIENT      = recipient address on Terra Classic
 
 terrad query wasm contract-state smart \
   CW20_CONTRACT \
@@ -816,38 +816,38 @@ terrad query wasm contract-state smart \
   --node https://rpc.terra-classic.hexxagon.dev:443
 ```
 
-**Exemplo real (XPTO):**
+**Real example (XPTO):**
 
 ```bash
 terrad query wasm contract-state smart \
   terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch \
   '{"balance":{"address":"terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k"}}' \
   --node https://rpc.terra-classic.hexxagon.dev:443
-# Saída: data: { balance: "99515999100" }
-#        = 99.515,999 XPTO (dividir por 10^6 para decimais=6)
+# Output: data: { balance: "99515999100" }
+#         = 99,515.999 XPTO (divide by 10^6 for decimals=6)
 ```
 
-**Verificar via Explorer:**
+**Verify via Explorer:**
 
-Acesse `https://finder.hexxagon.io/rebel-2/address/RECIPIENT` e procure a aba **"CW20 Tokens"** ou **"Token Balances"**.
+Access `https://finder.hexxagon.io/rebel-2/address/RECIPIENT` and look for the **"CW20 Tokens"** or **"Token Balances"** tab.
 
 ---
 
-### 14.2 Verificar saldo SPL na Solana (destino: Terra Classic → Solana)
+### 14.2 Check SPL balance on Solana (destination: Terra Classic → Solana)
 
-Quando você envia tokens da Terra Classic para a Solana, os tokens chegam como SPL na conta associada (ATA — Associated Token Account) do destinatário.
+When you send tokens from Terra Classic to Solana, the tokens arrive as SPL in the associated account (ATA — Associated Token Account) of the recipient.
 
-**Verificar via terminal:**
+**Verify via terminal:**
 
 ```bash
-# Listar todos os tokens SPL de uma conta Solana
+# List all SPL tokens of a Solana account
 spl-token accounts --owner DESTINATARIO_PUBKEY --url https://api.testnet.solana.com
 
-# Ou verificar saldo de um Mint específico
+# Or check balance of a specific Mint
 spl-token balance --owner DESTINATARIO_PUBKEY MINT_ADDRESS --url https://api.testnet.solana.com
 ```
 
-**Exemplo real (XPTO):**
+**Real example (XPTO):**
 
 ```bash
 spl-token balance \
@@ -856,55 +856,55 @@ spl-token balance \
   --url https://api.testnet.solana.com
 ```
 
-**Verificar via Explorer:**
+**Verify via Explorer:**
 
-Acesse `https://explorer.solana.com/address/DESTINATARIO?cluster=testnet` e procure a aba **"Tokens"**.
+Access `https://explorer.solana.com/address/RECIPIENT?cluster=testnet` and look for the **"Tokens"** tab.
 
 ---
 
-### 14.3 Verificar se a mensagem foi entregue no Terra Classic Mailbox
+### 14.3 Verify if the message was delivered to the Terra Classic Mailbox
 
-Para confirmar que a mensagem foi processada (independente da carteira):
+To confirm that the message was processed (regardless of the wallet):
 
 ```bash
 MAILBOX="terra1s4jwfe0tcaztpfsct5wzj02esxyjy7e7lhkcwn5dp04yvly82rwsvzyqmm"
-MESSAGE_ID="SEU_MESSAGE_ID_SEM_0x"  # ex: 830a1e166747001c54097299...
+MESSAGE_ID="YOUR_MESSAGE_ID_WITHOUT_0x"  # e.g.: 830a1e166747001c54097299...
 
 terrad query wasm contract-state smart "$MAILBOX" \
   "{\"mailbox\":{\"message_delivered\":{\"id\":\"${MESSAGE_ID}\"}}}" \
   --node https://rpc.terra-classic.hexxagon.dev:443
-# Saída: data: { delivered: true }  ← mensagem entregue com sucesso
-# Saída: data: { delivered: false } ← ainda pendente (relayer não processou)
+# Output: data: { delivered: true }  ← message delivered successfully
+# Output: data: { delivered: false } ← still pending (relayer has not processed)
 ```
 
 ---
 
-### 14.4 Rastrear uma mensagem passo a passo
+### 14.4 Trace a message step by step
 
-Dado o **message ID** de uma transferência Solana → Terra Classic, verifique em ordem:
+Given the **message ID** of a Solana → Terra Classic transfer, check in order:
 
-| Passo | Verificação | URL / Comando |
+| Step | Verification | URL / Command |
 |-------|-------------|--------------|
-| 1 | TX na Solana | `https://explorer.solana.com/tx/TX_HASH?cluster=testnet` |
-| 2 | Checkpoints do validator TC | `https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/` |
-| 3 | Entrega no TC Mailbox | `terrad query wasm ... message_delivered {id: "..."}` |
-| 4 | Saldo CW20 no destinatário | `terrad query wasm ... balance {address: "..."}` |
+| 1 | TX on Solana | `https://explorer.solana.com/tx/TX_HASH?cluster=testnet` |
+| 2 | TC validator checkpoints | `https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/` |
+| 3 | Delivery in TC Mailbox | `terrad query wasm ... message_delivered {id: "..."}` |
+| 4 | CW20 balance at recipient | `terrad query wasm ... balance {address: "..."}` |
 
-> **Dica:** Se `delivered: true` mas o saldo não aparece na carteira — o token chegou! A carteira pode não exibir tokens CW20. Use o comando `terrad query wasm` para confirmar.
+> **Tip:** If `delivered: true` but the balance does not appear in the wallet — the token arrived! The wallet may not display CW20 tokens. Use the `terrad query wasm` command to confirm.
 
 ---
 
 ## 15. Troubleshooting
 
-### ❌ `RelativeUrlWithoutBase` ao validar metadata
+### ❌ `RelativeUrlWithoutBase` when validating metadata
 
-**Causa:** O campo `image` na metadata JSON está como `""` (string vazia) e o cliente Rust tentou fazer `GET("")`.
+**Cause:** The `image` field in the JSON metadata is `""` (empty string) and the Rust client tried to `GET("")`.
 
-**Solução:** O repositório contém um patch em `warp_route.rs` que torna o campo `image` opcional. Para reaplicar se o monorepo for atualizado:
+**Fix:** The repository contains a patch in `warp_route.rs` that makes the `image` field optional. To reapply if the monorepo is updated:
 
 ```rust
-// warp_route.rs, função validate()
-// Substituir o bloco de validação de imagem por:
+// warp_route.rs, validate() function
+// Replace the image validation block with:
 if let Some(image_url) = &self.image {
     if !image_url.is_empty() {
         let image = reqwest::blocking::get(image_url).unwrap();
@@ -913,7 +913,7 @@ if let Some(image_url) = &self.image {
 }
 ```
 
-Depois recompilar:
+Then recompile:
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
@@ -922,121 +922,121 @@ cargo build --release -p hyperlane-sealevel-client
 
 ### ❌ `Failed to parse metadata JSON: reqwest::Error { kind: Decode ... integer 404 }`
 
-**Causa:** O `metadata_uri` configurado retorna HTTP 404 (arquivo não existe no GitHub ainda).
+**Cause:** The configured `metadata_uri` returns HTTP 404 (file does not exist on GitHub yet).
 
-**Solução:** O script detecta o código HTTP e omite o campo `uri` do `token-config.json` automaticamente. O deploy prossegue sem metadata on-chain. Para adicionar a metadata depois, faça commit do arquivo JSON no GitHub e reexecute apenas o passo de metadata.
+**Fix:** The script detects the HTTP code and automatically omits the `uri` field from `token-config.json`. The deploy proceeds without on-chain metadata. To add the metadata later, commit the JSON file to GitHub and re-run only the metadata step.
 
 ### ❌ `error: Found argument '--use-rpc' which wasn't expected`
 
-**Causa:** A Solana CLI instalada é **anterior à v1.16** e não reconhece o flag `--use-rpc` que o cliente Rust do Hyperlane adiciona por padrão. O deploy falha em todas as tentativas, mas o script pode ter gerado um `log/WARP-*.txt` com Program IDs locais **que nunca chegaram à testnet** (os endereços são dos keypairs gerados localmente, não de contas reais on-chain).
+**Cause:** The installed Solana CLI is **older than v1.16** and does not recognize the `--use-rpc` flag that the Hyperlane Rust client adds by default. The deploy fails on all attempts, but the script may have generated a `log/WARP-*.txt` with local Program IDs **that never reached the testnet** (the addresses are from locally generated keypairs, not real on-chain accounts).
 
-**Como verificar se o deploy realmente aconteceu:**
+**How to verify if the deploy really happened:**
 
 ```bash
 solana account PROGRAM_ID --url https://api.testnet.solana.com
-# Se retornar "AccountNotFound" → deploy não aconteceu
+# If it returns "AccountNotFound" → deploy did not happen
 ```
 
-**Solução — Patch no código Rust (não requer atualização da CLI):**
+**Fix — Patch in the Rust code (does not require CLI update):**
 
 ```bash
-# 1. Editar o arquivo
+# 1. Edit the file
 nano /home/lunc/hyperlane-monorepo/rust/sealevel/client/src/cmd_utils.rs
-# Localizar e remover a linha:   "--use-rpc",
+# Find and remove the line:   "--use-rpc",
 
-# 2. Recompilar
+# 2. Recompile
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
 cargo build --release -p hyperlane-sealevel-client
 
-# 3. Limpar keypairs do deploy fracassado
+# 3. Clean up keypairs from the failed deploy
 rm -f environments/testnet/warp-routes/TOKEN/keys/*.json
 
-# 4. Resetar o state e o config
+# 4. Reset the state and config
 rm -f ~/cw-hyperlane/script-warp-terraclassic/.warp-sealevel-state.json
-# Em warp-sealevel-config.json: setar deployed:false, program_id:"", mint_address:""
+# In warp-sealevel-config.json: set deployed:false, program_id:"", mint_address:""
 
-# 5. Reexecutar o script
+# 5. Re-run the script
 ./create-warp-sealevel.sh
 ```
 
-> **Alternativa:** Atualizar a Solana CLI para v1.16+:
+> **Alternative:** Update the Solana CLI to v1.16+:
 > ```bash
 > sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
 > ```
 
 ---
 
-### ❌ `warp-route deploy falhou (exit 101)`
+### ❌ `warp-route deploy failed (exit 101)`
 
-**Causa:** Pode ser:
-1. Saldo insuficiente na keypair Solana
-2. Arquivo `token-config.json` inválido
-3. `.so` (bytecode do programa) não compilado
+**Cause:** Could be:
+1. Insufficient balance in the Solana keypair
+2. Invalid `token-config.json` file
+3. `.so` (program bytecode) not compiled
 
-**Diagnóstico:**
+**Diagnosis:**
 
 ```bash
-# Verificar saldo
+# Check balance
 solana balance PUBKEY --url https://api.testnet.solana.com
 
-# Verificar se o .so existe
+# Check if the .so exists
 ls /home/lunc/hyperlane-monorepo/rust/sealevel/target/deploy/*.so
 
-# Ver log completo
+# View full log
 cat ~/cw-hyperlane/script-warp-terraclassic/log/create-warp-sealevel.log
 ```
 
-**Solução para .so ausente:**
+**Fix for missing .so:**
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
 cargo build-bpf   # ou: cargo build-sbf
 ```
 
-### ❌ `account sequence mismatch` na Terra Classic
+### ❌ `account sequence mismatch` on Terra Classic
 
-**Causa:** O RPC da Terra Classic está desatualizado.
+**Cause:** The Terra Classic RPC is outdated.
 
-**Solução:** Usar o RPC sincronizado:
+**Fix:** Use the synchronized RPC:
 
 ```bash
-# No warp-evm-config.json:
+# In warp-evm-config.json:
 "rpc": "https://rpc.terra-classic.hexxagon.dev"
 ```
 
-### ❌ Mensagem enviada (Solana → Terra Classic) mas não chega
+### ❌ Message sent (Solana → Terra Classic) but does not arrive
 
-**Diagnóstico:**
-1. Verificar se o relayer tem Solana configurado em `relayChains`
-2. Verificar se o ISM da Terra Classic tem o validator Solana registrado
-3. Verificar se o validator Solana está fazendo checkpoints no S3
+**Diagnosis:**
+1. Check if the relayer has Solana configured in `relayChains`
+2. Check if the Terra Classic ISM has the Solana validator registered
+3. Check if the Solana validator is making checkpoints on S3
 
 ```bash
-# Verificar validator announcement (substitua pela URL do seu S3)
+# Check validator announcement (replace with your S3 URL)
 curl https://hyperlane-validator-signatures-SEU_BUCKET.s3.us-east-1.amazonaws.com/announcement.json
 ```
 
-### ❌ Mensagem enviada (Terra Classic → Solana) mas não chega
+### ❌ Message sent (Terra Classic → Solana) but does not arrive
 
-**Diagnóstico — cheklist em ordem:**
+**Diagnosis — checklist in order:**
 
-**1. Verificar se a rota no Terra Classic aponta para o Program ID CORRETO**
+**1. Verify if the route on Terra Classic points to the CORRECT Program ID**
 
-Este é o erro mais comum após um deploy com falha silenciosa. O `set_route` pode ter registrado o Program ID de um deploy anterior (que não existe on-chain):
+This is the most common error after a silently failed deploy. The `set_route` may have registered the Program ID from a previous deploy (that does not exist on-chain):
 
 ```bash
-# Obter a rota atual na Terra Classic
+# Get the current route on Terra Classic
 terrad query wasm contract-state smart terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm \
   '{"router":{"list_routes":{}}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Confirmar se o Program ID existe no Solana
+# Confirm if the Program ID exists on Solana
 solana account PROGRAM_ID_BASE58 --url https://api.testnet.solana.com
 ```
 
-Se `AccountNotFound` → a rota aponta para um programa inválido. Corrija conforme seção 11.6.
+If `AccountNotFound` → the route points to an invalid program. Fix as per section 11.6.
 
-**2. Verificar se o ISM Solana tem o validator da Terra Classic registrado**
+**2. Verify if the Solana ISM has the Terra Classic validator registered**
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
@@ -1048,43 +1048,43 @@ cd /home/lunc/hyperlane-monorepo/rust/sealevel
   --domains 1325
 ```
 
-Saída esperada: `threshold: 1`, validator = endereço do validator Terra Classic.
+Expected output: `threshold: 1`, validator = Terra Classic validator address.
 
-**3. Verificar se o validator da Terra Classic está fazendo checkpoints**
+**3. Verify if the Terra Classic validator is making checkpoints**
 
 ```bash
-# Substitua pela URL do S3 do seu validator Terra Classic
+# Replace with the S3 URL of your Terra Classic validator
 curl https://hyperlane-validator-signatures-NOME.s3.us-east-1.amazonaws.com/announcement.json
-# Deve retornar um JSON com "validator", "mailbox_address", "storage_location"
+# Should return a JSON with "validator", "mailbox_address", "storage_location"
 ```
 
-**4. Verificar se o relayer está monitorando a Terra Classic**
+**4. Verify if the relayer is monitoring Terra Classic**
 
-Confirme que `relayChains` no config do relayer inclui `terraclassic` ou o domain `1325`.
+Confirm that `relayChains` in the relayer config includes `terraclassic` or domain `1325`.
 
-### ❌ Rota na Terra Classic aponta para Program ID antigo/inválido
+### ❌ Route on Terra Classic points to old/invalid Program ID
 
-**Sintoma:** Mensagens saem da Terra Classic sem erro, mas nunca chegam ao Solana. A rota existe no contrato mas aponta para um programa que não existe on-chain.
+**Symptom:** Messages leave Terra Classic without error, but never reach Solana. The route exists in the contract but points to a program that does not exist on-chain.
 
-**Causa:** Um deploy anterior foi iniciado mas falhou silenciosamente (ex: erro `--use-rpc`), gerando um Program ID local que nunca foi publicado. O `set_route` registrou este ID inválido.
+**Cause:** A previous deploy was started but failed silently (e.g.: `--use-rpc` error), generating a local Program ID that was never published. The `set_route` registered this invalid ID.
 
-**Como identificar:**
+**How to identify:**
 
 ```bash
-# Listar todas as rotas configuradas no Warp Terra Classic
+# List all routes configured on the Terra Classic Warp
 terrad query wasm contract-state smart TERRA_WARP_ADDRESS \
   '{"router":{"list_routes":{}}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Para cada route encontrado, verificar no Solana
+# For each found route, verify on Solana
 solana account PROGRAM_ID_BASE58 --url https://api.testnet.solana.com
-# "AccountNotFound" = Program ID inválido
+# "AccountNotFound" = Invalid Program ID
 ```
 
-**Como corrigir — executar `set_route` com o Program ID correto:**
+**How to fix — run `set_route` with the correct Program ID:**
 
 ```bash
-export TERRA_PRIVATE_KEY="sua_chave_privada_hex"
+export TERRA_PRIVATE_KEY="your_private_key_hex"
 
 node - <<'EOF'
 const { SigningCosmWasmClient } = require("@cosmjs/cosmwasm-stargate");
@@ -1102,7 +1102,7 @@ async function main() {
     { gasPrice: GasPrice.fromString("0.015uluna") }
   );
 
-  // Program ID Solana em hex de 32 bytes, SEM "0x"
+  // Solana Program ID in 32-byte hex, WITHOUT "0x"
   const programHex = "0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6";
   const warpAddr   = "terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm";
   const domain     = 1399811150;
@@ -1110,7 +1110,7 @@ async function main() {
   const result = await client.execute(
     account.address, warpAddr,
     { router: { set_route: { set: { domain, route: programHex } } } },
-    "auto", "corrigir set_route TC → Solana"
+    "auto", "fix set_route TC → Solana"
   );
   console.log("TX:", result.transactionHash);
 }
@@ -1118,15 +1118,15 @@ main().catch(e => { console.error(e); process.exit(1); });
 EOF
 ```
 
-> **O script `create-warp-sealevel.sh` previne este problema** verificando automaticamente se a rota existente aponta para o Program ID correto antes de pular a etapa.
+> **The `create-warp-sealevel.sh` script prevents this problem** by automatically verifying whether the existing route points to the correct Program ID before skipping the step.
 
 ---
 
-### ❌ `invalid hex` ao executar `set_route` na Terra Classic
+### ❌ `invalid hex` when running `set_route` on Terra Classic
 
-**Causa:** O campo `route` foi passado com o prefixo `0x`. O contrato CosmWasm da Terra Classic aceita apenas hex puro (64 caracteres sem prefixo).
+**Cause:** The `route` field was passed with the `0x` prefix. The Terra Classic CosmWasm contract only accepts pure hex (64 characters without prefix).
 
-**Solução:** Remova o `0x` do valor do campo `route`:
+**Fix:** Remove the `0x` from the `route` field value:
 
 ```
 ❌  "route": "0x0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6"
@@ -1135,47 +1135,47 @@ EOF
 
 ---
 
-### ❌ `gasPriceAmount.multiply is not a function` no Node.js
+### ❌ `gasPriceAmount.multiply is not a function` in Node.js
 
-**Causa:** Uso incorreto do `GasPrice` ao construir o cliente CosmJS.
+**Cause:** Incorrect use of `GasPrice` when building the CosmJS client.
 
-**Solução:** Use `GasPrice.fromString(...)` em vez de passar um objeto literal:
+**Fix:** Use `GasPrice.fromString(...)` instead of passing a literal object:
 
 ```js
-// ❌ Errado:
+// ❌ Wrong:
 { gasPrice: { amount: "28.325", denom: "uluna" } }
 
-// ✅ Correto:
+// ✅ Correct:
 const { GasPrice } = require("@cosmjs/stargate");
 { gasPrice: GasPrice.fromString("0.015uluna") }
 ```
 
 ---
 
-### ❌ `TERRA_PRIVATE_KEY não definida`
+### ❌ `TERRA_PRIVATE_KEY not set`
 
-**Solução:**
+**Fix:**
 
 ```bash
-export TERRA_PRIVATE_KEY="sua_chave_privada_hex_sem_0x"
+export TERRA_PRIVATE_KEY="your_private_key_hex_without_0x"
 ./create-warp-sealevel.sh
 ```
 
 ---
 
-## 16. Referência de endereços deployados
+## 16. Deployed address reference
 
 ### XPTO — Solana Testnet ↔ Terra Classic
 
-> ✅ **Status: Funcionando em produção** — transferências bidirecionais confirmadas (Solana → Terra Classic e Terra Classic → Solana).
+> ✅ **Status: Working in production** — bidirectional transfers confirmed (Solana → Terra Classic and Terra Classic → Solana).
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | **Program ID (Solana)** | `jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9` |
 | **Program Hex (32b)** | `0x0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6` |
 | **Route (sem 0x, para set_route)** | `0adafdae59c217a1b7409f65ca81505f9991c257be80af8902ebed96d8801ba6` |
 | **Mint Address (SPL)** | `Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2` |
-| **Mailbox Solana (usado pelo Warp)** | `75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR` |
+| **Solana Mailbox (used by Warp)** | `75HBBLae3ddeneJVrZeyrDfv6vb7SMC3aCpBucSXS5aR` |
 | **ISM Program** | `5FgXjCJ8hw1hDbYhvwMB7PFN6oBhVcHuLo3ABoYynMZh` |
 | **IGP Program** | `5p7Hii6CJL4xGBYYTGEQmH9LnUSZteFJUu9AVLDExZX2` |
 | **IGP Account** | `E9i32KsKGQZMYTguZ81VHUueNvpTGh7nb9J5bRif4xT1` |
@@ -1190,16 +1190,16 @@ export TERRA_PRIVATE_KEY="sua_chave_privada_hex_sem_0x"
 | **Domain Terra Classic** | `1325` |
 | **Deployer (keypair)** | `EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd` |
 
-**Verificar on-chain:**
+**Verify on-chain:**
 
 ```bash
-# Warp Solana — confirmar que o programa existe
+# Solana Warp — confirm the program exists
 solana account jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9 --url https://api.testnet.solana.com
 
-# Mint SPL — confirmar que o token existe
+# SPL Mint — confirm the token exists
 solana account Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 --url https://api.testnet.solana.com
 
-# Rota Terra Classic → Solana
+# Terra Classic → Solana route
 terrad query wasm contract-state smart terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm \
   '{"router":{"get_route":{"domain":1399811150}}}' \
   --node https://rpc.terra-classic.hexxagon.dev
@@ -1207,28 +1207,28 @@ terrad query wasm contract-state smart terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8k
 
 ---
 
-## 17. Links úteis
+## 17. Useful links
 
-| Recurso | URL |
+| Resource | URL |
 |---------|-----|
-| Explorer Solana Testnet | https://explorer.solana.com/?cluster=testnet |
-| Explorer Terra Classic | https://finder.hexxagon.io/rebel-2 |
+| Solana Testnet Explorer | https://explorer.solana.com/?cluster=testnet |
+| Terra Classic Explorer | https://finder.hexxagon.io/rebel-2 |
 | Hyperlane Docs | https://docs.hyperlane.xyz |
 | Hyperlane Domínios | https://docs.hyperlane.xyz/docs/reference/domains |
 | Solana CLI | https://docs.solana.com/cli/install-solana-cli-tools |
-| Faucet Solana Testnet | https://faucet.solana.com |
-| Faucet Terra Classic | https://faucet.terra.dev |
+| Solana Testnet Faucet | https://faucet.solana.com |
+| Terra Classic Faucet | https://faucet.terra.dev |
 | **Validators — S3 (checkpoints)** | |
-| S3 Validator Terra Classic | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/announcement.json |
-| S3 Validator Sepolia | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/announcement.json |
-| S3 Validator BSC Testnet | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/announcement.json |
-| **Contratos on-chain (XPTO)** | |
-| Mailbox Terra Classic | `terra1s4jwfe0tcaztpfsct5wzj02esxyjy7e7lhkcwn5dp04yvly82rwsvzyqmm` |
-| Warp XPTO Terra Classic | `terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm` |
-| CW20 XPTO (colateral) | `terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch` |
-| Program XPTO Solana | `jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9` |
-| Mint XPTO SPL | `Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2` |
-| **Repositórios** | |
+| Terra Classic S3 Validator | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/announcement.json |
+| Sepolia S3 Validator | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/announcement.json |
+| BSC Testnet S3 Validator | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/announcement.json |
+| **On-chain contracts (XPTO)** | |
+| Terra Classic Mailbox | `terra1s4jwfe0tcaztpfsct5wzj02esxyjy7e7lhkcwn5dp04yvly82rwsvzyqmm` |
+| Terra Classic Warp XPTO | `terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm` |
+| CW20 XPTO (collateral) | `terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch` |
+| Solana XPTO Program | `jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9` |
+| XPTO SPL Mint | `Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2` |
+| **Repositories** | |
 | Hyperlane Registry GitHub | https://github.com/hyperlane-xyz/hyperlane-registry |
 | Hyperlane Monorepo | https://github.com/hyperlane-xyz/hyperlane-monorepo |
-| cw-hyperlane (metadata Solana) | https://github.com/igorv43/cw-hyperlane/tree/main/warp/solana |
+| cw-hyperlane (Solana metadata) | https://github.com/igorv43/cw-hyperlane/tree/main/warp/solana |

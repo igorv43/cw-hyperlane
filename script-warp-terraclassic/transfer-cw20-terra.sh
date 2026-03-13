@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  transfer-cw20-terra.sh
-#  Transfere tokens CW20 na Terra Classic via CosmWasm
+#  Transfers CW20 tokens on Terra Classic via CosmWasm
 # =============================================================================
 set -euo pipefail
 
@@ -9,14 +9,14 @@ set -euo pipefail
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
-# ─── Configurações padrão (editáveis) ────────────────────────────────────────
+# ─── Default settings (editable) ────────────────────────────────────────────
 CW20_CONTRACT="${CW20_CONTRACT:-terra19ujvy60tjeyehjrwlrdpqlp0gxmtt4qv452nwjqc6w6m38pm8xmq22lux3}"
 SENDER="${SENDER:-terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze}"
 RECIPIENT="${RECIPIENT:-terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k}"
 AMOUNT="${AMOUNT:-100000000000}"
 TOKEN_SYMBOL="${TOKEN_SYMBOL:-XPTO}"
 
-# RPC / LCD da Terra Classic (lê do warp-evm-config.json se existir)
+# RPC / LCD for Terra Classic (reads from warp-evm-config.json if it exists)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$SCRIPT_DIR/log"
 mkdir -p "$LOG_DIR"
@@ -39,81 +39,81 @@ GAS_MULTIPLIER="${GAS_MULTIPLIER:-1.4}"
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo -e ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${CYAN}║      TRANSFERÊNCIA CW20 — TERRA CLASSIC              ║${RESET}"
+echo -e "${BOLD}${CYAN}║      CW20 TRANSFER — TERRA CLASSIC                   ║${RESET}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo -e ""
 
-# ─── Checar dependências ──────────────────────────────────────────────────────
+# ─── Check dependencies ──────────────────────────────────────────────────────
 for dep in node jq curl; do
     if ! command -v "$dep" &>/dev/null; then
-        echo -e "${RED}❌ Dependência não encontrada: ${dep}${RESET}"
-        echo -e "   Instale com: sudo apt install ${dep}"
+        echo -e "${RED}❌ Dependency not found: ${dep}${RESET}"
+        echo -e "   Install with: sudo apt install ${dep}"
         exit 1
     fi
 done
 
-# Localizar node_modules do projeto
+# Locate project node_modules
 PROJECT_ROOT="$SCRIPT_DIR"
 while [ "$PROJECT_ROOT" != "/" ] && [ ! -f "$PROJECT_ROOT/package.json" ]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
 
 if [ ! -d "$PROJECT_ROOT/node_modules/@cosmjs/cosmwasm-stargate" ]; then
-    echo -e "${RED}❌ node_modules não encontrado em $PROJECT_ROOT${RESET}"
+    echo -e "${RED}❌ node_modules not found in $PROJECT_ROOT${RESET}"
     echo -e "   Execute: cd $PROJECT_ROOT && yarn install"
     exit 1
 fi
 
-echo -e "${GREEN}✅ node_modules encontrado em: ${PROJECT_ROOT}${RESET}"
+echo -e "${GREEN}✅ node_modules found at: ${PROJECT_ROOT}${RESET}"
 
-# ─── Chave privada ─────────────────────────────────────────────────────────────
+# ─── Private key ──────────────────────────────────────────────────────────────
 if [ -z "${TERRA_PRIVATE_KEY:-}" ]; then
     echo -e ""
-    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY não definida.${RESET}"
-    echo -e "   Opção 1: export TERRA_PRIVATE_KEY=\"sua_chave_hex\""
-    echo -e "   Opção 2: digite agora (não será exibida):"
+    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY not set.${RESET}"
+    echo -e "   Option 1: export TERRA_PRIVATE_KEY=\"your_hex_key\""
+    echo -e "   Option 2: enter now (will not be displayed):"
     echo -n "   > "
     read -rs TERRA_PRIVATE_KEY
     echo ""
     if [ -z "$TERRA_PRIVATE_KEY" ]; then
-        echo -e "${RED}❌ Chave privada não fornecida. Abortando.${RESET}"
+        echo -e "${RED}❌ Private key not provided. Aborting.${RESET}"
         exit 1
     fi
 fi
 
-# Remover prefixo 0x se presente
+# Remove 0x prefix if present
 TERRA_PRIVATE_KEY="${TERRA_PRIVATE_KEY#0x}"
 
-# ─── Resumo da transação ───────────────────────────────────────────────────────
+# ─── Transaction summary ─────────────────────────────────────────────────────
 echo -e ""
-echo -e "${BOLD}📋 Detalhes da transferência:${RESET}"
+echo -e "${BOLD}📋 Transfer details:${RESET}"
 echo -e "   ${CYAN}Rede      :${RESET} $CHAIN_ID"
 echo -e "   ${CYAN}RPC       :${RESET} $RPC_URL"
 echo -e "   ${CYAN}Contrato  :${RESET} $CW20_CONTRACT"
 echo -e "   ${CYAN}Token     :${RESET} $TOKEN_SYMBOL"
-echo -e "   ${CYAN}Remetente :${RESET} $SENDER"
-echo -e "   ${CYAN}Destinat. :${RESET} $RECIPIENT"
-echo -e "   ${CYAN}Valor     :${RESET} $AMOUNT (unidades base)"
+echo -e "   ${CYAN}Sender    :${RESET} $SENDER"
+echo -e "   ${CYAN}Recipient :${RESET} $RECIPIENT"
+echo -e "   ${CYAN}Amount    :${RESET} $AMOUNT (base units)"
 echo -e ""
 
-# Confirmação
-echo -ne "${YELLOW}▶ Confirmar a transferência? [s/N]: ${RESET}"
+# Confirmation
+echo -ne "${YELLOW}▶ Confirm the transfer? [y/N]: ${RESET}"
 read -r CONFIRM
-if [[ ! "$CONFIRM" =~ ^[sS]$ ]]; then
-    echo -e "${RED}❌ Transferência cancelada.${RESET}"
+if [[ ! "$CONFIRM" =~ ^[sStTyY]$ ]]; then
+    echo -e "${RED}❌ Transfer cancelled.${RESET}"
     exit 0
 fi
 
 echo -e ""
-echo -e "${BOLD}⏳ Processando...${RESET}"
+echo -e "${BOLD}⏳ Processing...${RESET}"
 echo -e ""
 
-# ─── Script Node.js inline ────────────────────────────────────────────────────
+# ─── Inline Node.js script ───────────────────────────────────────────────────
 RESULT=$(node --no-warnings - <<EOF
 const path = require('path');
 const PROJECT_ROOT = "${PROJECT_ROOT}";
 
-// Carregar módulos do node_modules do projeto
+// Load modules from project node_modules
 const nmPath = path.join(PROJECT_ROOT, 'node_modules');
 const { SigningCosmWasmClient } = require(path.join(nmPath, '@cosmjs/cosmwasm-stargate'));
 const { DirectSecp256k1Wallet } = require(path.join(nmPath, '@cosmjs/proto-signing'));
@@ -129,30 +129,30 @@ async function main() {
     const privKeyHex = "${TERRA_PRIVATE_KEY}";
     const gasPrice = GasPrice.fromString("${GAS_PRICE}${GAS_DENOM}");
 
-    // Criar wallet a partir da chave privada hex
+    // Create wallet from hex private key
     let privKeyBytes;
     try {
         privKeyBytes = fromHex(privKeyHex);
     } catch(e) {
-        throw new Error("Chave privada inválida: " + e.message);
+        throw new Error("Invalid private key: " + e.message);
     }
 
     const wallet = await DirectSecp256k1Wallet.fromKey(privKeyBytes, 'terra');
     const [account] = await wallet.getAccounts();
 
-    // Verificar se o endereço bate com o sender esperado
+    // Verify if derived address matches the expected sender
     if (account.address !== sender) {
-        process.stderr.write("⚠️  AVISO: endereço derivado da chave: " + account.address + "\n");
-        process.stderr.write("          endereço configurado (SENDER): " + sender + "\n");
-        process.stderr.write("          Usando o endereço derivado da chave.\n\n");
+        process.stderr.write("⚠️  WARNING: address derived from key: " + account.address + "\n");
+        process.stderr.write("          configured address (SENDER): " + sender + "\n");
+        process.stderr.write("          Using the address derived from the key.\n\n");
     }
 
-    // Conectar ao cliente
+    // Connect to client
     const client = await SigningCosmWasmClient.connectWithSigner(rpcUrl, wallet, {
         gasPrice: gasPrice,
     });
 
-    // Checar saldo CW20 antes
+    // Check CW20 balance before transfer
     let balanceBefore = "0";
     let balanceRecipientBefore = "0";
     try {
@@ -165,13 +165,13 @@ async function main() {
         });
         balanceRecipientBefore = resR.balance;
     } catch(e) {
-        // query pode falhar em redes testnet
+        // query may fail on testnets
     }
 
     console.log("BALANCE_SENDER_BEFORE=" + balanceBefore);
     console.log("BALANCE_RECIPIENT_BEFORE=" + balanceRecipientBefore);
 
-    // Mensagem CW20 transfer
+    // CW20 transfer message
     const transferMsg = {
         transfer: {
             recipient: recipient,
@@ -179,7 +179,7 @@ async function main() {
         }
     };
 
-    // Estimar gas
+    // Estimate gas
     let gasEstimate;
     try {
         gasEstimate = await client.simulate(account.address, [
@@ -194,8 +194,8 @@ async function main() {
             }
         ], "");
     } catch(e) {
-        process.stderr.write("⚠️  Falha ao estimar gas: " + e.message + "\n");
-        process.stderr.write("   Usando gas padrão: 200000\n");
+        process.stderr.write("⚠️  Failed to estimate gas: " + e.message + "\n");
+        process.stderr.write("   Using default gas: 200000\n");
         gasEstimate = null;
     }
 
@@ -205,7 +205,7 @@ async function main() {
     console.log("GAS_LIMIT=" + gasLimit);
     console.log("FEE_AMOUNT=" + fee.amount[0].amount + fee.amount[0].denom);
 
-    // Executar transferência
+    // Execute transfer
     const result = await client.execute(
         account.address,
         contract,
@@ -220,7 +220,7 @@ async function main() {
     console.log("GAS_WANTED=" + result.gasWanted);
     console.log("SENDER_USED=" + account.address);
 
-    // Checar saldo CW20 depois
+    // Check CW20 balance after transfer
     try {
         const resAfter = await client.queryContractSmart(contract, {
             balance: { address: account.address }
@@ -234,7 +234,7 @@ async function main() {
 }
 
 main().catch(e => {
-    process.stderr.write("ERRO: " + e.message + "\n");
+    process.stderr.write("ERROR: " + e.message + "\n");
     process.exit(1);
 });
 EOF
@@ -242,14 +242,14 @@ EOF
 
 EXIT_CODE=$?
 
-# ─── Processar resultado ───────────────────────────────────────────────────────
+# ─── Process result ──────────────────────────────────────────────────────────
 if [ $EXIT_CODE -ne 0 ]; then
-    echo -e "${RED}❌ Falha na transferência!${RESET}"
-    echo -e "${RED}   Verifique os logs acima para mais detalhes.${RESET}"
+    echo -e "${RED}❌ Transfer failed!${RESET}"
+    echo -e "${RED}   Check the logs above for more details.${RESET}"
     exit 1
 fi
 
-# Extrair variáveis do output do Node.js
+# Extract variables from Node.js output
 TX_HASH=$(echo "$RESULT"             | grep "^TX_HASH="                  | cut -d= -f2)
 HEIGHT=$(echo "$RESULT"              | grep "^HEIGHT="                   | cut -d= -f2)
 GAS_USED=$(echo "$RESULT"            | grep "^GAS_USED="                 | cut -d= -f2)
@@ -261,61 +261,61 @@ BAL_S_AFTER=$(echo "$RESULT"         | grep "^BALANCE_SENDER_AFTER="     | cut -
 BAL_R_BEFORE=$(echo "$RESULT"        | grep "^BALANCE_RECIPIENT_BEFORE=" | cut -d= -f2)
 BAL_R_AFTER=$(echo "$RESULT"         | grep "^BALANCE_RECIPIENT_AFTER="  | cut -d= -f2)
 
-# ─── Relatório final ───────────────────────────────────────────────────────────
+# ─── Final report ────────────────────────────────────────────────────────────
 echo -e ""
 echo -e "${BOLD}${GREEN}╔══════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${GREEN}║       ✅ TRANSFERÊNCIA REALIZADA COM SUCESSO!        ║${RESET}"
+echo -e "${BOLD}${GREEN}║       ✅ TRANSFER COMPLETED SUCCESSFULLY!            ║${RESET}"
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo -e ""
-echo -e "${BOLD}📦 Transação:${RESET}"
+echo -e "${BOLD}📦 Transaction:${RESET}"
 echo -e "   ${CYAN}TX Hash   :${RESET} ${BOLD}${TX_HASH}${RESET}"
-echo -e "   ${CYAN}Bloco     :${RESET} $HEIGHT"
-echo -e "   ${CYAN}Gas usado :${RESET} ${GAS_USED} / ${GAS_LIMIT}"
-echo -e "   ${CYAN}Taxa paga :${RESET} $FEE_AMOUNT"
+echo -e "   ${CYAN}Block     :${RESET} $HEIGHT"
+echo -e "   ${CYAN}Gas used  :${RESET} ${GAS_USED} / ${GAS_LIMIT}"
+echo -e "   ${CYAN}Fee paid  :${RESET} $FEE_AMOUNT"
 echo -e ""
-echo -e "${BOLD}💰 Saldos:${RESET}"
-echo -e "   ${CYAN}Remetente (antes) :${RESET} $BAL_S_BEFORE $TOKEN_SYMBOL"
-echo -e "   ${CYAN}Remetente (depois):${RESET} $BAL_S_AFTER $TOKEN_SYMBOL"
-echo -e "   ${CYAN}Destinat. (antes) :${RESET} $BAL_R_BEFORE $TOKEN_SYMBOL"
-echo -e "   ${CYAN}Destinat. (depois):${RESET} $BAL_R_AFTER $TOKEN_SYMBOL"
+echo -e "${BOLD}💰 Balances:${RESET}"
+echo -e "   ${CYAN}Sender   (before) :${RESET} $BAL_S_BEFORE $TOKEN_SYMBOL"
+echo -e "   ${CYAN}Sender   (after)  :${RESET} $BAL_S_AFTER $TOKEN_SYMBOL"
+echo -e "   ${CYAN}Recipient (before):${RESET} $BAL_R_BEFORE $TOKEN_SYMBOL"
+echo -e "   ${CYAN}Recipient (after) :${RESET} $BAL_R_AFTER $TOKEN_SYMBOL"
 echo -e ""
-echo -e "${BOLD}🔗 Verificar no Explorer:${RESET}"
+echo -e "${BOLD}🔗 Verify on Explorer:${RESET}"
 echo -e "   ${CYAN}https://finder.terra-classic.hexxagon.dev/testnet/tx/${TX_HASH}${RESET}"
 echo -e ""
 
-# ─── Salvar relatório ──────────────────────────────────────────────────────────
+# ─── Save report ─────────────────────────────────────────────────────────────
 REPORT_FILE="$LOG_DIR/TRANSFER-CW20-$(date +%Y%m%d-%H%M%S).txt"
 cat > "$REPORT_FILE" <<REPORT
-TRANSFERÊNCIA CW20 — TERRA CLASSIC
-====================================
-Data/Hora  : $(date "+%Y-%m-%d %H:%M:%S")
+CW20 TRANSFER — TERRA CLASSIC
+==============================
+Date/Time  : $(date "+%Y-%m-%d %H:%M:%S")
 Chain      : $CHAIN_ID
 RPC        : $RPC_URL
 
-PARÂMETROS
------------
-Token      : $TOKEN_SYMBOL
-Contrato   : $CW20_CONTRACT
-Remetente  : $SENDER_USED
-Destinat.  : $RECIPIENT
-Valor      : $AMOUNT
-
-RESULTADO
+PARAMETERS
 ----------
-TX Hash    : $TX_HASH
-Bloco      : $HEIGHT
-Gas Usado  : $GAS_USED / $GAS_LIMIT
-Taxa       : $FEE_AMOUNT
+Token      : $TOKEN_SYMBOL
+Contract   : $CW20_CONTRACT
+Sender     : $SENDER_USED
+Recipient  : $RECIPIENT
+Amount     : $AMOUNT
 
-SALDOS
--------
-Remetente antes : $BAL_S_BEFORE $TOKEN_SYMBOL
-Remetente depois: $BAL_S_AFTER $TOKEN_SYMBOL
-Destinat. antes : $BAL_R_BEFORE $TOKEN_SYMBOL
-Destinat. depois: $BAL_R_AFTER $TOKEN_SYMBOL
+RESULT
+------
+TX Hash    : $TX_HASH
+Block      : $HEIGHT
+Gas Used   : $GAS_USED / $GAS_LIMIT
+Fee        : $FEE_AMOUNT
+
+BALANCES
+--------
+Sender before   : $BAL_S_BEFORE $TOKEN_SYMBOL
+Sender after    : $BAL_S_AFTER $TOKEN_SYMBOL
+Recipient before: $BAL_R_BEFORE $TOKEN_SYMBOL
+Recipient after : $BAL_R_AFTER $TOKEN_SYMBOL
 
 Explorer: https://finder.terra-classic.hexxagon.dev/testnet/tx/$TX_HASH
 REPORT
 
-echo -e "${GREEN}📄 Relatório salvo: ${REPORT_FILE}${RESET}"
+echo -e "${GREEN}📄 Report saved: ${REPORT_FILE}${RESET}"
 echo -e ""

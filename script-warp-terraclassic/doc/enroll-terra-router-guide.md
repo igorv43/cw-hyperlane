@@ -1,125 +1,125 @@
-# Guia: `enroll-terra-router.sh`
+# Guide: `enroll-terra-router.sh`
 
-> Script interativo para registrar a rota EVM no contrato Warp da **Terra Classic**.  
-> Resolve o erro `route not found` ao chamar `transfer_remote` e garante o vínculo bidirecional do Warp Route.
+> Interactive script to register the EVM route in the **Terra Classic** Warp contract.  
+> Resolves the `route not found` error when calling `transfer_remote` and ensures the bidirectional Warp Route link.
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-1. [O que o script faz](#1-o-que-o-script-faz)
-2. [Quando usar](#2-quando-usar)
-3. [Pré-requisitos](#3-pré-requisitos)
-4. [Como executar](#4-como-executar)
-5. [O que acontece por baixo](#5-o-que-acontece-por-baixo)
-6. [Entendendo o vínculo bidirecional](#6-entendendo-o-vínculo-bidirecional)
-7. [Verificando o estado atual](#7-verificando-o-estado-atual)
+1. [What the script does](#1-what-the-script-does)
+2. [When to use](#2-when-to-use)
+3. [Prerequisites](#3-prerequisites)
+4. [How to run](#4-how-to-run)
+5. [What happens under the hood](#5-what-happens-under-the-hood)
+6. [Understanding the bidirectional link](#6-understanding-the-bidirectional-link)
+7. [Checking the current state](#7-checking-the-current-state)
 8. [Troubleshooting](#8-troubleshooting)
-9. [Links úteis](#9-links-úteis)
+9. [Useful links](#9-useful-links)
 
 ---
 
-## 1. O que o script faz
+## 1. What the script does
 
-O `enroll-terra-router.sh` chama a função `router.set_route` no contrato Warp **da Terra Classic** para registrar o endereço do Warp de uma rede EVM (ex: Sepolia) como roteador autorizado.
+The `enroll-terra-router.sh` calls the `router.set_route` function on the **Terra Classic** Warp contract to register the address of a Warp contract on an EVM network (e.g.: Sepolia) as an authorized router.
 
-Sem esse registro, qualquer chamada `transfer_remote` partindo da Terra Classic falha com:
+Without this registration, any `transfer_remote` call from Terra Classic will fail with:
 
 ```
 route not found: wasmvm error
 ```
 
-O script:
-1. Lê a configuração de `warp-evm-config.json`
-2. Apresenta menus para selecionar o **token** e a **rede EVM** de destino
-3. Converte o endereço EVM para `bytes32` (formato exigido pelo Warp)
-4. Exibe um resumo e pede confirmação
-5. Executa a transação via Node.js + `@cosmjs`
-6. Verifica se a rota já estava configurada (evita duplicatas)
+The script:
+1. Reads configuration from `warp-evm-config.json`
+2. Shows menus to select the **token** and the destination **EVM network**
+3. Converts the EVM address to `bytes32` (format required by the Warp contract)
+4. Displays a summary and asks for confirmation
+5. Executes the transaction via Node.js + `@cosmjs`
+6. Checks if the route was already configured (avoids duplicates)
 
 ---
 
-## 2. Quando usar
+## 2. When to use
 
-| Situação | Ação |
+| Situation | Action |
 |---|---|
-| `transfer_remote` falha com `route not found` | Execute este script |
-| Deploy feito sem `TERRA_PRIVATE_KEY` (Etapa 7B pulada) | Execute este script |
-| Warp EVM foi re-deployado em novo endereço | Execute este script para atualizar a rota |
-| Primeira vez adicionando uma rede EVM a um token existente | Execute este script após o deploy EVM |
-| Verificação preventiva antes de transferir | Use a seção [Verificando o estado atual](#7-verificando-o-estado-atual) |
+| `transfer_remote` fails with `route not found` | Run this script |
+| Deploy completed without `TERRA_PRIVATE_KEY` (Step 7B skipped) | Run this script |
+| EVM Warp was re-deployed at a new address | Run this script to update the route |
+| First time adding an EVM network to an existing token | Run this script after the EVM deploy |
+| Preventive check before transferring | Use the [Checking the current state](#7-checking-the-current-state) section |
 
-> **Contexto:** O `create-warp-evm.sh` executa esta etapa automaticamente (Etapa 7B) quando `TERRA_PRIVATE_KEY` está definida. Use `enroll-terra-router.sh` apenas quando precisar executar manualmente depois.
+> **Context:** The `create-warp-evm.sh` executes this step automatically (Step 7B) when `TERRA_PRIVATE_KEY` is set. Use `enroll-terra-router.sh` only when you need to run it manually afterwards.
 
 ---
 
-## 3. Pré-requisitos
+## 3. Prerequisites
 
-| Requisito | Verificação |
+| Requirement | Check |
 |---|---|
 | `node` 18+ | `node --version` |
 | `jq` | `jq --version` |
-| Pacotes `@cosmjs` instalados | `ls node_modules/@cosmjs/cosmwasm-stargate` |
-| `TERRA_PRIVATE_KEY` com saldo em LUNA | owner do contrato Warp Terra Classic |
-| `warp-evm-config.json` atualizado | token com `warp_address` preenchido + rede com `warp_tokens.<token>.deployed: true` |
+| `@cosmjs` packages installed | `ls node_modules/@cosmjs/cosmwasm-stargate` |
+| `TERRA_PRIVATE_KEY` with LUNA balance | owner of the Terra Classic Warp contract |
+| `warp-evm-config.json` updated | token with `warp_address` filled in + network with `warp_tokens.<token>.deployed: true` |
 
-### Verificar se os dados estão no config:
+### Check if data is in the config:
 
 ```bash
-# Token XPTO — verificar se warp_address está preenchido
+# XPTO token — check if warp_address is filled
 jq '.terra_classic.tokens.xpto.terra_warp' script-warp-terraclassic/warp-evm-config.json
 
-# Rede Sepolia — verificar se warp xpto está deployado
+# Sepolia network — check if xpto warp is deployed
 jq '.networks.sepolia.warp_tokens.xpto' script-warp-terraclassic/warp-evm-config.json
 ```
 
 ---
 
-## 4. Como executar
+## 4. How to run
 
 ```bash
-# 1. Entrar na pasta script-warp-terraclassic
+# 1. Enter the script-warp-terraclassic folder
 cd ~/cw-hyperlane/script-warp-terraclassic
 
-# 2. Dar permissão (apenas primeira vez)
+# 2. Grant permission (first time only)
 chmod +x enroll-terra-router.sh
 
-# 3. Definir a chave privada Terra Classic
-export TERRA_PRIVATE_KEY="sua_chave_hex"   # sem prefixo 0x
+# 3. Set the Terra Classic private key
+export TERRA_PRIVATE_KEY="your_hex_key"   # without 0x prefix
 
-# 4. Executar
+# 4. Run
 ./enroll-terra-router.sh
 ```
 
-### Exemplo de execução
+### Execution example
 
 ```
 ╔══════════════════════════════════════════════════════╗
 ║   enrollRemoteRouter — TERRA CLASSIC (set_route)    ║
 ╚══════════════════════════════════════════════════════╝
 
-📌 Selecione o TOKEN a vincular:
+📌 Select the TOKEN to link:
 
   [1] XPTO — terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm
   [2] JURIS — terra1stu3c...
 
-▶ Digite o número: 1
+▶ Enter the number: 1
 
-📌 Selecione a rede EVM de destino:
+📌 Select the destination EVM network:
 
   [1] Ethereum Sepolia Testnet (domain 11155111) — 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048
 
-▶ Digite o número: 1
+▶ Enter the number: 1
 
-📋 Parâmetros da operação:
+📋 Operation parameters:
    Token         : XPTO (xpto)
    Terra Warp    : terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm
-   Rede EVM      : Ethereum Sepolia Testnet (domain 11155111)
+   EVM Network   : Ethereum Sepolia Testnet (domain 11155111)
    EVM Warp      : 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048
    EVM bytes32   : 000000000000000000000000bf43aa4878f5ad0fcac12cd3a835dd3506981048
-   RPC Terra     : https://rpc.terra-classic.hexxagon.dev
+   Terra RPC     : https://rpc.terra-classic.hexxagon.dev
 
-Mensagem CosmWasm que será executada:
+CosmWasm message to be executed:
 {
   "router": {
     "set_route": {
@@ -131,19 +131,19 @@ Mensagem CosmWasm que será executada:
   }
 }
 
-▶ Confirmar? [s/N]: s
+▶ Confirm? [y/N]: y
 
-⏳ Enviando transação...
+⏳ Sending transaction...
 
 ╔══════════════════════════════════════════════════════╗
-║    ✅ set_route EXECUTADO COM SUCESSO!               ║
+║    ✅ set_route EXECUTED SUCCESSFULLY!               ║
 ╚══════════════════════════════════════════════════════╝
 
-📦 Transação:
+📦 Transaction:
    TX Hash   : D24446E27DAB952ED26B538358AF687BE19CA8DE98B89BC8A601D617AD8DD8A5
-   Bloco     : 24571234
-   Gas usado : 180000
-   Remetente : terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
+   Block     : 24571234
+   Gas used  : 180000
+   Sender    : terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze
 
    🔗 Explorer:
    https://finder.hexxagon.io/rebel-2/tx/D24446E27DAB952...
@@ -151,30 +151,30 @@ Mensagem CosmWasm que será executada:
 
 ---
 
-## 5. O que acontece por baixo
+## 5. What happens under the hood
 
-### 5.1 Conversão de endereço EVM → bytes32
+### 5.1 EVM address → bytes32 conversion
 
-O contrato Warp da Terra Classic armazena os roteadores como `bytes32`. O endereço EVM (20 bytes) é convertido para `bytes32` com padding esquerdo de zeros:
+The Terra Classic Warp contract stores routers as `bytes32`. The EVM address (20 bytes) is converted to `bytes32` with left-zero padding:
 
 ```
-Endereço EVM (20 bytes / 40 hex chars):
+EVM address (20 bytes / 40 hex chars):
   0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048
 
 bytes32 (32 bytes / 64 hex chars):
   000000000000000000000000bf43aa4878f5ad0fcac12cd3a835dd3506981048
-  ^^^^^^^^^^^^^^^^^^^^^^^^  ← 24 zeros de padding (12 bytes)
+  ^^^^^^^^^^^^^^^^^^^^^^^^  ← 24 zeros of padding (12 bytes)
 ```
 
-O script usa:
+The script uses:
 ```bash
 EVM_WARP_HEX="${EVM_WARP_ADDR#0x}"
 EVM_WARP_B32=$(printf '%064s' "$EVM_WARP_HEX" | tr ' ' '0')
 ```
 
-### 5.2 Verificação de rota existente
+### 5.2 Existing route check
 
-Antes de enviar a transação, o script consulta `router.list_routes` para verificar se a rota já existe:
+Before sending the transaction, the script queries `router.list_routes` to check if the route already exists:
 
 ```javascript
 const { routes } = await client.queryContractSmart(terraWarp, {
@@ -182,54 +182,54 @@ const { routes } = await client.queryContractSmart(terraWarp, {
 });
 const existing = routes.find(r => r.domain === evmDomain);
 if (existing && existing.route) {
-    // rota já configurada — não re-enviar
+    // route already configured — do not re-send
 }
 ```
 
-> ⚠️ **Não use `router.get_route`** para esta verificação. Quando o domínio não existe, ele retorna
-> `{"route": null}` em vez de erro, causando falsos positivos. O `list_routes` é confiável.
+> ⚠️ **Do not use `router.get_route`** for this check. When the domain does not exist, it returns
+> `{"route": null}` instead of an error, causing false positives. `list_routes` is reliable.
 
-### 5.3 Execução via @cosmjs
+### 5.3 Execution via @cosmjs
 
-A transação é enviada usando `SigningCosmWasmClient.execute` do pacote `@cosmjs/cosmwasm-stargate`:
+The transaction is sent using `SigningCosmWasmClient.execute` from the `@cosmjs/cosmwasm-stargate` package:
 
 ```javascript
 const result = await client.execute(
     senderAddress,
     terraWarpContract,
     { router: { set_route: { set: { domain: evmDomain, route: evmRouteHex } } } },
-    "auto",   // estimativa automática de gas
+    "auto",   // automatic gas estimation
     "enrollRemoteRouter via enroll-terra-router.sh"
 );
 ```
 
 ---
 
-## 6. Entendendo o vínculo bidirecional
+## 6. Understanding the bidirectional link
 
-Um Warp Route Hyperlane requer configuração **nos dois lados** para funcionar:
+A Hyperlane Warp Route requires configuration on **both sides** to work:
 
 ```
 Terra Classic → Sepolia:
-  Contrato Warp Terra Classic sabe que o domain 11155111 usa o endereço 0xbF43aA...
-  (configurado por este script via router.set_route)
+  Terra Classic Warp contract knows domain 11155111 uses address 0xbF43aA...
+  (configured by this script via router.set_route)
 
 Sepolia → Terra Classic:
-  Contrato Warp Sepolia sabe que o domain 1325 usa o endereço terra16ql6l...
-  (configurado pelo create-warp-evm.sh na Etapa 7 via enrollRemoteRouter)
+  Sepolia Warp contract knows domain 1325 uses address terra16ql6l...
+  (configured by create-warp-evm.sh in Step 7 via enrollRemoteRouter)
 ```
 
-### Verificação on-chain dos dois lados:
+### On-chain verification of both sides:
 
 ```bash
 RPC="https://ethereum-sepolia-rpc.publicnode.com"
 
-# Lado Sepolia: routers(1325) deve ser o hex do Warp Terra Classic
+# Sepolia side: routers(1325) should be the hex of the Terra Classic Warp
 cast call 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048 \
   "routers(uint32)(bytes32)" 1325 --rpc-url $RPC
-# Esperado: 0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
+# Expected: 0xd03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
 
-# Lado Terra Classic: list_routes deve conter domain 11155111
+# Terra Classic side: list_routes should contain domain 11155111
 node -e "
 const p=require('path'), nm=p.join('/home/lunc/cw-hyperlane','node_modules');
 const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
@@ -241,19 +241,19 @@ const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
   );
   console.log(JSON.stringify(r.routes, null, 2));
 })();"
-# Esperado: [{ domain: 11155111, route: "000000000000000000000000bf43aa4878..." }]
+# Expected: [{ domain: 11155111, route: "000000000000000000000000bf43aa4878..." }]
 ```
 
 ---
 
-## 7. Verificando o estado atual
+## 7. Checking the current state
 
-Antes de executar o script, verifique se a rota já está configurada:
+Before running the script, check if the route is already configured:
 
 ```bash
 cd ~/cw-hyperlane
 
-# Consultar todas as rotas registradas no XPTO Warp Terra Classic
+# Query all routes registered on the XPTO Terra Classic Warp
 node --no-warnings -e "
 const p=require('path'), nm=p.join(process.cwd(),'node_modules');
 const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
@@ -264,23 +264,23 @@ const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
     {router:{list_routes:{}}}
   );
   if(!r.routes || r.routes.length === 0) {
-    console.log('❌ Nenhuma rota configurada!');
+    console.log('❌ No routes configured!');
   } else {
     r.routes.forEach(rt => console.log('domain', rt.domain, '→', rt.route));
   }
-})().catch(e=>console.log('Erro:', e.message));"
+})().catch(e=>console.log('Error:', e.message));"
 ```
 
-**Resultado esperado (tudo configurado):**
+**Expected result (everything configured):**
 ```
 domain 11155111 → 000000000000000000000000bf43aa4878f5ad0fcac12cd3a835dd3506981048
 ```
 
-**Resultado que indica problema:**
+**Result that indicates a problem:**
 ```
-❌ Nenhuma rota configurada!
+❌ No routes configured!
 ```
-ou
+or
 ```
 domain 11155111 → null
 ```
@@ -289,11 +289,11 @@ domain 11155111 → null
 
 ## 8. Troubleshooting
 
-### ❌ `Nenhum token com warp_address configurado`
+### ❌ `No token with warp_address configured`
 
-**Causa:** O campo `terra_warp.warp_address` está vazio no `warp-evm-config.json`.
+**Cause:** The `terra_warp.warp_address` field is empty in `warp-evm-config.json`.
 
-**Solução:** Preencher o endereço do Warp Terra Classic após o deploy:
+**Solution:** Fill in the Terra Classic Warp address after the deploy:
 
 ```json
 "xpto": {
@@ -307,11 +307,11 @@ domain 11155111 → null
 
 ---
 
-### ❌ `Nenhuma rede EVM com TOKEN deployado`
+### ❌ `No EVM network with TOKEN deployed`
 
-**Causa:** `warp_tokens.<token>.deployed` está `false` ou o campo `address` está vazio.
+**Cause:** `warp_tokens.<token>.deployed` is `false` or the `address` field is empty.
 
-**Solução:** Após o deploy EVM, atualizar o JSON:
+**Solution:** After the EVM deploy, update the JSON:
 
 ```json
 "warp_tokens": {
@@ -324,32 +324,32 @@ domain 11155111 → null
 
 ---
 
-### ❌ `Chave privada inválida`
+### ❌ `Invalid private key`
 
-**Causa:** O formato da chave está errado.
+**Cause:** The key format is wrong.
 
-**Solução:** A chave deve ser hexadecimal sem prefixo `0x`:
+**Solution:** The key must be hexadecimal without the `0x` prefix:
 
 ```bash
-# ✅ Correto:
+# ✅ Correct:
 export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# ❌ Com 0x — o script remove automaticamente, mas verifique se não há espaços:
+# ❌ With 0x — the script removes it automatically, but check for extra spaces:
 export TERRA_PRIVATE_KEY="0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
 ---
 
-### ❌ `out of gas` ou gas insuficiente
+### ❌ `out of gas` or insufficient gas
 
-**Causa:** O gas estimado (`"auto"`) não foi suficiente, ou o preço configurado é muito baixo.
+**Cause:** The estimated gas (`"auto"`) was not enough, or the configured price is too low.
 
-**Solução:** O script usa `28.325uluna` como gasPrice, que é o padrão da Terra Classic testnet. Se a rede estiver congestionada, pode ser necessário aumentar:
+**Solution:** The script uses `28.325uluna` as gasPrice, which is the standard for Terra Classic testnet. If the network is congested, you may need to increase it:
 
 ```javascript
-// Dentro do script, altere a linha:
+// Inside the script, change the line:
 const gasPrice = GasPrice.fromString("28.325uluna");
-// Para:
+// To:
 const gasPrice = GasPrice.fromString("50uluna");
 ```
 
@@ -357,42 +357,42 @@ const gasPrice = GasPrice.fromString("50uluna");
 
 ### ❌ `account sequence mismatch`
 
-**Causa:** O RPC está atrasado ou outra transação foi enviada simultaneamente.
+**Cause:** The RPC is lagging or another transaction was sent simultaneously.
 
-**Solução:** Aguardar alguns blocos e tentar novamente. Verificar se o RPC está sincronizado:
+**Solution:** Wait a few blocks and try again. Check if the RPC is synchronized:
 
 ```bash
 curl -s "https://rpc.terra-classic.hexxagon.dev/status" | jq '.result.sync_info.latest_block_height'
 ```
 
-> Use sempre o RPC do `hexxagon` — é o mais sincronizado para rebel-2.
+> Always use the `hexxagon` RPC — it is the most synchronized for rebel-2.
 
 ---
 
-### ✅ Rota já configurada (`already_set`) mas `transfer_remote` ainda falha
+### ✅ Route already configured (`already_set`) but `transfer_remote` still fails
 
-**Possíveis causas:**
+**Possible causes:**
 
-1. **O lado EVM não está configurado** — verifique `routers(1325)` no Warp Sepolia:
+1. **The EVM side is not configured** — check `routers(1325)` on the Sepolia Warp:
    ```bash
    cast call $WARP_EVM "routers(uint32)(bytes32)" 1325 \
      --rpc-url https://ethereum-sepolia-rpc.publicnode.com
-   # Deve ser != 0x000...
+   # Must be != 0x000...
    ```
 
-2. **Domain incorreto no `transfer_remote`** — confirme que está passando `11155111` (Sepolia) e não outro valor.
+2. **Incorrect domain in `transfer_remote`** — confirm you are passing `11155111` (Sepolia) and not another value.
 
-3. **Endereço EVM registrado está desatualizado** — se o Warp EVM foi re-deployado, a rota aponta para o endereço antigo. Re-execute o script para atualizar.
+3. **Registered EVM address is outdated** — if the EVM Warp was re-deployed, the route points to the old address. Re-run the script to update.
 
 ---
 
-## 9. Links úteis
+## 9. Useful links
 
-| Recurso | URL |
+| Resource | URL |
 |---|---|
 | Hyperlane Explorer | [explorer.hyperlane.xyz](https://explorer.hyperlane.xyz) |
 | Terra Classic Finder (testnet) | [finder.hexxagon.io/rebel-2](https://finder.hexxagon.io/rebel-2) |
 | Terra Classic Finder (mainnet) | [finder.terra.money](https://finder.terra.money) |
 | Sepolia Etherscan | [sepolia.etherscan.io](https://sepolia.etherscan.io) |
-| Documentação Hyperlane Warp Routes | [docs.hyperlane.xyz/docs/protocol/warp-routes](https://docs.hyperlane.xyz/docs/protocol/warp-routes/overview) |
-| Guia principal (`create-warp-evm.sh`) | [`create-warp-evm-guide.md`](./create-warp-evm-guide.md) |
+| Hyperlane Warp Routes Documentation | [docs.hyperlane.xyz/docs/protocol/warp-routes](https://docs.hyperlane.xyz/docs/protocol/warp-routes/overview) |
+| Main guide (`create-warp-evm.sh`) | [`create-warp-evm-guide.md`](./create-warp-evm-guide.md) |

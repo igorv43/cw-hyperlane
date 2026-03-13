@@ -1,26 +1,26 @@
-# Atualizar IGP Oracle via Governance
+# Update IGP Oracle via Governance
 
-Como o IGP Oracle tem o módulo de governança (`terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`) como owner, você precisa criar uma proposta de governança para atualizar o `token_exchange_rate`.
+Since the IGP Oracle has the governance module (`terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`) as owner, you need to create a governance proposal to update the `token_exchange_rate`.
 
-## Endereços Importantes
+## Important Addresses
 
 - **IGP Oracle**: `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`
 - **Governance Module**: `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`
 
-## Criar Proposta de Governance
+## Creating a Governance Proposal
 
-### Método 1: Usando o Script (Recomendado)
+### Method 1: Using the Script (Recommended)
 
 ```bash
-# Executar o script para gerar o arquivo de proposta
+# Run the script to generate the proposal file
 bash script/create-igp-oracle-proposal.sh
 
-# O script criará o arquivo: proposal-igp-oracle-update.json
+# The script will create the file: proposal-igp-oracle-update.json
 ```
 
-### Método 2: Criar Manualmente
+### Method 2: Create Manually
 
-Crie um arquivo `proposal-igp-oracle-update.json`:
+Create a file `proposal-igp-oracle-update.json`:
 
 ```json
 {
@@ -51,7 +51,7 @@ Crie um arquivo `proposal-igp-oracle-update.json`:
 }
 ```
 
-## Enviar a Proposta
+## Submit the Proposal
 
 ```bash
 terrad tx gov submit-proposal proposal-igp-oracle-update.json \
@@ -65,13 +65,13 @@ terrad tx gov submit-proposal proposal-igp-oracle-update.json \
   --yes
 ```
 
-**Nota:** O depósito inicial é de 0.5 LUNC (500000uluna), que é menor que o depósito mínimo de 1 LUNC (1000000uluna). A proposta entrará em **período de depósito** e precisará atingir o depósito mínimo de 1 LUNC antes de entrar em votação. Outros usuários podem contribuir com depósitos adicionais.
+**Note:** The initial deposit is 0.5 LUNC (500000uluna), which is less than the minimum deposit of 1 LUNC (1000000uluna). The proposal will enter the **deposit period** and will need to reach the minimum deposit of 1 LUNC before entering the voting period. Other users can contribute additional deposits.
 
-## Período de Depósito
+## Deposit Period
 
-Após enviar, a proposta entrará em **período de depósito**. O depósito inicial é de 1 LUNC (1,000,000 uluna), que é o depósito mínimo. Se você quiser que outros usuários possam contribuir, você pode usar um depósito inicial menor.
+After submitting, the proposal will enter the **deposit period**. The initial deposit is 1 LUNC (1,000,000 uluna), which is the minimum deposit. If you want other users to be able to contribute, you can use a smaller initial deposit.
 
-### Verificar Status da Proposta
+### Check Proposal Status
 
 ```bash
 terrad query gov proposal <PROPOSAL_ID> \
@@ -79,11 +79,11 @@ terrad query gov proposal <PROPOSAL_ID> \
   --node https://rpc.luncblaze.com:443
 ```
 
-**Status esperado:** `DepositPeriod` (período de depósito)
+**Expected status:** `DepositPeriod` (deposit period)
 
-### Adicionar Depósito (se necessário)
+### Add Deposit (if necessary)
 
-Como o depósito inicial é de 0.5 LUNC (500,000 uluna) e o mínimo é 1 LUNC (1,000,000 uluna), você ou outros usuários precisam adicionar mais 0.5 LUNC:
+Since the initial deposit is 0.5 LUNC (500,000 uluna) and the minimum is 1 LUNC (1,000,000 uluna), you or other users need to add another 0.5 LUNC:
 
 ```bash
 terrad tx gov deposit <PROPOSAL_ID> 500000uluna \
@@ -95,16 +95,16 @@ terrad tx gov deposit <PROPOSAL_ID> 500000uluna \
   --yes
 ```
 
-**Nota:** O depósito mínimo é 1,000,000 uluna (1 LUNC). Quando o total de depósitos atingir esse valor, a proposta automaticamente entrará no período de votação. Você pode verificar o total de depósitos com:
+**Note:** The minimum deposit is 1,000,000 uluna (1 LUNC). When the total deposits reach this value, the proposal will automatically enter the voting period. You can check the total deposits with:
 ```bash
 terrad query gov deposits <PROPOSAL_ID> \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
 
-## Votar na Proposta
+## Vote on the Proposal
 
-Após o período de depósito e quando a proposta entrar em **período de votação** (status `VotingPeriod`), anote o `PROPOSAL_ID` e vote:
+After the deposit period and when the proposal enters the **voting period** (status `VotingPeriod`), note the `PROPOSAL_ID` and vote:
 
 ```bash
 terrad tx gov vote <PROPOSAL_ID> yes \
@@ -116,39 +116,39 @@ terrad tx gov vote <PROPOSAL_ID> yes \
   --yes
 ```
 
-## Verificar Status da Proposta
+## Check Proposal Status
 
 ```bash
-# Ver detalhes da proposta
+# View proposal details
 terrad query gov proposal <PROPOSAL_ID> \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 
-# Ver todas as propostas
+# View all proposals
 terrad query gov proposals \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 
-# Ver depósitos da proposta
+# View proposal deposits
 terrad query gov deposits <PROPOSAL_ID> \
   --chain-id rebel-2 \
   --node https://rpc.luncblaze.com:443
 ```
 
-**Status possíveis:**
-- `DepositPeriod`: Proposta está em período de depósito (aguardando atingir o mínimo)
-- `VotingPeriod`: Proposta está em período de votação
-- `Passed`: Proposta foi aprovada
-- `Rejected`: Proposta foi rejeitada
+**Possible statuses:**
+- `DepositPeriod`: Proposal is in the deposit period (waiting to reach the minimum)
+- `VotingPeriod`: Proposal is in the voting period
+- `Passed`: Proposal was approved
+- `Rejected`: Proposal was rejected
 
-## Verificar Execução
+## Verify Execution
 
-Após a proposta ser aprovada e executada, verifique se o exchange_rate foi atualizado:
+After the proposal is approved and executed, verify that the exchange_rate was updated:
 
 ```bash
 IGP_ORACLE="terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg"
 
-# Verificar configuração para domain 97
+# Check configuration for domain 97
 terrad query wasm contract-state smart ${IGP_ORACLE} \
   '{"remote_gas_data":{"remote_domain":97}}' \
   --chain-id rebel-2 \
@@ -163,14 +163,13 @@ terrad query wasm contract-state smart ${IGP_ORACLE} \
 }
 ```
 
-## Cálculo do Exchange Rate
+## Exchange Rate Calculation
 
-**Com BNB @ $897.88:**
-- Custo em BNB: 0.000005 BNB
-- Custo em USD: 0.000005 × $897.88 = $0.004489
-- Custo em LUNC: $0.004489 / $0.00006069 = 73.97 LUNC
-- Custo em uluna: 73,972,647 uluna
+**With BNB @ $897.88:**
+- Cost in BNB: 0.000005 BNB
+- Cost in USD: 0.000005 × $897.88 = $0.004489
+- Cost in LUNC: $0.004489 / $0.00006069 = 73.97 LUNC
+- Cost in uluna: 73,972,647 uluna
 - Exchange rate: `(73,972,647 × 10^18) / (100000 × 50000000) = 14794529576536`
 
-**Nota:** Se o preço do BNB mudar significativamente, você precisará atualizar o exchange_rate novamente via governance.
-
+**Note:** If the BNB price changes significantly, you will need to update the exchange_rate again via governance.

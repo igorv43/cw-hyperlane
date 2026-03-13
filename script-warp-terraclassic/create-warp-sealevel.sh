@@ -1,62 +1,62 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  🚀 CRIAR WARP ROUTE SOLANA (SEALEVEL) ↔ TERRA CLASSIC — HYPERLANE
+#  🚀 CREATE WARP ROUTE SOLANA (SEALEVEL) ↔ TERRA CLASSIC — HYPERLANE
 # ═══════════════════════════════════════════════════════════════════════════════
 #
-#  USO:
-#    export TERRA_PRIVATE_KEY="SUA_CHAVE_PRIVADA_TERRA_HEX"
+#  USAGE:
+#    export TERRA_PRIVATE_KEY="YOUR_TERRA_PRIVATE_KEY_HEX"
 #    chmod +x create-warp-sealevel.sh
 #    ./create-warp-sealevel.sh
 #
-#  PULAR ETAPAS (programa já deployado):
-#    export WARP_PROGRAM_ID="Base58ProgramID"  → pula deploy Warp Solana
-#    export SKIP_ISM="1"                       → pula configurar ISM
-#    export SKIP_IGP="1"                       → pula configurar IGP
-#    export SKIP_GAS="1"                       → pula configurar destination gas
-#    export SKIP_ENROLL="1"                    → pula enroll remote router (Solana→TC)
-#    export SKIP_TC_ROUTE="1"                  → pula set_route (TC→Solana)
+#  SKIP STEPS (program already deployed):
+#    export WARP_PROGRAM_ID="Base58ProgramID"  → skips Warp Solana deploy
+#    export SKIP_ISM="1"                       → skips ISM configuration
+#    export SKIP_IGP="1"                       → skips IGP configuration
+#    export SKIP_GAS="1"                       → skips destination gas configuration
+#    export SKIP_ENROLL="1"                    → skips enroll remote router (Solana→TC)
+#    export SKIP_TC_ROUTE="1"                  → skips set_route (TC→Solana)
 #
-#  NO SOLANA (Sealevel):
-#    - Program ID  = o Warp Route (endereço do router)
-#    - Mint        = o token SPL criado pelo warp (para type=synthetic)
-#    - ISM         = MultisigISM program (valida msgs da Terra Classic)
-#    - IGP         = Gas Paymaster (paga gas na Terra Classic)
-#    - sem AggregationHook como EVM — o Sealevel tem arquitetura diferente
+#  ON SOLANA (Sealevel):
+#    - Program ID  = the Warp Route (router address)
+#    - Mint        = the SPL token created by warp (for type=synthetic)
+#    - ISM         = MultisigISM program (validates msgs from Terra Classic)
+#    - IGP         = Gas Paymaster (pays gas on Terra Classic)
+#    - no AggregationHook like EVM — Sealevel has a different architecture
 #
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CORES
+# COLORS
 # ─────────────────────────────────────────────────────────────────────────────
 R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
 B='\033[0;34m'; C='\033[0;36m'; W='\033[1m'; NC='\033[0m'
 OK="${G}✅${NC}"; ERR="${R}❌${NC}"; WARN="${Y}⚠️ ${NC}"; INFO="${B}ℹ️ ${NC}"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CAMINHOS
+# PATHS
 # ─────────────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EVM_CONFIG="$SCRIPT_DIR/warp-evm-config.json"        # tokens Terra Classic
-SOL_CONFIG="$SCRIPT_DIR/warp-sealevel-config.json"   # redes Solana
+EVM_CONFIG="$SCRIPT_DIR/warp-evm-config.json"        # Terra Classic tokens
+SOL_CONFIG="$SCRIPT_DIR/warp-sealevel-config.json"   # Solana networks
 LOG_DIR="$SCRIPT_DIR/log"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/create-warp-sealevel.log"
 STATE_FILE="$SCRIPT_DIR/.warp-sealevel-state.json"
 
-# Auto-detectar PROJECT_ROOT (para node_modules / cosmjs)
+# Auto-detect PROJECT_ROOT (for node_modules / cosmjs)
 PROJECT_ROOT="$SCRIPT_DIR"
 while [ ! -f "$PROJECT_ROOT/package.json" ] && [ "$PROJECT_ROOT" != "/" ]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
 if [ ! -f "$PROJECT_ROOT/package.json" ]; then
-    echo "❌ Não foi possível encontrar o projeto raiz (package.json)!"
+    echo "❌ Could not find the project root (package.json)!"
     exit 1
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# UTILITÁRIOS
+# UTILITIES
 # ─────────────────────────────────────────────────────────────────────────────
 log()      { echo -e "$@" | tee -a "$LOG_FILE"; }
 log_ok()   { log "${OK} $*"; }
@@ -69,13 +69,13 @@ evm_cfg()  { jq -r "$1" "$EVM_CONFIG" 2>/dev/null || echo ""; }
 sol_cfg()  { jq -r "$1" "$SOL_CONFIG" 2>/dev/null || echo ""; }
 
 wait_sec() {
-    local s="$1" msg="${2:-Aguardando confirmação}"
+    local s="$1" msg="${2:-Awaiting confirmation}"
     echo -ne "${INFO} ${msg}: "
     for ((i=s; i>0; i--)); do echo -ne "${i}s "; sleep 1; done
     echo "✓"
 }
 
-# Converte Program ID base58 → hex bytes32 (sem 0x) usando Python puro
+# Converts Program ID base58 → hex bytes32 (without 0x) using pure Python
 b58_to_hex32() {
     python3 - "$1" <<'PYEOF' 2>/dev/null
 import sys
@@ -84,7 +84,7 @@ def b58decode(s):
     n = 0
     for c in s:
         if c not in alphabet:
-            raise ValueError(f"Char invalido: {c}")
+            raise ValueError(f"Invalid char: {c}")
         n = n * 58 + alphabet.index(c)
     result = []
     while n > 0:
@@ -98,14 +98,14 @@ def b58decode(s):
     return bytes(result)
 try:
     decoded = b58decode(sys.argv[1])
-    # Solana pubkeys são 32 bytes
+    # Solana pubkeys are 32 bytes
     print(decoded.hex().zfill(64))
 except Exception as e:
     sys.exit(1)
 PYEOF
 }
 
-# Extrair pubkey base58 de keypair JSON (array de 64 bytes: [secret(32)|public(32)])
+# Extract base58 pubkey from keypair JSON (array of 64 bytes: [secret(32)|public(32)])
 keypair_to_pubkey() {
     python3 - "$1" <<'PYEOF' 2>/dev/null
 import json, sys
@@ -152,21 +152,21 @@ load_state() {
     _STATE_HEX=$(jq -r '.program_hex// ""' "$STATE_FILE" 2>/dev/null || echo "")
     _STATE_MINT=$(jq -r '.mint      // ""' "$STATE_FILE" 2>/dev/null || echo "")
     if [ -n "$_STATE_TOK" ]; then
-        log_warn "Estado anterior: token=${_STATE_TOK}, net=${_STATE_NET:-—}, program=${_STATE_PID:-—}"
-        log "   Para recomeçar: ${Y}rm -f $STATE_FILE${NC}"
+        log_warn "Previous state: token=${_STATE_TOK}, net=${_STATE_NET:-—}, program=${_STATE_PID:-—}"
+        log "   To restart: ${Y}rm -f $STATE_FILE${NC}"
     fi
 }
 
 apply_state() {
-    # Aplica estado SOMENTE se token+rede batem com a seleção atual
+    # Applies state ONLY if token+network match the current selection
     [ -z "${_STATE_TOK:-}" ] && return 0
     if [ "${_STATE_TOK}" = "${TOKEN_KEY}" ] && [ "${_STATE_NET}" = "${NET_KEY}" ]; then
         [ -z "${WARP_PROGRAM_ID:-}" ] && [ -n "${_STATE_PID:-}"  ] && export WARP_PROGRAM_ID="$_STATE_PID"
         [ -z "${WARP_HEX:-}"        ] && [ -n "${_STATE_HEX:-}"  ] && export WARP_HEX="$_STATE_HEX"
         [ -z "${MINT_ADDRESS:-}"    ] && [ -n "${_STATE_MINT:-}" ] && export MINT_ADDRESS="$_STATE_MINT"
-        [ -n "${WARP_PROGRAM_ID:-}" ] && log_info "Estado restaurado: program=${WARP_PROGRAM_ID}, mint=${MINT_ADDRESS:-—}"
+        [ -n "${WARP_PROGRAM_ID:-}" ] && log_info "State restored: program=${WARP_PROGRAM_ID}, mint=${MINT_ADDRESS:-—}"
     else
-        log_info "Estado anterior era para ${_STATE_TOK}/${_STATE_NET} — ignorado para ${TOKEN_KEY}/${NET_KEY}."
+        log_info "Previous state was for ${_STATE_TOK}/${_STATE_NET} — ignored for ${TOKEN_KEY}/${NET_KEY}."
     fi
 }
 
@@ -177,7 +177,7 @@ apply_state() {
 clear 2>/dev/null || true
 log "╔══════════════════════════════════════════════════════════════════════════╗"
 log "║                                                                          ║"
-log "║    🚀  CRIAR WARP ROUTE SOLANA ↔ TERRA CLASSIC — HYPERLANE SEALEVEL 🚀 ║"
+log "║    🚀  CREATE WARP ROUTE SOLANA ↔ TERRA CLASSIC — HYPERLANE SEALEVEL 🚀 ║"
 log "║                                                                          ║"
 log "║    Configs: warp-sealevel-config.json + warp-evm-config.json            ║"
 log "║    Data: $(date '+%Y-%m-%d %H:%M:%S')                                        ║"
@@ -185,26 +185,26 @@ log "╚════════════════════════
 log ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# VERIFICAÇÕES INICIAIS
+# INITIAL CHECKS
 # ─────────────────────────────────────────────────────────────────────────────
 for cfg_file in "$EVM_CONFIG" "$SOL_CONFIG"; do
     if [ ! -f "$cfg_file" ]; then
-        log_err "Arquivo não encontrado: $cfg_file"; exit 1
+        log_err "File not found: $cfg_file"; exit 1
     fi
     if ! jq empty "$cfg_file" 2>/dev/null; then
-        log_err "JSON inválido: $cfg_file"; exit 1
+        log_err "Invalid JSON: $cfg_file"; exit 1
     fi
 done
-log_ok "Configurações válidas: warp-evm-config.json + warp-sealevel-config.json"
+log_ok "Valid configurations: warp-evm-config.json + warp-sealevel-config.json"
 
-# Verificar ferramentas obrigatórias
-command -v jq      &>/dev/null || { log_err "jq é obrigatório!";        exit 1; }
-command -v python3 &>/dev/null || { log_err "python3 é obrigatório!";   exit 1; }
-command -v node    &>/dev/null || { log_err "node é obrigatório!";       exit 1; }
-command -v cargo   &>/dev/null || { log_err "cargo (Rust) é obrigatório!"; exit 1; }
-command -v solana  &>/dev/null || { log_err "solana-cli é obrigatório!"; exit 1; }
+# Check required tools
+command -v jq      &>/dev/null || { log_err "jq is required!";         exit 1; }
+command -v python3 &>/dev/null || { log_err "python3 is required!";    exit 1; }
+command -v node    &>/dev/null || { log_err "node is required!";        exit 1; }
+command -v cargo   &>/dev/null || { log_err "cargo (Rust) is required!"; exit 1; }
+command -v solana  &>/dev/null || { log_err "solana-cli is required!";  exit 1; }
 
-# Terra Classic (do warp-evm-config.json)
+# Terra Classic (from warp-evm-config.json)
 TERRA_DOMAIN=$(evm_cfg '.terra_classic.domain')
 TERRA_RPC=$(evm_cfg    '.terra_classic.rpc')
 TERRA_CHAIN_ID=$(evm_cfg '.terra_classic.chain_id')
@@ -213,10 +213,10 @@ log_ok "Terra Classic: domain=${TERRA_DOMAIN}, rpc=${TERRA_RPC}"
 load_state
 
 # ═════════════════════════════════════════════════════════════════════════════
-# MENU 1 — SELECIONAR TOKEN (Terra Classic)
+# MENU 1 — SELECT TOKEN (Terra Classic)
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "PASSO 1/2 — SELECIONAR TOKEN (Terra Classic)"
-log "  Tokens configurados em ${C}warp-evm-config.json${NC}:"
+log_sep "STEP 1/2 — SELECT TOKEN (Terra Classic)"
+log "  Tokens configured in ${C}warp-evm-config.json${NC}:"
 log ""
 
 mapfile -t TOKEN_KEYS < <(jq -r '.terra_classic.tokens | keys[]' "$EVM_CONFIG" 2>/dev/null)
@@ -230,7 +230,7 @@ for TK in "${TOKEN_KEYS[@]}"; do
     TK_DEPLOYED_TC=$(evm_cfg ".terra_classic.tokens.${TK}.terra_warp.deployed")
     TK_WARP_TC=$(evm_cfg     ".terra_classic.tokens.${TK}.terra_warp.warp_address")
 
-    # Verificar se token tem config Solana
+    # Check if token has Solana config
     SOL_EXISTS=$(sol_cfg ".networks.solanatestnet.warp_tokens.${TK}.type" 2>/dev/null || echo "")
     SOL_DEPLOYED=$(sol_cfg ".networks.solanatestnet.warp_tokens.${TK}.deployed" 2>/dev/null || echo "false")
     SOL_PID=$(sol_cfg      ".networks.solanatestnet.warp_tokens.${TK}.program_id" 2>/dev/null || echo "")
@@ -238,9 +238,9 @@ for TK in "${TOKEN_KEYS[@]}"; do
     TOKEN_MENU+=("$TK")
 
     TAG_TC="${C}[terra: ${TK_TYPE}]${NC}"
-    [ "$TK_DEPLOYED_TC"  = "true" ] && TAG_TC_DEP="${G}[warp TC ok]${NC}"  || TAG_TC_DEP="${Y}[warp TC pendente]${NC}"
+    [ "$TK_DEPLOYED_TC"  = "true" ] && TAG_TC_DEP="${G}[warp TC ok]${NC}"  || TAG_TC_DEP="${Y}[warp TC pending]${NC}"
     [ "$SOL_DEPLOYED" = "true" ] && [ -n "$SOL_PID" ] \
-        && TAG_SOL="${G}[solana: deployado]${NC}" || TAG_SOL="${B}[solana: novo deploy]${NC}"
+        && TAG_SOL="${G}[solana: deployed]${NC}" || TAG_SOL="${B}[solana: new deploy]${NC}"
 
     log "   ${W}[$i]${NC}  ${C}${TK}${NC} — ${TK_NAME:-N/A} (${TK_SYM:-?}) ${TAG_TC} ${TAG_TC_DEP} ${TAG_SOL}"
     if [ -n "$TK_WARP_TC" ] && [ "$TK_WARP_TC" != "null" ]; then
@@ -253,12 +253,12 @@ for TK in "${TOKEN_KEYS[@]}"; do
     i=$((i+1))
 done
 
-echo -ne "  ${W}Escolha o token [1-${#TOKEN_MENU[@]}]: ${NC}"
+echo -ne "  ${W}Choose the token [1-${#TOKEN_MENU[@]}]: ${NC}"
 read -r SEL_TOK 2>/dev/null || SEL_TOK="1"
 SEL_TOK="${SEL_TOK:-1}"
 
 if ! [[ "$SEL_TOK" =~ ^[0-9]+$ ]] || [ "$SEL_TOK" -lt 1 ] || [ "$SEL_TOK" -gt "${#TOKEN_MENU[@]}" ]; then
-    log_err "Seleção inválida: $SEL_TOK"; exit 1
+    log_err "Invalid selection: $SEL_TOK"; exit 1
 fi
 
 TOKEN_KEY="${TOKEN_MENU[$((SEL_TOK-1))]}"
@@ -276,13 +276,13 @@ TERRA_WARP_ADDR=$(evm_cfg   "${TK_TC}.terra_warp.warp_address")
 TERRA_WARP_HEX=$(evm_cfg    "${TK_TC}.terra_warp.warp_hexed")
 TERRA_WARP_DEPLOYED=$(evm_cfg "${TK_TC}.terra_warp.deployed")
 
-log_ok "Token selecionado: ${C}${TOKEN_KEY}${NC} — ${TOKEN_NAME} (${TOKEN_SYMBOL})"
+log_ok "Token selected: ${C}${TOKEN_KEY}${NC} — ${TOKEN_NAME} (${TOKEN_SYMBOL})"
 
 # ═════════════════════════════════════════════════════════════════════════════
-# MENU 2 — SELECIONAR REDE SOLANA
+# MENU 2 — SELECT SOLANA NETWORK
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "PASSO 2/2 — SELECIONAR REDE SOLANA"
-log "  Redes disponíveis em ${C}warp-sealevel-config.json${NC}:"
+log_sep "STEP 2/2 — SELECT SOLANA NETWORK"
+log "  Networks available in ${C}warp-sealevel-config.json${NC}:"
 log ""
 
 mapfile -t NET_KEYS < <(jq -r '.networks | keys[]' "$SOL_CONFIG" 2>/dev/null)
@@ -299,8 +299,8 @@ for NK in "${NET_KEYS[@]}"; do
     if [ "$NE" = "true" ]; then
         NET_MENU+=("$NK")
         [ "$SOL_WD" = "true" ] && [ -n "$SOL_WA" ] && [ "$SOL_WA" != "null" ] \
-            && TAG_W="${G}[warp já deployado]${NC}" \
-            || TAG_W="${B}[novo deploy]${NC}"
+            && TAG_W="${G}[warp already deployed]${NC}" \
+            || TAG_W="${B}[new deploy]${NC}"
         log "   ${W}[$i]${NC}  ${C}${NK}${NC} — ${ND} (domain: ${ND_DOM}) ${TAG_W}"
         [ -n "$SOL_WA" ] && [ "$SOL_WA" != "null" ] && log "        Program ID: ${G}${SOL_WA}${NC}"
         log "        ISM:        $(sol_cfg ".networks.${NK}.ism.program_id")"
@@ -308,26 +308,26 @@ for NK in "${NET_KEYS[@]}"; do
         log ""
         i=$((i+1))
     else
-        log "   ${R}[-]${NC}  ${NK} — ${ND} ${R}[desabilitado]${NC}"
+        log "   ${R}[-]${NC}  ${NK} — ${ND} ${R}[disabled]${NC}"
     fi
 done
 
 if [ ${#NET_MENU[@]} -eq 0 ]; then
-    log_err "Nenhuma rede Solana habilitada! Edite warp-sealevel-config.json."; exit 1
+    log_err "No Solana network enabled! Edit warp-sealevel-config.json."; exit 1
 fi
 
-echo -ne "  ${W}Escolha a rede [1-${#NET_MENU[@]}]: ${NC}"
+echo -ne "  ${W}Choose the network [1-${#NET_MENU[@]}]: ${NC}"
 read -r SEL_NET 2>/dev/null || SEL_NET="1"
 SEL_NET="${SEL_NET:-1}"
 
 if ! [[ "$SEL_NET" =~ ^[0-9]+$ ]] || [ "$SEL_NET" -lt 1 ] || [ "$SEL_NET" -gt "${#NET_MENU[@]}" ]; then
-    log_err "Seleção inválida: $SEL_NET"; exit 1
+    log_err "Invalid selection: $SEL_NET"; exit 1
 fi
 
 NET_KEY="${NET_MENU[$((SEL_NET-1))]}"
 N=".networks.${NET_KEY}"
 
-# Carregar config da rede selecionada
+# Load selected network config
 NET_DISPLAY=$(sol_cfg "${N}.display_name")
 NET_ENV=$(sol_cfg     "${N}.environment")
 NET_DOMAIN=$(sol_cfg  "${N}.domain")
@@ -350,12 +350,12 @@ SOL_TOK_DEC=$(sol_cfg      "${N}.warp_tokens.${TOKEN_KEY}.decimals")
 SOL_OWNER=$(sol_cfg        "${N}.warp_tokens.${TOKEN_KEY}.owner")
 SOL_TYPE=$(sol_cfg         "${N}.warp_tokens.${TOKEN_KEY}.type")
 
-log_ok "Rede selecionada: ${C}${NET_KEY}${NC} — ${NET_DISPLAY} (domain: ${NET_DOMAIN})"
+log_ok "Network selected: ${C}${NET_KEY}${NC} — ${NET_DISPLAY} (domain: ${NET_DOMAIN})"
 
-# Aplicar estado salvo SOMENTE se token+rede batem
+# Apply saved state ONLY if token+network match
 apply_state
 
-# Inicializar variáveis de runtime (prioridade: env > config > state)
+# Initialize runtime variables (priority: env > config > state)
 WARP_PROGRAM_ID="${WARP_PROGRAM_ID:-}"
 WARP_HEX="${WARP_HEX:-}"
 MINT_ADDRESS="${MINT_ADDRESS:-}"
@@ -364,16 +364,16 @@ MINT_ADDRESS="${MINT_ADDRESS:-}"
 [ -z "$WARP_HEX"        ] && [ -n "$SOL_HEX_CFG"  ] && [ "$SOL_HEX_CFG"  != "null" ] && WARP_HEX="${SOL_HEX_CFG#0x}"
 [ -z "$MINT_ADDRESS"    ] && [ -n "$SOL_MINT_CFG"  ] && [ "$SOL_MINT_CFG" != "null" ] && MINT_ADDRESS="$SOL_MINT_CFG"
 
-# Validar keypair
+# Validate keypair
 if [ -z "$NET_KEYPAIR" ] || [ ! -f "$NET_KEYPAIR" ]; then
-    log_err "Keypair Solana não encontrado: ${NET_KEYPAIR:-NÃO CONFIGURADO}"
+    log_err "Solana keypair not found: ${NET_KEYPAIR:-NOT CONFIGURED}"
     log "  Configure: warp-sealevel-config.json → .networks.${NET_KEY}.keypair"
     exit 1
 fi
 
-# Diretórios do monorepo Sealevel
+# Sealevel monorepo directories
 if [ -z "$NET_MONOREPO" ] || [ ! -d "$NET_MONOREPO" ]; then
-    log_err "Monorepo Sealevel não encontrado: ${NET_MONOREPO:-NÃO CONFIGURADO}"
+    log_err "Sealevel monorepo not found: ${NET_MONOREPO:-NOT CONFIGURED}"
     log "  Configure: warp-sealevel-config.json → .networks.${NET_KEY}.monorepo_dir"
     exit 1
 fi
@@ -384,12 +384,12 @@ BUILT_SO_DIR="$NET_MONOREPO/target/deploy"
 REGISTRY_DIR="$HOME/.hyperlane/registry"
 
 if [ ! -d "$CLIENT_DIR" ]; then
-    log_err "Client Rust não encontrado: $CLIENT_DIR"; exit 1
+    log_err "Rust client not found: $CLIENT_DIR"; exit 1
 fi
 
 if [ ! -f "$BUILT_SO_DIR/hyperlane_sealevel_token.so" ]; then
-    log_err "Programa Solana não compilado: $BUILT_SO_DIR/hyperlane_sealevel_token.so"
-    log "  Compile com: cd $NET_MONOREPO && cargo build --release"
+    log_err "Solana program not compiled: $BUILT_SO_DIR/hyperlane_sealevel_token.so"
+    log "  Compile with: cd $NET_MONOREPO && cargo build --release"
     exit 1
 fi
 
@@ -397,25 +397,25 @@ WARP_ROUTE_DIR="$ENVIRONMENTS_DIR/${NET_ENV}/warp-routes/${TOKEN_KEY}"
 mkdir -p "$WARP_ROUTE_DIR/keys"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# RESUMO DA CONFIGURAÇÃO
+# CONFIGURATION SUMMARY
 # ─────────────────────────────────────────────────────────────────────────────
 log ""
 log "╔══════════════════════════════════════════════════════════════════════════╗"
-log "║   📋  RESUMO: Token ${C}${TOKEN_KEY}${NC} → Rede ${C}${NET_DISPLAY}${NC}"
+log "║   📋  SUMMARY: Token ${C}${TOKEN_KEY}${NC} → Network ${C}${NET_DISPLAY}${NC}"
 log "╚══════════════════════════════════════════════════════════════════════════╝"
 log ""
 log "  ${W}🪙 TOKEN${NC}"
 log "     ${TOKEN_NAME} (${TOKEN_SYMBOL}) | type=${TERRA_WARP_TYPE} | decimals=${TOKEN_DEC}"
 log ""
-log "  ${W}🌐 REDE SOLANA${NC}"
+log "  ${W}🌐 SOLANA NETWORK${NC}"
 log "     ${NET_DISPLAY}  |  Domain: ${NET_DOMAIN}"
 log "     RPC: ${NET_RPC}"
 log "     Keypair: ${NET_KEYPAIR}"
 log ""
-log "  ${W}🔐 ISM${NC}  —  MultisigISM valida msgs da Terra Classic"
+log "  ${W}🔐 ISM${NC}  —  MultisigISM validates msgs from Terra Classic"
 log "     Program ID: ${ISM_PROGRAM_ID}"
 log ""
-log "  ${W}⛽ IGP${NC}  —  paga gas na Terra Classic"
+log "  ${W}⛽ IGP${NC}  —  pays gas on Terra Classic"
 log "     Program ID: ${IGP_PROGRAM_ID}"
 log "     Account:    ${IGP_ACCOUNT}"
 log "     Dest Gas:   ${DEST_GAS} (Terra Classic domain ${TERRA_DOMAIN})"
@@ -426,56 +426,56 @@ log "     RPC: ${TERRA_RPC}"
 if [ -n "$TERRA_WARP_ADDR" ] && [ "$TERRA_WARP_ADDR" != "null" ]; then
     log "     Warp: ${G}${TERRA_WARP_ADDR}${NC}"
 else
-    log "     Warp: ${R}NÃO DEPLOYADO${NC}"
+    log "     Warp: ${R}NOT DEPLOYED${NC}"
 fi
 log ""
 
 if [ "$TERRA_WARP_DEPLOYED" != "true" ] || [ -z "$TERRA_WARP_ADDR" ] || [ "$TERRA_WARP_ADDR" = "null" ]; then
-    log_warn "Warp Terra Classic NÃO está deployado para '${TOKEN_KEY}'!"
-    log "  Configure em warp-evm-config.json ou use create-warp-evm.sh."
-    log "  As etapas de link bidirecional (5 e 6) serão puladas."
+    log_warn "Terra Classic Warp NOT deployed for '${TOKEN_KEY}'!"
+    log "  Configure in warp-evm-config.json or use create-warp-evm.sh."
+    log "  Bidirectional link steps (5 and 6) will be skipped."
     export SKIP_ENROLL="${SKIP_ENROLL:-1}"
     export SKIP_TC_ROUTE="${SKIP_TC_ROUTE:-1}"
 fi
 
 if [ -n "${WARP_PROGRAM_ID:-}" ]; then
-    log_info "Program ID carregado: ${WARP_PROGRAM_ID} — deploy será pulado."
+    log_info "Program ID loaded: ${WARP_PROGRAM_ID} — deploy will be skipped."
 fi
 
 echo ""
-echo -ne "  ${W}Confirmar configuração e continuar? [S/n]: ${NC}"
+echo -ne "  ${W}Confirm configuration and continue? [Y/n]: ${NC}"
 read -r CONFIRM 2>/dev/null || CONFIRM="s"
 CONFIRM="${CONFIRM:-s}"
 if [[ ! "$CONFIRM" =~ ^[sSyY]$ ]]; then
-    log "  Cancelado pelo usuário."; exit 0
+    log "  Cancelled by user."; exit 0
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 1 — DEPLOY WARP SOLANA
+# STEP 1 — DEPLOY WARP SOLANA
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 1 — DEPLOY WARP SOLANA (warp-route deploy)"
+log_sep "STEP 1 — DEPLOY WARP SOLANA (warp-route deploy)"
 
 if [ -n "${WARP_PROGRAM_ID:-}" ]; then
-    log_warn "WARP_PROGRAM_ID já definido (${WARP_PROGRAM_ID}) — pulando deploy."
+    log_warn "WARP_PROGRAM_ID already set (${WARP_PROGRAM_ID}) — skipping deploy."
 else
-    # ── Resolver metadata URI ────────────────────────────────────────────────
-    # Caminho local do arquivo de metadata (dentro do projeto cw-hyperlane)
+    # ── Resolve metadata URI ────────────────────────────────────────────────
+    # Local path to metadata file (inside the cw-hyperlane project)
     WARP_SOL_DIR="$PROJECT_ROOT/warp/solana"
     LOCAL_META_FILE="$WARP_SOL_DIR/metadata-${TOKEN_KEY}.json"
-    # URL esperada no GitHub (padrão do projeto)
+    # Expected URL on GitHub (project standard)
     GITHUB_META_URI="https://raw.githubusercontent.com/igorv43/cw-hyperlane/refs/heads/main/warp/solana/metadata-${TOKEN_KEY}.json"
 
-    # Se metadata_uri vazio ou null → tentar usar o padrão do GitHub
+    # If metadata_uri empty or null → try using the GitHub default
     if [ -z "$SOL_META_URI" ] || [ "$SOL_META_URI" = "null" ]; then
         SOL_META_URI="$GITHUB_META_URI"
-        log_warn "metadata_uri não configurado — usando padrão: $SOL_META_URI"
-        # Atualizar no config automaticamente
+        log_warn "metadata_uri not configured — using default: $SOL_META_URI"
+        # Update in config automatically
         TMP_CFG=$(mktemp)
         jq ".networks.\"${NET_KEY}\".warp_tokens.\"${TOKEN_KEY}\".metadata_uri = \"${SOL_META_URI}\"" \
             "$SOL_CONFIG" > "$TMP_CFG" && mv "$TMP_CFG" "$SOL_CONFIG"
     fi
 
-    # Tentar baixar a metadata da URI configurada
+    # Try downloading metadata from the configured URI
     META_TMP=$(mktemp /tmp/sol-meta-XXXXXX.json)
     META_NAME=""; META_SYM=""
     CURL_CODE=$(curl -s -o "$META_TMP" -w "%{http_code}" --max-time 15 "$SOL_META_URI" 2>/dev/null || echo "000")
@@ -484,11 +484,11 @@ else
         META_NAME=$(jq -r '.name   // ""' "$META_TMP" 2>/dev/null | tr -d '\r\n')
         META_SYM=$(jq -r  '.symbol // ""' "$META_TMP" 2>/dev/null | tr -d '\r\n')
         rm -f "$META_TMP"
-        log_ok "Metadata baixada: name='${META_NAME}' symbol='${META_SYM}'"
+        log_ok "Metadata downloaded: name='${META_NAME}' symbol='${META_SYM}'"
     else
         rm -f "$META_TMP"
-        # URI não acessível → gerar automaticamente a partir de warp-evm-config.json
-        log_warn "Metadata URI não acessível (HTTP $CURL_CODE) — gerando automaticamente."
+        # URI not accessible → generate automatically from warp-evm-config.json
+        log_warn "Metadata URI not accessible (HTTP $CURL_CODE) — generating automatically."
         META_NAME=$(evm_cfg ".terra_classic.tokens.${TOKEN_KEY}.name")
         META_SYM=$(evm_cfg  ".terra_classic.tokens.${TOKEN_KEY}.symbol")
         META_DESC=$(evm_cfg ".terra_classic.tokens.${TOKEN_KEY}.description")
@@ -498,7 +498,7 @@ else
         [ -z "$META_DESC" ] && META_DESC="${META_NAME} via Hyperlane Warp Route (Solana)"
         [ "$META_IMG"  = "null" ] && META_IMG=""
 
-        # Criar arquivo local de metadata
+        # Create local metadata file
         mkdir -p "$WARP_SOL_DIR"
         cat > "$LOCAL_META_FILE" <<METAJSON
 {
@@ -509,20 +509,20 @@ else
   "attributes": []
 }
 METAJSON
-        log_ok "Metadata gerada: ${C}${LOCAL_META_FILE}${NC}"
-        log_warn "Arquivo local criado — para on-chain com metadata, faça commit/push deste arquivo:"
+        log_ok "Metadata generated: ${C}${LOCAL_META_FILE}${NC}"
+        log_warn "Local file created — for on-chain metadata, commit/push this file:"
         log "    git add warp/solana/metadata-${TOKEN_KEY}.json && git push"
-        log "  A URI on-chain será: ${C}${SOL_META_URI}${NC}"
-        # Usar URI local se o GitHub não tiver ainda — o deploy vai funcionar sem metadata on-chain
-        # mas os campos name/symbol são preenchidos diretamente no token-config.json
+        log "  The on-chain URI will be: ${C}${SOL_META_URI}${NC}"
+        # Use local URI if GitHub does not have it yet — deploy will work without on-chain metadata
+        # but name/symbol fields are filled directly in token-config.json
     fi
 
     if [ -z "$META_NAME" ] || [ -z "$META_SYM" ]; then
-        log_err "Não foi possível obter name/symbol para a metadata!"; exit 1
+        log_err "Could not get name/symbol for metadata!"; exit 1
     fi
     log_info "Metadata: name='${META_NAME}' symbol='${META_SYM}'"
 
-    # Criar token-config.json via jq (garante JSON válido e "uri" só quando acessível)
+    # Create token-config.json via jq (ensures valid JSON and "uri" only when accessible)
     TOKEN_CONFIG="$WARP_ROUTE_DIR/token-config.json"
     _BASE_JSON=$(jq -n \
         --arg net   "${NET_KEY}" \
@@ -533,28 +533,28 @@ METAJSON
         --arg igp   "${IGP_ACCOUNT}" \
         '{($net): {"type":$type,"name":$name,"symbol":$sym,"decimals":$dec,"totalSupply":"0","interchainGasPaymaster":$igp}}')
 
-    # Incluir "uri" SOMENTE quando a URI foi acessível com sucesso (HTTP 200)
-    # O warp-route deploy valida e busca a URI — se retornar 404 ele aborta com panic
+    # Include "uri" ONLY when the URI was successfully accessible (HTTP 200)
+    # The warp-route deploy validates and fetches the URI — if it returns 404 it aborts with panic
     if [ "${CURL_CODE:-000}" = "200" ]; then
         TOKEN_CONFIG_JSON=$(echo "$_BASE_JSON" | jq \
             --arg net "${NET_KEY}" \
             --arg uri "${SOL_META_URI}" \
             '.[$net].uri = $uri')
-        log_info "URI incluída no token-config: ${SOL_META_URI}"
+        log_info "URI included in token-config: ${SOL_META_URI}"
     else
         TOKEN_CONFIG_JSON="$_BASE_JSON"
-        log_warn "URI omitida do token-config (não acessível) — token será deployado sem metadata on-chain."
-        log "    Para adicionar metadata depois, faça commit dos arquivos em warp/solana/ e atualize"
-        log "    warp-sealevel-config.json com a URI pública, depois redeploye."
+        log_warn "URI omitted from token-config (not accessible) — token will be deployed without on-chain metadata."
+        log "    To add metadata later, commit the files in warp/solana/ and update"
+        log "    warp-sealevel-config.json with the public URI, then redeploy."
     fi
 
     echo "$TOKEN_CONFIG_JSON" > "$TOKEN_CONFIG"
-    log_ok "token-config.json criado: $TOKEN_CONFIG"
+    log_ok "token-config.json created: $TOKEN_CONFIG"
 
-    # Aviso sobre tempo de compilação
+    # Warning about compilation time
     log ""
-    log_warn "O cargo run --release pode demorar 5-10 min na primeira compilação."
-    log_info "Compilação em andamento — aguarde..."
+    log_warn "cargo run --release can take 5-10 min on first compilation."
+    log_info "Compilation in progress — please wait..."
     log ""
 
     # Deploy
@@ -589,10 +589,10 @@ METAJSON
         fi
         log_warn "warp-route deploy terminou com aviso (já inicializado?) — continuando."
     else
-        log_ok "warp-route deploy concluído!"
+        log_ok "warp-route deploy completed!"
     fi
 
-    # Extrair Program ID do program-ids.json (gerado pelo deploy)
+    # Extract Program ID from program-ids.json (generated by deploy)
     PROG_IDS_FILE="$WARP_ROUTE_DIR/program-ids.json"
     if [ -f "$PROG_IDS_FILE" ]; then
         WARP_PROGRAM_ID=$(jq -r ".${NET_KEY}.base58 // empty" "$PROG_IDS_FILE" 2>/dev/null || echo "")
@@ -600,7 +600,7 @@ METAJSON
         [ -n "$WARP_HEX_FROM_FILE" ] && WARP_HEX="$WARP_HEX_FROM_FILE"
     fi
 
-    # Fallback: ler do keypair
+    # Fallback: read from keypair
     if [ -z "$WARP_PROGRAM_ID" ]; then
         PROGRAM_KEYPAIR="$WARP_ROUTE_DIR/keys/hyperlane_sealevel_token-${NET_KEY}-keypair.json"
         if [ -f "$PROGRAM_KEYPAIR" ]; then
@@ -611,9 +611,9 @@ METAJSON
     fi
 
     if [ -z "$WARP_PROGRAM_ID" ]; then
-        log_err "Não foi possível obter o Program ID após deploy!"
-        log "  Defina manualmente: export WARP_PROGRAM_ID='base58_program_id'"
-        log "  Depois execute novamente."
+        log_err "Could not get Program ID after deploy!"
+        log "  Set manually: export WARP_PROGRAM_ID='base58_program_id'"
+        log "  Then run again."
         exit 1
     fi
 
@@ -623,12 +623,12 @@ fi
 
 log_ok "Program ID: ${G}${WARP_PROGRAM_ID}${NC}"
 
-# Converter Program ID → hex bytes32 (se ainda não temos)
+# Convert Program ID → hex bytes32 (if we do not have it yet)
 if [ -z "$WARP_HEX" ]; then
     WARP_HEX=$(b58_to_hex32 "$WARP_PROGRAM_ID")
     if [ -z "$WARP_HEX" ]; then
-        log_err "Falha ao converter Program ID para hex bytes32!"
-        log "  Certifique-se de que python3 está disponível."
+        log_err "Failed to convert Program ID to hex bytes32!"
+        log "  Make sure python3 is available."
         exit 1
     fi
     save_state
@@ -636,20 +636,20 @@ fi
 
 log_info "Program ID (hex32): 0x${WARP_HEX}"
 
-# Auto-atualizar warp-sealevel-config.json com program_id e program_hex
+# Auto-update warp-sealevel-config.json with program_id and program_hex
 TMP_CFG=$(mktemp)
 jq ".networks.\"${NET_KEY}\".warp_tokens.\"${TOKEN_KEY}\".program_id = \"${WARP_PROGRAM_ID}\" |
     .networks.\"${NET_KEY}\".warp_tokens.\"${TOKEN_KEY}\".program_hex = \"0x${WARP_HEX}\"" \
     "$SOL_CONFIG" > "$TMP_CFG" && mv "$TMP_CFG" "$SOL_CONFIG"
-log_ok "${C}warp-sealevel-config.json${NC} atualizado com Program ID"
+log_ok "${C}warp-sealevel-config.json${NC} updated with Program ID"
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 2 — CONFIGURAR ISM
+# STEP 2 — CONFIGURE ISM
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 2 — CONFIGURAR ISM (MultisigISM)"
+log_sep "STEP 2 — CONFIGURE ISM (MultisigISM)"
 
 if [ -n "${SKIP_ISM:-}" ]; then
-    log_warn "SKIP_ISM definido — pulando configuração de ISM."
+    log_warn "SKIP_ISM set — skipping ISM configuration."
 else
     log_info "ISM Program ID: ${ISM_PROGRAM_ID}"
     log_info "Warp Program ID: ${WARP_PROGRAM_ID}"
@@ -671,25 +671,25 @@ else
     set -e
 
     if [ $ISM_EXIT -eq 0 ]; then
-        log_ok "ISM configurado no Warp Solana!"
+        log_ok "ISM configured on Warp Solana!"
     else
         KNOWN=$(echo "$ISM_OUT" | grep -iE "already|exists|same" || echo "")
         if [ -n "$KNOWN" ]; then
-            log_ok "ISM já estava configurado (idêntico)."
+            log_ok "ISM was already configured (identical)."
         else
-            log_warn "Erro ao configurar ISM (exit $ISM_EXIT) — continue se já estava configurado."
+            log_warn "Error configuring ISM (exit $ISM_EXIT) — continue if already configured."
             log "  Manual: cd $CLIENT_DIR && cargo run --release -- -k $NET_KEYPAIR -u $NET_RPC token set-interchain-security-module --program-id $WARP_PROGRAM_ID --ism $ISM_PROGRAM_ID"
         fi
     fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 3 — CONFIGURAR IGP
+# STEP 3 — CONFIGURE IGP
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 3 — CONFIGURAR IGP (Interchain Gas Paymaster)"
+log_sep "STEP 3 — CONFIGURE IGP (Interchain Gas Paymaster)"
 
 if [ -n "${SKIP_IGP:-}" ]; then
-    log_warn "SKIP_IGP definido — pulando configuração de IGP."
+    log_warn "SKIP_IGP set — skipping IGP configuration."
 else
     log_info "IGP Program ID: ${IGP_PROGRAM_ID}"
     log_info "IGP Account:    ${IGP_ACCOUNT}"
@@ -714,28 +714,28 @@ else
     set -e
 
     if [ $IGP_EXIT -eq 0 ]; then
-        log_ok "IGP associado ao Warp Solana!"
+        log_ok "IGP associated with Warp Solana!"
     else
         KNOWN=$(echo "$IGP_OUT" | grep -iE "already|exists|same" || echo "")
         if [ -n "$KNOWN" ]; then
-            log_ok "IGP já estava associado."
+            log_ok "IGP was already associated."
         else
-            log_warn "Erro ao configurar IGP (exit $IGP_EXIT)."
+            log_warn "Error configuring IGP (exit $IGP_EXIT)."
             log "  Manual: cd $CLIENT_DIR && cargo run --release -- -k $NET_KEYPAIR -u $NET_RPC token igp --program-id $WARP_PROGRAM_ID set $IGP_PROGRAM_ID igp $IGP_ACCOUNT"
         fi
     fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 4 — CONFIGURAR DESTINATION GAS (Terra Classic)
+# STEP 4 — CONFIGURE DESTINATION GAS (Terra Classic)
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 4 — CONFIGURAR DESTINATION GAS (Terra Classic domain ${TERRA_DOMAIN})"
+log_sep "STEP 4 — CONFIGURE DESTINATION GAS (Terra Classic domain ${TERRA_DOMAIN})"
 
 if [ -n "${SKIP_GAS:-}" ]; then
-    log_warn "SKIP_GAS definido — pulando destination gas."
+    log_warn "SKIP_GAS set — skipping destination gas."
 else
-    log_info "Destination gas: ${DEST_GAS} para domínio ${TERRA_DOMAIN}"
-    log_warn "Sem destination gas → transferências falharão com 'InvalidArgument'"
+    log_info "Destination gas: ${DEST_GAS} for domain ${TERRA_DOMAIN}"
+    log_warn "Without destination gas → transfers will fail with 'InvalidArgument'"
 
     cd "$CLIENT_DIR"
     GAS_TMP=$(mktemp)
@@ -755,30 +755,30 @@ else
     set -e
 
     if [ $GAS_EXIT -eq 0 ]; then
-        log_ok "Destination Gas configurado: domain=${TERRA_DOMAIN} gas=${DEST_GAS}"
+        log_ok "Destination Gas configured: domain=${TERRA_DOMAIN} gas=${DEST_GAS}"
     else
         KNOWN=$(echo "$GAS_OUT" | grep -iE "already|exists|same" || echo "")
         if [ -n "$KNOWN" ]; then
-            log_ok "Destination gas já estava configurado."
+            log_ok "Destination gas was already configured."
         else
-            log_warn "Erro ao configurar destination gas (exit $GAS_EXIT)."
+            log_warn "Error configuring destination gas (exit $GAS_EXIT)."
             log "  Manual: cd $CLIENT_DIR && cargo run --release -- -k $NET_KEYPAIR -u $NET_RPC token set-destination-gas --program-id $WARP_PROGRAM_ID $TERRA_DOMAIN $DEST_GAS"
         fi
     fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 5 — ENROLL REMOTE ROUTER (Solana → Terra Classic)
+# STEP 5 — ENROLL REMOTE ROUTER (Solana → Terra Classic)
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 5 — ENROLL REMOTE ROUTER (Solana → Terra Classic)"
+log_sep "STEP 5 — ENROLL REMOTE ROUTER (Solana → Terra Classic)"
 
 if [ -n "${SKIP_ENROLL:-}" ]; then
-    log_warn "SKIP_ENROLL definido — pulando enroll remote router."
+    log_warn "SKIP_ENROLL set — skipping enroll remote router."
 elif [ -z "$TERRA_WARP_ADDR" ] || [ "$TERRA_WARP_ADDR" = "null" ]; then
-    log_warn "Terra Classic Warp não deployado — pulando enroll remote router."
+    log_warn "Terra Classic Warp not deployed — skipping enroll remote router."
 else
     TERRA_HEX_CLEAN="${TERRA_WARP_HEX#0x}"
-    log_info "Enrollando Terra Classic Warp no Solana..."
+    log_info "Enrolling Terra Classic Warp on Solana..."
     log "  Terra Classic domain: ${TERRA_DOMAIN}"
     log "  Terra Classic Warp (hex): 0x${TERRA_HEX_CLEAN}"
 
@@ -800,39 +800,39 @@ else
     set -e
 
     if [ $ENROLL_EXIT -eq 0 ]; then
-        log_ok "Remote Router enrollado! Solana agora conhece Terra Classic (domain ${TERRA_DOMAIN})"
+        log_ok "Remote Router enrolled! Solana now knows Terra Classic (domain ${TERRA_DOMAIN})"
     else
         KNOWN=$(echo "$ENROLL_OUT" | grep -iE "already|exists" || echo "")
         if [ -n "$KNOWN" ]; then
-            log_ok "Remote Router já estava enrollado."
+            log_ok "Remote Router was already enrolled."
         else
-            log_warn "Erro ao enrollar Remote Router (exit $ENROLL_EXIT)."
+            log_warn "Error enrolling Remote Router (exit $ENROLL_EXIT)."
             log "  Manual: cd $CLIENT_DIR && cargo run --release -- -k $NET_KEYPAIR -u $NET_RPC token enroll-remote-router --program-id $WARP_PROGRAM_ID $TERRA_DOMAIN 0x${TERRA_HEX_CLEAN}"
         fi
     fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 6 — SET ROUTE NO TERRA CLASSIC (Terra Classic → Solana)
+# STEP 6 — SET ROUTE ON TERRA CLASSIC (Terra Classic → Solana)
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 6 — SET ROUTE NO TERRA CLASSIC (Terra Classic → Solana)"
+log_sep "STEP 6 — SET ROUTE ON TERRA CLASSIC (Terra Classic → Solana)"
 
 if [ -n "${SKIP_TC_ROUTE:-}" ]; then
-    log_warn "SKIP_TC_ROUTE definido — pulando set_route Terra Classic."
+    log_warn "SKIP_TC_ROUTE set — skipping Terra Classic set_route."
 elif [ -z "$TERRA_WARP_ADDR" ] || [ "$TERRA_WARP_ADDR" = "null" ]; then
-    log_warn "Terra Classic Warp não deployado — pulando set_route."
+    log_warn "Terra Classic Warp not deployed — skipping set_route."
 elif [ -z "${TERRA_PRIVATE_KEY:-}" ]; then
-    log_warn "TERRA_PRIVATE_KEY não definida — pulando set_route Terra Classic."
-    log "  Execute: export TERRA_PRIVATE_KEY='chave_hex'"
-    log "  Depois reexecute com: export WARP_PROGRAM_ID='${WARP_PROGRAM_ID}'"
-    log "  E: export SKIP_ENROLL=1 (se já enrollado)"
+    log_warn "TERRA_PRIVATE_KEY not set — skipping Terra Classic set_route."
+    log "  Run: export TERRA_PRIVATE_KEY='hex_key'"
+    log "  Then re-run with: export WARP_PROGRAM_ID='${WARP_PROGRAM_ID}'"
+    log "  And: export SKIP_ENROLL=1 (if already enrolled)"
 else
     TERRA_PRIV_CLEAN="${TERRA_PRIVATE_KEY#0x}"
     log_info "Terra Classic Warp: ${TERRA_WARP_ADDR}"
     log_info "Solana Domain: ${NET_DOMAIN}"
     log_info "Solana Route (hex32): ${WARP_HEX}"
 
-    # Gravar script Node.js em arquivo temporário
+    # Write Node.js script to temp file
     _NODE_TMP=$(mktemp /tmp/set-route-sol-XXXXXX.js)
     cat > "$_NODE_TMP" <<'NODEJS_SCRIPT'
 const path = require('path');
@@ -863,7 +863,7 @@ async function main() {
         });
         const ex = (routes.routes || []).find(r => r.domain === domain);
         if (ex && ex.route) {
-            // Normalizar ambos os valores (remover 0x e lowercase) para comparar
+            // Normalize both values (remove 0x and lowercase) to compare
             const existingNorm = ex.route.replace(/^0x/i, '').toLowerCase();
             const expectedNorm = solHex.replace(/^0x/i, '').toLowerCase();
             if (existingNorm === expectedNorm) {
@@ -871,8 +871,8 @@ async function main() {
                 console.log('EXISTING=' + ex.route);
                 return;
             }
-            // Rota existe mas aponta para Program ID diferente — atualizar
-            console.error('WARN: rota existente (' + ex.route + ') difere do esperado (' + solHex + ') — atualizando...');
+            // Route exists but points to different Program ID — update
+            console.error('WARN: existing route (' + ex.route + ') differs from expected (' + solHex + ') — updating...');
         }
     } catch(e) { /* rota ainda não existe, continuar */ }
 
@@ -906,7 +906,7 @@ NODEJS_SCRIPT
 
     if [ $_NODE_EXIT -ne 0 ] && ! echo "$SR_RESULT" | grep -q "^STATUS="; then
         SR_STATUS="error"
-        SR_ERR="node saiu com código $_NODE_EXIT: $(echo "$SR_RESULT" | tail -3)"
+        SR_ERR="node exited with code $_NODE_EXIT: $(echo "$SR_RESULT" | tail -3)"
     else
         SR_STATUS=$(echo "$SR_RESULT" | grep "^STATUS=" | cut -d= -f2  || echo "")
         SR_TX=$(echo    "$SR_RESULT"  | grep "^TX="     | cut -d= -f2   || echo "")
@@ -915,32 +915,32 @@ NODEJS_SCRIPT
 
     case "$SR_STATUS" in
         ok)
-            log_ok "set_route executado! Terra Classic agora conhece o Warp Solana."
+            log_ok "set_route executed! Terra Classic now knows the Solana Warp."
             log "   TX: ${B}https://finder.hexxagon.io/${TERRA_CHAIN_ID}/tx/${SR_TX}${NC}"
             ;;
         already_set)
             EXISTING_ROUTE=$(echo "$SR_RESULT" | grep "^EXISTING=" | cut -d= -f2 || echo "")
-            log_ok "Rota já configurada no Terra Classic (${EXISTING_ROUTE:-já existente})."
+            log_ok "Route already configured on Terra Classic (${EXISTING_ROUTE:-already set})."
             ;;
         error)
-            log_warn "set_route Terra Classic falhou: ${SR_ERR}"
+            log_warn "Terra Classic set_route failed: ${SR_ERR}"
             log "  Output: $(echo "$SR_RESULT" | grep -v "^STATUS=" | head -5)"
-            log "  Execute manualmente:"
+            log "  Run manually:"
             log "  terrad tx wasm execute \"${TERRA_WARP_ADDR}\" \\"
             log "    '{\"router\":{\"set_route\":{\"set\":{\"domain\":${NET_DOMAIN},\"route\":\"${WARP_HEX}\"}}}}' \\"
             log "    --from <KEY> --keyring-backend file --chain-id ${TERRA_CHAIN_ID} --node ${TERRA_RPC} --gas auto --gas-adjustment 1.5 --fees 12000000uluna --yes"
             ;;
         *)
-            log_warn "set_route Terra Classic: resultado inesperado (exit=$_NODE_EXIT)."
+            log_warn "Terra Classic set_route: unexpected result (exit=$_NODE_EXIT)."
             [ -n "$SR_RESULT" ] && log "  Output: $(echo "$SR_RESULT" | head -5)"
             ;;
     esac
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 7 — EXTRAIR MINT ADDRESS + TRANSFER OWNERSHIP
+# STEP 7 — EXTRACT MINT ADDRESS + TRANSFER OWNERSHIP
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 7 — CONSULTAR WARP (Mint Address + Verificação)"
+log_sep "STEP 7 — QUERY WARP (Mint Address + Verification)"
 
 cd "$CLIENT_DIR"
 QUERY_TMP=$(mktemp)
@@ -968,16 +968,16 @@ if [ $QUERY_EXIT -eq 0 ] && [ -n "$QUERY_OUT" ]; then
         jq ".networks.\"${NET_KEY}\".warp_tokens.\"${TOKEN_KEY}\".mint_address = \"${MINT_ADDRESS}\" |
             .networks.\"${NET_KEY}\".warp_tokens.\"${TOKEN_KEY}\".deployed = true" \
             "$SOL_CONFIG" > "$TMP_CFG" && mv "$TMP_CFG" "$SOL_CONFIG"
-        log_ok "${C}warp-sealevel-config.json${NC} atualizado com mint_address e deployed=true"
+        log_ok "${C}warp-sealevel-config.json${NC} updated with mint_address and deployed=true"
         save_state
     else
-        log_warn "Mint Address não encontrado na query — o token pode ainda não estar inicializado."
+        log_warn "Mint Address not found in query — the token may not be initialized yet."
     fi
 fi
 
-# Transfer ownership (se owner configurado e diferente do keypair)
+# Transfer ownership (if owner configured and different from keypair)
 if [ -n "$SOL_OWNER" ] && [ "$SOL_OWNER" != "null" ]; then
-    log_info "Transferindo ownership para: $SOL_OWNER"
+    log_info "Transferring ownership to: $SOL_OWNER"
     cd "$CLIENT_DIR"
     set +e
     timeout 120 cargo run --release -- \
@@ -992,20 +992,20 @@ if [ -n "$SOL_OWNER" ] && [ "$SOL_OWNER" != "null" ]; then
     cd "$SCRIPT_DIR"
     set -e
     if [ $OWN_EXIT -eq 0 ]; then
-        log_ok "Ownership transferido para: $SOL_OWNER"
+        log_ok "Ownership transferred to: $SOL_OWNER"
     else
-        log_warn "Erro ao transferir ownership (exit $OWN_EXIT) — pode já estar correto."
+        log_warn "Error transferring ownership (exit $OWN_EXIT) — may already be correct."
         log "  Manual: cd $CLIENT_DIR && cargo run --release -- -k $NET_KEYPAIR -u $NET_RPC token transfer-ownership --program-id $WARP_PROGRAM_ID $SOL_OWNER"
     fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
-# ETAPA 8 — VERIFICAÇÃO FINAL
+# STEP 8 — FINAL VERIFICATION
 # ═════════════════════════════════════════════════════════════════════════════
-log_sep "ETAPA 8 — VERIFICAÇÃO FINAL"
+log_sep "STEP 8 — FINAL VERIFICATION"
 
-# 1. Verificar remote routers no Solana
-log_info "Verificando remote routers no Warp Solana..."
+# 1. Check remote routers on Solana
+log_info "Checking remote routers on Warp Solana..."
 cd "$CLIENT_DIR"
 set +e
 VER_SOL=$(timeout 60 cargo run --release --quiet -- \
@@ -1020,15 +1020,15 @@ set -e
 cd "$SCRIPT_DIR"
 
 if [ -n "$VER_SOL" ]; then
-    log_ok "Estado do Warp Solana:"
+    log_ok "Warp Solana state:"
     echo "$VER_SOL" | while IFS= read -r line; do log "    $line"; done
 else
-    log_warn "Nenhuma informação de verificação retornada."
+    log_warn "No verification info returned."
 fi
 
-# 2. Verificar rota no Terra Classic
+# 2. Check route on Terra Classic
 if [ -n "$TERRA_WARP_ADDR" ] && [ "$TERRA_WARP_ADDR" != "null" ]; then
-    log_info "Verificando rota no Terra Classic (domain ${NET_DOMAIN})..."
+    log_info "Checking route on Terra Classic (domain ${NET_DOMAIN})..."
     set +e
     TC_ROUTE=$(terrad query wasm contract-state smart "$TERRA_WARP_ADDR" \
         "{\"router\":{\"get_route\":{\"domain\":${NET_DOMAIN}}}}" \
@@ -1038,7 +1038,7 @@ if [ -n "$TERRA_WARP_ADDR" ] && [ "$TERRA_WARP_ADDR" != "null" ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GERAR ARQUIVO DE INFORMAÇÕES
+# GENERATE INFO FILE
 # ─────────────────────────────────────────────────────────────────────────────
 TOKEN_UPPER=$(echo "$TOKEN_KEY" | tr '[:lower:]' '[:upper:]')
 NET_UPPER=$(echo "$NET_KEY" | tr '[:lower:]' '[:upper:]')
@@ -1046,8 +1046,8 @@ INFO_FILE="$LOG_DIR/WARP-${NET_UPPER}-${TOKEN_UPPER}.txt"
 
 cat > "$INFO_FILE" <<EOF
 ═══════════════════════════════════════════════════════════
-  WARP SOLANA: ${TOKEN_KEY^^} em ${NET_DISPLAY}
-  Gerado: $(date '+%Y-%m-%d %H:%M:%S')
+  WARP SOLANA: ${TOKEN_KEY^^} on ${NET_DISPLAY}
+  Generated: $(date '+%Y-%m-%d %H:%M:%S')
 ═══════════════════════════════════════════════════════════
 
 [WARP SOLANA]
@@ -1072,30 +1072,30 @@ Address (Hex):      ${TERRA_WARP_HEX:-N/A}
 Domain:             ${TERRA_DOMAIN}
 Chain ID:           ${TERRA_CHAIN_ID}
 
-[LINKS CONFIGURADOS]
+[CONFIGURED LINKS]
 Solana → Terra Classic:  enroll-remote-router (domain ${TERRA_DOMAIN})
 Terra Classic → Solana:  set_route (domain ${NET_DOMAIN})
 
-[COMANDOS MANUAIS DE VERIFICAÇÃO]
-# Verificar Warp Solana:
+[MANUAL VERIFICATION COMMANDS]
+# Check Warp Solana:
 cd ${CLIENT_DIR}
 cargo run --release -- -k ${NET_KEYPAIR} -u ${NET_RPC} token query --program-id ${WARP_PROGRAM_ID} synthetic
 
-# Verificar rota Terra Classic:
+# Check Terra Classic route:
 terrad query wasm contract-state smart ${TERRA_WARP_ADDR:-TC_WARP_ADDR} '{"router":{"get_route":{"domain":${NET_DOMAIN}}}}' --node ${TERRA_RPC}
 
-# Verificar ISM:
+# Check ISM:
 cargo run --release -- -k ${NET_KEYPAIR} -u ${NET_RPC} multisig-ism-message-id query --program-id ${ISM_PROGRAM_ID} --domains ${TERRA_DOMAIN}
 EOF
 
-log_ok "Info salvo em: ${C}${INFO_FILE}${NC}"
+log_ok "Info saved at: ${C}${INFO_FILE}${NC}"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# RESUMO FINAL
+# FINAL SUMMARY
 # ─────────────────────────────────────────────────────────────────────────────
 log ""
 log "╔══════════════════════════════════════════════════════════════════════════╗"
-log "║               ✅  WARP SOLANA CONFIGURADO COM SUCESSO!                  ║"
+log "║               ✅  WARP SOLANA CONFIGURED SUCCESSFULLY!                  ║"
 log "╚══════════════════════════════════════════════════════════════════════════╝"
 log ""
 log "${G}📝 Warp Solana:${NC}"
@@ -1115,15 +1115,15 @@ log "${G}📝 Links:${NC}"
 if [ -z "${SKIP_ENROLL:-}" ]; then
     log "   ✅ Solana → Terra Classic (domain ${TERRA_DOMAIN})"
 else
-    log "   ⚠️  Solana → Terra Classic: pendente"
+    log "   ⚠️  Solana → Terra Classic: pending"
 fi
 if [ -z "${SKIP_TC_ROUTE:-}" ] && [ -n "${TERRA_PRIVATE_KEY:-}" ]; then
     log "   ✅ Terra Classic → Solana (domain ${NET_DOMAIN})"
 else
-    log "   ⚠️  Terra Classic → Solana: pendente"
+    log "   ⚠️  Terra Classic → Solana: pending"
 fi
 log ""
-log "${C}  Atualizações automáticas em warp-sealevel-config.json:${NC}"
+log "${C}  Automatic updates in warp-sealevel-config.json:${NC}"
 log "    .networks.${NET_KEY}.warp_tokens.${TOKEN_KEY}.program_id  = \"${WARP_PROGRAM_ID}\""
 log "    .networks.${NET_KEY}.warp_tokens.${TOKEN_KEY}.program_hex = \"0x${WARP_HEX}\""
 [ -n "${MINT_ADDRESS:-}" ] && log "    .networks.${NET_KEY}.warp_tokens.${TOKEN_KEY}.mint_address = \"${MINT_ADDRESS}\""

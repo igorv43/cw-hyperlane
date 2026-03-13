@@ -1,97 +1,97 @@
 # Transfer Remote — Terra Classic → EVM / Sealevel
 
-Guia completo para o script `transfer-remote-terra.sh`, que envia tokens via Hyperlane Warp Route
-da **Terra Classic** para redes EVM (Sepolia, BSC Testnet) e Sealevel (Solana Testnet).
+Complete guide for the `transfer-remote-terra.sh` script, which sends tokens via Hyperlane Warp Route
+from **Terra Classic** to EVM networks (Sepolia, BSC Testnet) and Sealevel (Solana Testnet).
 
 ---
 
-## Índice
+## Table of Contents
 
-1. [Pré-requisitos](#1--pré-requisitos)
-2. [Estrutura de arquivos](#2--estrutura-de-arquivos)
-3. [Configurar chave privada](#3--configurar-chave-privada)
-4. [Modo interativo](#4--modo-interativo)
-5. [Modo não-interativo](#5--modo-não-interativo)
-6. [Opções disponíveis (token × rede)](#6--opções-disponíveis-token--rede)
-7. [Formatos de endereço do destinatário](#7--formatos-de-endereço-do-destinatário)
-8. [Fee IGP (gas de destino)](#8--fee-igp-gas-de-destino)
-9. [Saída e relatório](#9--saída-e-relatório)
-10. [Como verificar a entrega](#10--como-verificar-a-entrega)
-    - [Confirmar o envio na Terra Classic](#1-confirmar-o-envio-na-terra-classic)
-    - [Rastrear no Hyperlane Explorer](#2-rastrear-a-mensagem-no-hyperlane-explorer)
-    - [Verificar recebimento na rede destino](#3-verificar-recebimento-na-rede-de-destino)
-    - [Consultar saldo CW20 via terrad](#4-verificar-saldo-cw20-antes-do-envio-terra-classic)
-    - [Consultar saldo LUNC nativo via terrad](#5-consultar-saldo-de-lunc-nativo-de-uma-carteira)
-    - [Consultar múltiplos CW20 em loop](#6-consultar-saldo-de-múltiplos-tokens-cw20-todos-de-uma-vez-via-loop)
-11. [Referência de contratos](#11--referência-de-contratos)
+1. [Prerequisites](#1--prerequisites)
+2. [File structure](#2--file-structure)
+3. [Configure private key](#3--configure-private-key)
+4. [Interactive mode](#4--interactive-mode)
+5. [Non-interactive mode](#5--non-interactive-mode)
+6. [Available options (token × network)](#6--available-options-token--network)
+7. [Recipient address formats](#7--recipient-address-formats)
+8. [IGP Fee (destination gas)](#8--igp-fee-destination-gas)
+9. [Output and report](#9--output-and-report)
+10. [How to verify delivery](#10--how-to-verify-delivery)
+    - [Confirm the send on Terra Classic](#1-confirm-the-send-on-terra-classic)
+    - [Track in Hyperlane Explorer](#2-track-the-message-in-the-hyperlane-explorer)
+    - [Verify receipt on destination network](#3-verify-receipt-on-the-destination-network)
+    - [Query CW20 balance via terrad](#4-check-cw20-balance-before-sending-terra-classic)
+    - [Query native LUNC balance via terrad](#5-query-native-lunc-balance-of-a-wallet)
+    - [Query multiple CW20 in loop](#6-query-balance-of-multiple-cw20-tokens-all-at-once-via-loop)
+11. [Contract reference](#11--contract-reference)
 12. [Troubleshooting](#12--troubleshooting)
 
 ---
 
-## 1 — Pré-requisitos
+## 1 — Prerequisites
 
-| Dependência | Verificar | Instalar |
+| Dependency | Check | Install |
 |---|---|---|
 | `node` (≥ 16) | `node --version` | `nvm install 18` |
 | `jq` | `jq --version` | `sudo apt install jq` |
 | `curl` | `curl --version` | `sudo apt install curl` |
-| `python3` | `python3 --version` | já disponível no Ubuntu |
-| `@cosmjs` (node_modules) | automático | `cd ~/cw-hyperlane && yarn install` |
+| `python3` | `python3 --version` | available by default on Ubuntu |
+| `@cosmjs` (node_modules) | automatic | `cd ~/cw-hyperlane && yarn install` |
 
-O script localiza automaticamente o `node_modules` percorrendo os diretórios pai até encontrar um `package.json`.
+The script automatically locates `node_modules` by traversing parent directories until it finds a `package.json`.
 
 ---
 
-## 2 — Estrutura de arquivos
+## 2 — File structure
 
 ```
 script-warp-terraclassic/
-├── transfer-remote-terra.sh        ← script principal
-├── warp-evm-config.json            ← configuração EVM + tokens Terra Classic
-├── warp-sealevel-config.json       ← configuração Solana Testnet
+├── transfer-remote-terra.sh        ← main script
+├── warp-evm-config.json            ← EVM config + Terra Classic tokens
+├── warp-sealevel-config.json       ← Solana Testnet config
 └── log/
-    ├── transfer-remote-terra.log   ← log cumulativo de todas as execuções
-    └── TRANSFER-REMOTE-<REDE>-<TOKEN>-<timestamp>.txt  ← relatório por envio
+    ├── transfer-remote-terra.log   ← cumulative log of all executions
+    └── TRANSFER-REMOTE-<NETWORK>-<TOKEN>-<timestamp>.txt  ← report per send
 ```
 
-O script lê os dois arquivos JSON para montar a lista de opções disponíveis. Somente combinações
-token × rede marcadas como `"deployed": true` aparecem no menu.
+The script reads both JSON files to build the list of available options. Only token × network
+combinations marked as `"deployed": true` appear in the menu.
 
 ---
 
-## 3 — Configurar chave privada
+## 3 — Configure private key
 
-A chave privada é da **conta remetente na Terra Classic**. Deve ser em formato hexadecimal
-(32 bytes = 64 caracteres hex, com ou sem prefixo `0x`).
+The private key is for the **sender account on Terra Classic**. Must be in hexadecimal format
+(32 bytes = 64 hex characters, with or without `0x` prefix).
 
 ```bash
 export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-Se não estiver definida, o script solicitará interativamente (entrada oculta).
+If not set, the script will prompt interactively (hidden input).
 
-> ⚠️ **Nunca comite sua chave privada em repositórios.**  
-> Use variáveis de ambiente ou arquivos `.env` fora do controle de versão.
+> ⚠️ **Never commit your private key to repositories.**  
+> Use environment variables or `.env` files outside version control.
 
 ---
 
-## 4 — Modo interativo
+## 4 — Interactive mode
 
-O modo mais simples: o script guia passo a passo.
+The simplest mode: the script guides step by step.
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 
-export TERRA_PRIVATE_KEY="sua_chave_hex"
+export TERRA_PRIVATE_KEY="your_key_hex"
 ./transfer-remote-terra.sh
 ```
 
-### Fluxo de execução
+### Execution flow
 
-**Passo 1 — Menu de seleção**
+**Step 1 — Selection menu**
 
 ```
-Selecione o token e a rede de destino:
+Select the token and destination network:
 
   [1]   LUNC → Ethereum Sepolia Testnet  (domain 11155111)
   [2]   XPTO → Ethereum Sepolia Testnet  (domain 11155111)
@@ -102,37 +102,37 @@ Selecione o token e a rede de destino:
   [7]   JURIS → Solana Testnet  (domain 1399811150)
   [8]   XPTO → Solana Testnet  (domain 1399811150)
 
-  Opção [1-8]:
+  Option [1-8]:
 ```
 
-**Passo 2 — Endereço do destinatário**
+**Step 2 — Recipient address**
 
 ```
-  Formato EVM: 0x... (ex: 0x867f9ce9f0d7218b016351cb6122406e6d247a5e)
-  Endereço do destinatário:
+  EVM format: 0x... (e.g.: 0x867f9ce9f0d7218b016351cb6122406e6d247a5e)
+  Recipient address:
 ```
 
-Para Solana:
+For Solana:
 ```
-  Formato Solana: Base58 (ex: EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd)
-  Endereço do destinatário:
-```
-
-**Passo 3 — Quantidade**
-
-```
-  Decimais: 6 — ex: 1 XPTO = 1000000
-  Quantidade (em unidades mínimas, ex: 10000000):
+  Solana format: Base58 (e.g.: EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd)
+  Recipient address:
 ```
 
-**Passo 4 — Resumo e confirmação**
+**Step 3 — Amount**
+
+```
+  Decimals: 6 — e.g.: 1 XPTO = 1000000
+  Amount (in minimum units, e.g.: 10000000):
+```
+
+**Step 4 — Summary and confirmation**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Resumo da transferência
+  Transfer Summary
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Token          : XPTO  (cw20)
-  Destino        : SEPOLIA  (domain 11155111)
+  Destination    : SEPOLIA  (domain 11155111)
   Recipient      : 0x867f9ce9f0d7218b016351cb6122406e6d247a5e
   Recipient b32  : 000000000000000000000000867f9ce9f0d7218b016351cb6122406e6d247a5e
   Amount         : 10000000
@@ -140,19 +140,19 @@ Para Solana:
   Warp TC        : terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm
   Collateral CW20: terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch
 
-  Confirmar e enviar? [s/N]:
+  Confirm and send? [y/N]:
 ```
 
-Digite `s` para confirmar.
+Type `y` to confirm.
 
 ---
 
-## 5 — Modo não-interativo
+## 5 — Non-interactive mode
 
-Útil para automação e scripts. Passe todas as variáveis antes da chamada:
+Useful for automation and scripts. Pass all variables before the call:
 
 ```bash
-export TERRA_PRIVATE_KEY="sua_chave_hex"
+export TERRA_PRIVATE_KEY="your_key_hex"
 
 TOKEN_KEY=xpto \
 DEST_NETWORK=sepolia \
@@ -162,30 +162,30 @@ AUTO_CONFIRM=s \
 ./transfer-remote-terra.sh
 ```
 
-### Variáveis disponíveis
+### Available variables
 
-| Variável | Obrigatória | Descrição | Exemplo |
+| Variable | Required | Description | Example |
 |---|---|---|---|
-| `TERRA_PRIVATE_KEY` | ✅ | Chave privada hex do remetente | `xxxxxxxx...` |
-| `TOKEN_KEY` | — | Identificador do token | `xpto`, `xptv`, `xpv`, `juris`, `wlunc` |
-| `DEST_NETWORK` | — | Rede de destino | `sepolia`, `bsctestnet`, `solanatestnet` |
-| `RECIPIENT` | — | Endereço do destinatário | `0x867f...` ou Base58 |
-| `AMOUNT` | — | Valor em unidades mínimas | `10000000` |
-| `IGP_FEE_ULUNA` | — | Fee manual em uluna (sobrescreve a consulta automática) | `1780832150` |
-| `AUTO_CONFIRM` | — | `s` para não pedir confirmação | `s` |
+| `TERRA_PRIVATE_KEY` | ✅ | Sender hex private key | `xxxxxxxx...` |
+| `TOKEN_KEY` | — | Token identifier | `xpto`, `xptv`, `xpv`, `juris`, `wlunc` |
+| `DEST_NETWORK` | — | Destination network | `sepolia`, `bsctestnet`, `solanatestnet` |
+| `RECIPIENT` | — | Recipient address | `0x867f...` or Base58 |
+| `AMOUNT` | — | Value in minimum units | `10000000` |
+| `IGP_FEE_ULUNA` | — | Manual fee in uluna (overrides automatic query) | `1780832150` |
+| `AUTO_CONFIRM` | — | `s` to skip confirmation | `s` |
 
-Se `TOKEN_KEY` e `DEST_NETWORK` forem omitidos → modo interativo com menu.  
-Se `RECIPIENT` for omitido → solicitado interativamente.  
-Se `AMOUNT` for omitido → solicitado interativamente.
+If `TOKEN_KEY` and `DEST_NETWORK` are omitted → interactive mode with menu.  
+If `RECIPIENT` is omitted → prompted interactively.  
+If `AMOUNT` is omitted → prompted interactively.
 
 ---
 
-## 6 — Opções disponíveis (token × rede)
+## 6 — Available options (token × network)
 
-As opções do menu são geradas dinamicamente a partir dos JSONs de configuração.
-Somente combinações com `"deployed": true` aparecem.
+Menu options are dynamically generated from the configuration JSONs.
+Only combinations with `"deployed": true` appear.
 
-| # | Token | Rede | Domain | Tipo |
+| # | Token | Network | Domain | Type |
 |---|---|---|---|---|
 | 1 | LUNC | Ethereum Sepolia Testnet | 11155111 | native |
 | 2 | XPTO | Ethereum Sepolia Testnet | 11155111 | CW20 |
@@ -196,21 +196,21 @@ Somente combinações com `"deployed": true` aparecem.
 | 7 | JURIS | Solana Testnet | 1399811150 | CW20 |
 | 8 | XPTO | Solana Testnet | 1399811150 | CW20 |
 
-### Adicionar um novo token/rede ao menu
+### Adding a new token/network to the menu
 
-Para que um novo warp apareça no menu, basta garantir em `warp-evm-config.json` ou
-`warp-sealevel-config.json` que:
+For a new warp to appear in the menu, ensure in `warp-evm-config.json` or
+`warp-sealevel-config.json` that:
 
 ```json
-// warp-evm-config.json → networks.<rede>.warp_tokens.<token>
+// warp-evm-config.json → networks.<network>.warp_tokens.<token>
 {
   "deployed": true,
-  "address": "0xEndereçoDoWarpNaRedeEVM"
+  "address": "0xWarpAddressOnEVMNetwork"
 }
 ```
 
 ```json
-// warp-sealevel-config.json → networks.<rede>.warp_tokens.<token>
+// warp-sealevel-config.json → networks.<network>.warp_tokens.<token>
 {
   "deployed": true,
   "program_id": "ProgramIdBase58",
@@ -218,21 +218,21 @@ Para que um novo warp apareça no menu, basta garantir em `warp-evm-config.json`
 }
 ```
 
-E que o token esteja em `warp-evm-config.json → terra_classic.tokens.<token>.terra_warp` com `warp_address` preenchido.
+And that the token is in `warp-evm-config.json → terra_classic.tokens.<token>.terra_warp` with `warp_address` filled in.
 
 ---
 
-## 7 — Formatos de endereço do destinatário
+## 7 — Recipient address formats
 
 ### EVM (Sepolia, BSC Testnet)
 
-Aceita o formato padrão `0x` de 20 bytes (40 chars hex):
+Accepts the standard `0x` format of 20 bytes (40 hex chars):
 
 ```
 0x867f9ce9f0d7218b016351cb6122406e6d247a5e
 ```
 
-O script converte automaticamente para **bytes32** (64 chars hex com padding de zeros à esquerda):
+The script automatically converts to **bytes32** (64 hex chars with left-zero padding):
 
 ```
 000000000000000000000000867f9ce9f0d7218b016351cb6122406e6d247a5e
@@ -240,100 +240,100 @@ O script converte automaticamente para **bytes32** (64 chars hex com padding de 
 
 ### Sealevel (Solana Testnet)
 
-Aceita três formatos:
+Accepts three formats:
 
-1. **Base58** (formato padrão Solana):
+1. **Base58** (standard Solana format):
    ```
    EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd
    ```
 
-2. **Hex de 64 chars sem `0x`**:
+2. **64-char hex without `0x`**:
    ```
    c6525508893d49539a9ae57421ec470517a5c815780b21b93a78e79569c0d01c
    ```
 
-3. **Hex de 64 chars com `0x`**:
+3. **64-char hex with `0x`**:
    ```
    0xc6525508893d49539a9ae57421ec470517a5c815780b21b93a78e79569c0d01c
    ```
 
-> 💡 Para encontrar o endereço hex de uma wallet Solana Base58, use:
+> 💡 To find the hex address of a Solana Base58 wallet, use:
 > ```bash
 > node -e "
 > const bs58 = require('node_modules/bs58');
-> console.log(Buffer.from(bs58.decode('SEU_ENDEREÇO_BASE58')).toString('hex'));
+> console.log(Buffer.from(bs58.decode('YOUR_BASE58_ADDRESS')).toString('hex'));
 > "
 > ```
 
 ---
 
-## 8 — Fee IGP (gas de destino)
+## 8 — IGP Fee (destination gas)
 
-O IGP (Interchain Gas Paymaster) na Terra Classic cobra uma taxa em **uluna** para cobrir o gas
-no chain de destino. O script tenta calculá-la automaticamente e usa valores padrão como fallback.
+The IGP (Interchain Gas Paymaster) on Terra Classic charges a fee in **uluna** to cover gas
+on the destination chain. The script tries to calculate it automatically and uses default values as fallback.
 
-### Cálculo automático
+### Automatic calculation
 
-O script consulta o contrato IGP na Terra Classic via LCD:
+The script queries the IGP contract on Terra Classic via LCD:
 
 ```
 Contrato : terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9
 Query    : quote_gas_payment { dest_domain, gas_amount: "300000" }
 ```
 
-Tenta múltiplos LCD endpoints em sequência.
+Tries multiple LCD endpoints in sequence.
 
-### Valores padrão (fallback)
+### Default values (fallback)
 
-Se todos os LCDs falharem, usa valores históricos reais do projeto:
+If all LCDs fail, uses real historical values from the project:
 
-| Rede | Domain | Fee padrão (uluna) | LUNC aproximado |
+| Network | Domain | Default fee (uluna) | Approx LUNC |
 |---|---|---|---|
-| Sepolia | 11155111 | 1.780.832.150 | ~1,78 LUNC |
-| BSC Testnet | 97 | 500.000.000 | ~0,50 LUNC |
-| Solana Testnet | 1399811150 | 300.000 | ~0,0003 LUNC |
+| Sepolia | 11155111 | 1,780,832,150 | ~1.78 LUNC |
+| BSC Testnet | 97 | 500,000,000 | ~0.50 LUNC |
+| Solana Testnet | 1399811150 | 300,000 | ~0.0003 LUNC |
 
-### Sobrescrever manualmente
+### Manual override
 
 ```bash
 IGP_FEE_ULUNA=2000000000 ./transfer-remote-terra.sh
 ```
 
-> ⚠️ Se o fee for insuficiente, a transação falha com erro de gas. Aumente `IGP_FEE_ULUNA`.
+> ⚠️ If the fee is insufficient, the transaction fails with a gas error. Increase `IGP_FEE_ULUNA`.
 
 ---
 
-## 9 — Saída e relatório
+## 9 — Output and report
 
-### Sucesso
+### Success
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  ✅  TRANSFERÊNCIA ENVIADA COM SUCESSO!                   ║
+║  ✅  TRANSFER SENT SUCCESSFULLY!                          ║
 ╚═══════════════════════════════════════════════════════════╝
 
   TX Hash :  EA8C0788EDF6194BE96C08844045D16189737A38...
   Explorer:  https://finder.hexxagon.io/rebel-2/tx/EA8C...
 
-  A mensagem será relayada pelo Hyperlane Relayer.
-  Tempo estimado de entrega: 1-5 minutos.
+  The message will be relayed by the Hyperlane Relayer.
+  Estimated delivery time: 1-5 minutes.
 
-  Relatório : log/TRANSFER-REMOTE-SEPOLIA-XPTO-20260312-120000.txt
+  Report    : log/TRANSFER-REMOTE-SEPOLIA-XPTO-20260312-120000.txt
 ```
 
-### Arquivos gerados
+### Generated files
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---|---|
-| `log/transfer-remote-terra.log` | Uma linha por execução: data, token, rede, amount, fee, txhash |
-| `log/TRANSFER-REMOTE-<REDE>-<TOKEN>-<timestamp>.txt` | Relatório completo da transferência |
+| `log/transfer-remote-terra.log` | One line per execution: date, token, network, amount, fee, txhash |
+| `log/TRANSFER-REMOTE-<NETWORK>-<TOKEN>-<timestamp>.txt` | Full transfer report |
 
-Exemplo do relatório:
+Report example:
 ```
 TRANSFER REMOTE — Terra Classic → SEPOLIA
-Data          : Thu Mar 12 12:00:00 UTC 2026
+Date          : Thu Mar 12 12:00:00 UTC 2026
 Token         : XPTO  (cw20)
-Destino       : SEPOLIA  (domain 11155111)
+Destination   : SEPOLIA  (domain 11155111)
 Recipient     : 0x867f9ce9f0d7218b016351cb6122406e6d247a5e
 Recipient b32 : 000000000000000000000000867f9ce9f0d7218b016351cb6122406e6d247a5e
 Amount        : 10000000
@@ -346,35 +346,35 @@ Explorer      : https://finder.hexxagon.io/rebel-2/tx/EA8C...
 
 ---
 
-## 10 — Como verificar a entrega
+## 10 — How to verify delivery
 
-### 1. Confirmar o envio na Terra Classic
+### 1. Confirm the send on Terra Classic
 
 ```
 https://finder.hexxagon.io/rebel-2/tx/<TX_HASH>
 ```
 
-Verifique nos eventos do contrato:
-- `wasm-HplMessage.dispatched` → mensagem emitida pelo Mailbox
-- `wasm-HplIgp.gas_payment` → fee IGP pago
-- `message_id` → ID da mensagem (bytes32 hex)
+Check in the contract events:
+- `wasm-HplMessage.dispatched` → message dispatched by Mailbox
+- `wasm-HplIgp.gas_payment` → IGP fee paid
+- `message_id` → message ID (bytes32 hex)
 
-### 2. Rastrear a mensagem no Hyperlane Explorer
+### 2. Track the message in the Hyperlane Explorer
 
 ```
 https://explorer.hyperlane.xyz/message/<MESSAGE_ID>
 ```
 
-O status deve passar por:
-1. **Dispatched** → mensagem enviada
-2. **Signed** → validador assinou
-3. **Relayed** → relayer entregou no destino
+The status should progress through:
+1. **Dispatched** → message sent
+2. **Signed** → validator signed
+3. **Relayed** → relayer delivered to destination
 
-### 3. Verificar recebimento na rede de destino
+### 3. Verify receipt on the destination network
 
 **EVM (Sepolia / BSC Testnet):**
 
-Acesse o endereço do destinatário no explorador da rede destino e verifique o saldo do token ERC-20 do Warp.
+Access the recipient address in the destination network explorer and check the Warp ERC-20 token balance.
 
 - Sepolia Explorer: `https://sepolia.etherscan.io/address/<RECIPIENT>`
 - BSC Testnet: `https://testnet.bscscan.com/address/<RECIPIENT>`
@@ -390,14 +390,14 @@ Ou no explorer:
 https://explorer.solana.com/address/<RECIPIENT>?cluster=testnet
 ```
 
-### 4. Verificar saldo CW20 antes do envio (Terra Classic)
+### 4. Check CW20 balance before sending (Terra Classic)
 
-**Via `terrad` (recomendado):**
+**Via `terrad` (recommended):**
 
 ```bash
 terrad query wasm contract-state smart \
   <CW20_ADDRESS> \
-  '{"balance":{"address":"<SUA_CARTEIRA>"}}' \
+  '{"balance":{"address":"<YOUR_WALLET>"}}' \
   --node https://rpc.terra-classic.hexxagon.dev:443
 ```
 
@@ -410,36 +410,36 @@ terrad query wasm contract-state smart \
   --node https://rpc.terra-classic.hexxagon.dev:443
 ```
 
-Retorno esperado:
+Expected response:
 
 ```yaml
 data:
   balance: "10000000"
 ```
 
-**Via `curl` (sem terrad instalado):**
+**Via `curl` (without terrad installed):**
 
 ```bash
 curl -s "https://lcd.terra-classic.hexxagon.dev/cosmwasm/wasm/v1/contract/<CW20_ADDRESS>/smart/$(
-  python3 -c "import json,base64; print(base64.b64encode(json.dumps({'balance':{'address':'<SUA_CARTEIRA>'}}).encode()).decode())"
+  python3 -c "import json,base64; print(base64.b64encode(json.dumps({'balance':{'address':'<YOUR_WALLET>'}}).encode()).decode())"
 )" | jq '.data.balance'
 ```
 
-### 5. Consultar saldo de LUNC nativo de uma carteira
+### 5. Query native LUNC balance of a wallet
 
 ```bash
 terrad query bank balances <SUA_CARTEIRA> \
   --node https://rpc.terra-classic.hexxagon.dev:443
 ```
 
-Exemplo:
+Example:
 
 ```bash
 terrad query bank balances terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k \
   --node https://rpc.terra-classic.hexxagon.dev:443
 ```
 
-Retorno esperado:
+Expected response:
 
 ```yaml
 balances:
@@ -447,13 +447,13 @@ balances:
   denom: uluna
 ```
 
-> 💡 `uluna` é a unidade mínima do LUNC. Divida por `1.000.000` para obter o valor em LUNC.  
-> Exemplo: `5000000000 uluna` = `5000 LUNC`
+> 💡 `uluna` is the minimum unit of LUNC. Divide by `1,000,000` to get the value in LUNC.  
+> Example: `5000000000 uluna` = `5000 LUNC`
 
-### 6. Consultar saldo de múltiplos tokens CW20 (todos de uma vez via loop)
+### 6. Query balance of multiple CW20 tokens (all at once via loop)
 
 ```bash
-# Lista de contratos CW20 e nomes (adapte conforme seus tokens)
+# List of CW20 contracts and names (adapt to your tokens)
 declare -A CW20_TOKENS=(
   ["XPTO"]="terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch"
   ["XPTV"]="terra19ujvy60tjeyehjrwlrdpqlp0gxmtt4qv452nwjqc6w6m38pm8xmq22lux3"
@@ -463,7 +463,7 @@ declare -A CW20_TOKENS=(
 WALLET="terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k"
 NODE="https://rpc.terra-classic.hexxagon.dev:443"
 
-echo "Saldos de $WALLET"
+echo "Balances for $WALLET"
 for TOKEN in "${!CW20_TOKENS[@]}"; do
   ADDR="${CW20_TOKENS[$TOKEN]}"
   BAL=$(terrad query wasm contract-state smart "$ADDR" \
@@ -475,11 +475,11 @@ done
 
 ---
 
-## 11 — Referência de contratos
+## 11 — Contract reference
 
-### Terra Classic — Contratos Warp
+### Terra Classic — Warp Contracts
 
-| Token | Tipo | CW20 Collateral | Warp Contract |
+| Token | Type | CW20 Collateral | Warp Contract |
 |---|---|---|---|
 | LUNC (WLUNC) | native | — | `terra1zlm0h2xu6rhnjchn29hxnpvr74uxxqetar9y75zcehyx2mqezg9slj09ml` |
 | JURIS | CW20 | `terra1w7d0jqehn0ja3hkzsm0psk6z2hjz06lsq0nxnwkzkkq4fqwgq6tqa5te8e` | `terra1stu3cl7mhtsc2mf9cputawfd6v6e4a2nkmhhphh47lsrr3j6ktdqlcfe2l` |
@@ -487,9 +487,9 @@ done
 | XPTV | CW20 | `terra19ujvy60tjeyehjrwlrdpqlp0gxmtt4qv452nwjqc6w6m38pm8xmq22lux3` | `terra1n8y4sj9lrqq66pf7je0nm7s6nhln5z4s3accw9g2aassdh8dzqts9y0928` |
 | XPV  | CW20 | `terra1f2jw36hc7fzeu7dz2fhk250ezec7e80c2s6uxt3ry5ujjjslf9nqwvpu88` | `terra1dnflusc7slapvals97em3fj4vrfyx90npr3znq6y45qjy7hhd6jqchqsgx` |
 
-### Terra Classic — Contratos Hyperlane
+### Terra Classic — Hyperlane Contracts
 
-| Contrato | Endereço |
+| Contract | Address |
 |---|---|
 | Mailbox | `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf` |
 | IGP | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` |
@@ -524,71 +524,71 @@ done
 
 ### ❌ `Account '...' does not exist on chain`
 
-A conta remetente não existe ou nunca recebeu fundos na Terra Classic.
+The sender account does not exist or has never received funds on Terra Classic.
 
 ```
-Causa  : wallet nunca usada ou chave privada incorreta
-Solução: verifique o endereço em https://finder.hexxagon.io/rebel-2
-         certifique-se de que a conta tem saldo de LUNC
+Cause  : wallet never used or incorrect private key
+Fix    : check the address at https://finder.hexxagon.io/rebel-2
+         make sure the account has a LUNC balance
 ```
 
 ### ❌ `route not found`
 
-O warp contract na Terra Classic não tem rota configurada para a rede destino.
+The Terra Classic warp contract has no route configured for the destination network.
 
 ```
-Causa  : enrollRemoteRouter não foi executado ou a rota aponta para endereço antigo
-Solução: execute create-warp-evm.sh ou create-warp-sealevel.sh para reconfigurar
-         ou use enroll-terra-router.sh para fazer manualmente
+Cause  : enrollRemoteRouter was not executed or route points to old address
+Fix    : run create-warp-evm.sh or create-warp-sealevel.sh to reconfigure
+         or use enroll-terra-router.sh to do it manually
 ```
 
 ### ❌ `insufficient funds` / `out of gas`
 
 ```
-Causa  : saldo de LUNC insuficiente ou IGP fee subestimado
-Solução: verifique saldo com:
+Cause  : insufficient LUNC balance or underestimated IGP fee
+Fix    : check balance with:
            curl -s "https://lcd.terra-classic.hexxagon.dev/cosmos/bank/v1beta1/balances/<WALLET>"
-         aumente a fee com:
+         increase the fee with:
            IGP_FEE_ULUNA=3000000000 ./transfer-remote-terra.sh
 ```
 
-### ❌ `Nenhuma combinação token/rede deployada encontrada`
+### ❌ `No deployed token/network combination found`
 
 ```
-Causa  : warp-evm-config.json ou warp-sealevel-config.json não tem nenhum token
-         com "deployed": true e endereço válido
-Solução: verifique os arquivos de configuração e confirme que o warp foi deployado
+Cause  : warp-evm-config.json or warp-sealevel-config.json has no token
+         with "deployed": true and valid address
+Fix    : check the configuration files and confirm the warp was deployed
 ```
 
-### ❌ Mensagem enviada mas não chega no destino
+### ❌ Message sent but does not arrive at destination
 
-**Passo a passo de diagnóstico:**
+**Step-by-step diagnosis:**
 
-1. Confirme que a TX passou na Terra Classic:
+1. Confirm the TX went through on Terra Classic:
    ```
    https://finder.hexxagon.io/rebel-2/tx/<TX_HASH>
    ```
 
-2. Verifique o relayer/validador no Hyperlane Explorer:
+2. Check the relayer/validator in the Hyperlane Explorer:
    ```
    https://explorer.hyperlane.xyz/message/<MESSAGE_ID>
    ```
-   O `message_id` aparece nos eventos da TX como `wasm-HplMessage.dispatched`.
+   The `message_id` appears in TX events as `wasm-HplMessage.dispatched`.
 
-3. Confirme que o validador está gerando checkpoints:
+3. Confirm the validator is generating checkpoints:
    - Terra Classic: `https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/`
 
-4. Verifique se a rota inversa está configurada (destino → Terra Classic):
-   - O warp na rede destino precisa ter `enrollRemoteRouter` apontando para o warp da Terra Classic.
+4. Verify the reverse route is configured (destination → Terra Classic):
+   - The warp on the destination network must have `enrollRemoteRouter` pointing to the Terra Classic warp.
 
-### ❌ `Endereço EVM inválido` ou `Endereço Solana inválido`
+### ❌ `Invalid EVM address` or `Invalid Solana address`
 
 ```
-EVM   : use exatamente 40 chars hex com 0x (ex: 0xAbCd...1234)
-Solana: use Base58 padrão (ex: EMAYGf...) ou hex de exatamente 64 chars sem 0x
+EVM   : use exactly 40 hex chars with 0x (e.g.: 0xAbCd...1234)
+Solana: use standard Base58 (e.g.: EMAYGf...) or exactly 64 hex chars without 0x
 ```
 
-### ❌ `node_modules/@cosmjs/cosmwasm-stargate não encontrado`
+### ❌ `node_modules/@cosmjs/cosmwasm-stargate not found`
 
 ```bash
 cd ~/cw-hyperlane
@@ -597,16 +597,16 @@ yarn install
 
 ---
 
-## Links úteis
+## Useful links
 
-| Recurso | URL |
+| Resource | URL |
 |---|---|
-| Explorer Terra Classic | https://finder.hexxagon.io/rebel-2 |
-| Hyperlane Explorer (mensagens) | https://explorer.hyperlane.xyz |
+| Terra Classic Explorer | https://finder.hexxagon.io/rebel-2 |
+| Hyperlane Explorer (messages) | https://explorer.hyperlane.xyz |
 | Sepolia Etherscan | https://sepolia.etherscan.io |
 | BSC Testnet Explorer | https://testnet.bscscan.com |
 | Solana Testnet Explorer | https://explorer.solana.com/?cluster=testnet |
-| Mailbox Terra Classic | https://finder.hexxagon.io/rebel-2/address/terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf |
-| S3 Validator Terra Classic | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/ |
-| S3 Validator Sepolia | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/ |
-| S3 Validator BSC Testnet | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/ |
+| Terra Classic Mailbox | https://finder.hexxagon.io/rebel-2/address/terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf |
+| Terra Classic S3 Validator | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/ |
+| Sepolia S3 Validator | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/ |
+| BSC Testnet S3 Validator | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/ |

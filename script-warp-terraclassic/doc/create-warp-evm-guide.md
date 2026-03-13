@@ -1,61 +1,61 @@
-# Guia Completo: `create-warp-evm.sh`
+# Complete Guide: `create-warp-evm.sh`
 
-> Script interativo para criar e configurar Warp Routes Hyperlane em redes EVM conectadas à Terra Classic.  
-> Totalmente portável — basta copiar a pasta `script-warp-terraclassic/` para qualquer projeto `cw-hyperlane`.
+> Interactive script to create and configure Hyperlane Warp Routes on EVM networks connected to Terra Classic.  
+> Fully portable — just copy the `script-warp-terraclassic/` folder to any `cw-hyperlane` project.
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-1. [O que o script faz](#1-o-que-o-script-faz)
-2. [Pré-requisitos](#2-pré-requisitos)
-3. [Estrutura de arquivos](#3-estrutura-de-arquivos)
-4. [Configurando o `warp-evm-config.json`](#4-configurando-o-warp-evm-configjson)
-   - [Seção `terra_classic.tokens`](#41-seção-terra_classictokens)
-   - [Seção `networks`](#42-seção-networks)
-   - [Adicionando um novo token](#43-adicionando-um-novo-token)
-   - [Habilitando uma nova rede](#44-habilitando-uma-nova-rede)
-5. [Configurando o `config.yaml`](#5-configurando-o-configyaml)
-6. [Executando o script](#6-executando-o-script)
-   - [Execução completa (do zero)](#61-execução-completa-do-zero)
-   - [Deploy automático da Terra Classic](#62-deploy-automático-da-terra-classic)
-   - [Retomando após falha](#63-retomando-após-falha)
-   - [Pulando etapas já executadas](#64-pulando-etapas-já-executadas)
-7. [O que o script configura — Etapas detalhadas](#7-o-que-o-script-configura--etapas-detalhadas)
-8. [Deploy manual do IGP via Remix](#8-deploy-manual-do-igp-via-remix)
-9. [Deploy do Warp na Terra Classic (manual)](#9-deploy-do-warp-na-terra-classic-manual)
-10. [Atualizando o JSON após o deploy](#10-atualizando-o-json-após-o-deploy)
-11. [Scripts auxiliares](#11-scripts-auxiliares)
-12. [Usando em outro projeto (portabilidade)](#12-usando-em-outro-projeto-portabilidade)
+1. [What the script does](#1-what-the-script-does)
+2. [Prerequisites](#2-prerequisites)
+3. [File structure](#3-file-structure)
+4. [Configuring `warp-evm-config.json`](#4-configuring-warp-evm-configjson)
+   - [Section `terra_classic.tokens`](#41-section-terra_classictokens)
+   - [Section `networks`](#42-section-networks)
+   - [Adding a new token](#43-adding-a-new-token)
+   - [Enabling a new network](#44-enabling-a-new-network)
+5. [Configuring `config.yaml`](#5-configuring-configyaml)
+6. [Running the script](#6-running-the-script)
+   - [Full execution (from scratch)](#61-full-execution-from-scratch)
+   - [Automatic Terra Classic deploy](#62-automatic-terra-classic-deploy)
+   - [Resuming after failure](#63-resuming-after-failure)
+   - [Skipping already executed steps](#64-skipping-already-executed-steps)
+7. [What the script configures — Detailed steps](#7-what-the-script-configures--detailed-steps)
+8. [Manual IGP deploy via Remix](#8-manual-igp-deploy-via-remix)
+9. [Warp deploy on Terra Classic (manual)](#9-warp-deploy-on-terra-classic-manual)
+10. [Updating the JSON after deploy](#10-updating-the-json-after-deploy)
+11. [Helper scripts](#11-helper-scripts)
+12. [Using in another project (portability)](#12-using-in-another-project-portability)
 13. [Troubleshooting](#13-troubleshooting)
-14. [Correção manual do AggregationHook (sem o script)](#14-correção-manual-do-aggregationhook-sem-o-script)
-15. [Referência de endereços deployados](#15-referência-de-endereços-deployados)
-16. [Como encontrar endereços Hyperlane de qualquer rede](#16-como-encontrar-endereços-hyperlane-de-qualquer-rede)
+14. [Manual AggregationHook fix (without the script)](#14-manual-aggregationhook-fix-without-the-script)
+15. [Deployed address reference](#15-deployed-address-reference)
+16. [How to find Hyperlane addresses for any network](#16-how-to-find-hyperlane-addresses-for-any-network)
 
 ---
 
-## 1. O que o script faz
+## 1. What the script does
 
 O `create-warp-evm.sh` automatiza o deploy e a configuração completa de um Warp Route Hyperlane no lado EVM, conectado à Terra Classic.
 
 Para cada par **token + rede EVM** escolhido, o script executa de forma automatizada:
 
-| Componente | O que é | Por que é necessário |
+| Component | What it is | Why it is needed |
 |---|---|---|
-| **Terra Classic Warp** | Contrato `hpl_warp_cw20` ou `hpl_warp_native` | Ponto de entrada/saída na Terra Classic |
-| **Mailbox** | Hub central Hyperlane da rede EVM | Recebe e envia mensagens cross-chain |
-| **ISM** | Interchain Security Module (`messageIdMultisigIsm`) | Valida que as mensagens vieram da Terra Classic |
-| **IGP** | Contrato de gas customizado (`TerraClassicIGPStandalone`) | Calcula e cobra gas para execução na Terra Classic |
-| **AggregationHook** | `[MerkleTreeHook + IGP]` como hook do Warp | Garante que msgs entram na merkle tree (para o validator) **e** pagam o IGP |
-| **enrollRemoteRouter** | Vínculo bidirecional Warp EVM ↔ Warp Terra | Autoriza a rota cross-chain |
+| **Terra Classic Warp** | `hpl_warp_cw20` or `hpl_warp_native` contract | Entry/exit point on Terra Classic |
+| **Mailbox** | Hyperlane central hub of the EVM network | Receives and sends cross-chain messages |
+| **ISM** | Interchain Security Module (`messageIdMultisigIsm`) | Validates that messages came from Terra Classic |
+| **IGP** | Custom gas contract (`TerraClassicIGPStandalone`) | Calculates and charges gas for execution on Terra Classic |
+| **AggregationHook** | `[MerkleTreeHook + IGP]` as Warp hook | Ensures messages enter the merkle tree (for the validator) **and** pay the IGP |
+| **enrollRemoteRouter** | Bidirectional link Warp EVM ↔ Warp Terra | Authorizes the cross-chain route |
 
 ---
 
-## 2. Pré-requisitos
+## 2. Prerequisites
 
-### Ferramentas obrigatórias
+### Required tools
 
-| Ferramenta | Versão mínima | Instalação |
+| Tool | Min version | Installation |
 |---|---|---|
 | `bash` | 4+ | nativo no Linux/macOS |
 | `jq` | 1.6+ | `sudo apt install jq` |
@@ -66,25 +66,25 @@ Para cada par **token + rede EVM** escolhido, o script executa de forma automati
 
 > ⚠️ **A versão mínima do Hyperlane CLI é v26.** Versões anteriores falham com `invalid_enum_value` ao processar o protocolo `tron`. O script detecta isso e atualiza automaticamente.
 
-### Ferramentas recomendadas (deploy automático do IGP)
+### Recommended tools (automatic IGP deploy)
 
-| Ferramenta | Instalação |
+| Tool | Installation |
 |---|---|
 | `forge` (Foundry 1.x) | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` |
 | `cast` (Foundry 1.x) | Instalado junto com `forge` |
 
 > **Sem o Foundry**, o script pausa na Etapa 3 e exibe instruções para deploy manual via **Remix IDE** (veja [Seção 8](#8-deploy-manual-do-igp-via-remix)).
 
-### Saldo mínimo
+### Minimum balance
 
-| Rede | Saldo recomendado | Faucet |
+| Network | Recommended balance | Faucet |
 |---|---|---|
 | Sepolia | 0.1 ETH | [sepoliafaucet.com](https://sepoliafaucet.com) |
 | BSC Testnet | 0.1 BNB | [testnet.binance.org/faucet-smart](https://testnet.binance.org/faucet-smart) |
 
 ---
 
-## 3. Estrutura de arquivos
+## 3. File structure
 
 A pasta `script-warp-terraclassic/` é autocontida. Copie-a inteira para qualquer projeto `cw-hyperlane`:
 
@@ -117,9 +117,9 @@ script-warp-terraclassic/
     └── enroll-terra-router-guide.md       ← guia do enroll-terra-router.sh
 ```
 
-**Arquivos gerados automaticamente na execução:**
+**Files automatically generated during execution:**
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---|---|
 | `log/create-warp-evm.log` | Log completo da execução |
 | `warp/warp-<rede>-<token>.yaml` | YAML gerado para o CLI Hyperlane |
@@ -128,13 +128,13 @@ script-warp-terraclassic/
 
 ---
 
-## 4. Configurando o `warp-evm-config.json`
+## 4. Configuring `warp-evm-config.json`
 
-Este é o **arquivo central de configuração**. Todo o comportamento do script vem daqui.
+This is the **central configuration file**. All script behavior comes from here.
 
-### 4.1 Seção `terra_classic.tokens`
+### 4.1 Section `terra_classic.tokens`
 
-Define cada token com suas configurações para a Terra Classic.
+Defines each token with its Terra Classic configuration.
 
 ```json
 "terra_classic": {
@@ -153,39 +153,39 @@ Define cada token com suas configurações para a Terra Classic.
       "image": "https://url-da-imagem.png",
 
       "terra_warp": {
-        "type":               "cw20",       ← "cw20" ou "native"
-        "mode":               "collateral", ← "collateral" ou "locked"
-        "owner":              "terra1...",  ← endereço admin na Terra Classic
-        "denom":              "",           ← preencher se type = "native" (ex: "uluna")
-        "collateral_address": "terra1...", ← preencher se type = "cw20"
-        "warp_address":       "",          ← preenchido APÓS deploy Terra Classic
-        "warp_hexed":         "",          ← preenchido APÓS deploy Terra Classic
-        "deployed":           false        ← muda para true após o deploy
+        "type":               "cw20",       ← "cw20" or "native"
+        "mode":               "collateral", ← "collateral" or "locked"
+        "owner":              "terra1...",  ← admin address on Terra Classic
+        "denom":              "",           ← fill if type = "native" (e.g.: "uluna")
+        "collateral_address": "terra1...", ← fill if type = "cw20"
+        "warp_address":       "",          ← filled AFTER Terra Classic deploy
+        "warp_hexed":         "",          ← filled AFTER Terra Classic deploy
+        "deployed":           false        ← changes to true after deploy
       }
     }
   }
 }
 ```
 
-#### Tokens pré-configurados
+#### Pre-configured tokens
 
-| ID | Tipo | Warp Terra Classic | Status |
+| ID | Type | Terra Classic Warp | Status |
 |---|---|---|---|
-| `wlunc` | `native/collateral` (uluna) | `terra1zlm0h...` | ✅ Deployado |
-| `ustc` | `native/collateral` (uusd) | `terra1rnpvp...` | ✅ Deployado |
-| `juris` | `cw20/collateral` | `terra1stu3c...` | ✅ Deployado |
-| `xpto` | `cw20/collateral` | `terra16ql6l...` | ✅ Deployado |
+| `wlunc` | `native/collateral` (uluna) | `terra1zlm0h...` | ✅ Deployed |
+| `ustc` | `native/collateral` (uusd) | `terra1rnpvp...` | ✅ Deployed |
+| `juris` | `cw20/collateral` | `terra1stu3c...` | ✅ Deployed |
+| `xpto` | `cw20/collateral` | `terra16ql6l...` | ✅ Deployed |
 
 ---
 
-### 4.2 Seção `networks`
+### 4.2 Section `networks`
 
-Define cada rede EVM com todos os endereços Hyperlane e configurações do IGP.
+Defines each EVM network with all Hyperlane addresses and IGP configurations.
 
 ```json
 "networks": {
   "sepolia": {
-    "enabled": true,                        ← true = aparece no menu
+    "enabled": true,                        ← true = appears in menu
     "display_name": "Ethereum Sepolia Testnet",
     "chain_id": 11155111,
     "domain":   11155111,
@@ -193,7 +193,7 @@ Define cada rede EVM com todos os endereços Hyperlane e configurações do IGP.
     "native_token": { "symbol": "ETH", "decimals": 18 },
     "rpc_urls": [
       "https://ethereum-sepolia-rpc.publicnode.com",
-      "https://rpc.sepolia.org"             ← URL alternativa (fallback automático)
+      "https://rpc.sepolia.org"             ← alternate URL (automatic fallback)
     ],
     "explorer": "https://sepolia.etherscan.io",
 
@@ -204,7 +204,7 @@ Define cada rede EVM com todos os endereços Hyperlane e configurações do IGP.
     "ism": {
       "type":             "messageIdMultisigIsm",
       "factory":          "0xFEb9585b2f948c1eD74034205a7439261a9d27DD",
-      "deployed_address": "",               ← opcional: ISM já deployado
+      "deployed_address": "",               ← optional: ISM already deployed
       "validators":       [ "0x8804770d6a346210c0fd011258fdf3ab0a5bb0d0" ],
       "threshold":        1
     },
@@ -218,7 +218,7 @@ Define cada rede EVM com todos os endereços Hyperlane e configurações do IGP.
       "gas_oracle":      "0x7113Df4d1D8B230e6339011d10277a6E5AC4eC9c",
       "overhead_default": 200000,
       "terra_classic_config": {
-        "exchange_rate":   142244393,       ← veja cálculo abaixo
+        "exchange_rate":   142244393,       ← see calculation below
         "gas_price_wei":   38325000000
       }
     },
@@ -236,9 +236,9 @@ Define cada rede EVM com todos os endereços Hyperlane e configurações do IGP.
 }
 ```
 
-#### Cálculo do `exchange_rate`
+#### Calculating `exchange_rate`
 
-Configura o IGP para cobrar o valor correto em ETH/BNB para pagar o gas na Terra Classic.
+Configures the IGP to charge the correct ETH/BNB amount to pay gas on Terra Classic.
 
 ```
 exchange_rate = (PRECO_ETH_USD / PRECO_LUNC_USD) × 0,01
@@ -249,13 +249,13 @@ Exemplo:
   exchange_rate = (3500 / 0,00006069) × 0,01 ≈ 142.244.393
 ```
 
-> **Atualize este valor periodicamente** para refletir os preços reais do mercado.
+> **Update this value periodically** to reflect real market prices.
 
 ---
 
-### 4.3 Adicionando um novo token
+### 4.3 Adding a new token
 
-**Passo 1** — Adicione o token na seção `terra_classic.tokens`:
+**Step 1** — Add the token in the `terra_classic.tokens` section:
 
 ```json
 "novotoken": {
@@ -278,9 +278,9 @@ Exemplo:
 }
 ```
 
-> Para token **native**, preencha `"denom": "uluna"` (ou outro denom) e deixe `collateral_address` vazio.
+> For **native** tokens, fill `"denom": "uluna"` (or other denom) and leave `collateral_address` empty.
 
-**Passo 2** — Adicione o token em `warp_tokens` de **cada rede**:
+**Step 2** — Add the token in `warp_tokens` for **each network**:
 
 ```json
 "warp_tokens": {
@@ -294,14 +294,14 @@ Exemplo:
 }
 ```
 
-**Passo 3** — Execute o script, selecione o novo token e a rede desejada.  
-Se tiver `TERRA_PRIVATE_KEY` definida, o deploy da Terra Classic é **automático**.
+**Step 3** — Run the script, select the new token and the desired network.  
+If `TERRA_PRIVATE_KEY` is defined, the Terra Classic deploy is **automatic**.
 
 ---
 
-### 4.4 Habilitando uma nova rede
+### 4.4 Enabling a new network
 
-Para habilitar uma rede desabilitada, edite o campo `enabled`:
+To enable a disabled network, edit the `enabled` field:
 
 ```json
 "bsctestnet": {
@@ -310,22 +310,22 @@ Para habilitar uma rede desabilitada, edite o campo `enabled`:
 }
 ```
 
-> ⚠️ **Para redes mainnet**, confirme todos os endereços de contratos Hyperlane e o `exchange_rate` antes de executar.
+> ⚠️ **For mainnet networks**, confirm all Hyperlane contract addresses and `exchange_rate` before running.
 
 ---
 
-## 5. Configurando o `config.yaml`
+## 5. Configuring `config.yaml`
 
-O `config.yaml` contém as configurações da **conta na Terra Classic** usada pelo `cw-hpl` CLI para fazer deploys.
+The `config.yaml` contains the **Terra Classic account** settings used by the `cw-hpl` CLI for deployments.
 
 ```yaml
 networks:
   - id: 'terraclassic'
     chainId: 'rebel-2'
     hrp: 'terra'
-    signer: SUA_CHAVE_PRIVADA_TERRA_HEX   ← chave privada sem prefixo 0x
+    signer: YOUR_TERRA_PRIVATE_KEY_HEX   ← private key without 0x prefix
     endpoint:
-       rpc: 'https://rpc.terra-classic.hexxagon.dev'   ← use hexxagon (sincronizado)
+       rpc: 'https://rpc.terra-classic.hexxagon.dev'   ← use hexxagon (synchronized)
        rest: 'https://lcd.terra-classic.hexxagon.dev'
        grpc: 'https://grpc.terra-classic.hexxagon.dev'
     gas:
@@ -338,56 +338,56 @@ networks:
 
 ---
 
-## 6. Executando o script
+## 6. Running the script
 
-### 6.1 Execução completa (do zero)
+### 6.1 Full execution (from scratch)
 
 ```bash
-# 1. Entrar na pasta script-warp-terraclassic (ou na raiz do projeto)
+# 1. Enter the script-warp-terraclassic folder (or project root)
 cd ~/cw-hyperlane/script-warp-terraclassic
 
-# 2. Dar permissão de execução (apenas na primeira vez)
+# 2. Give execution permission (first time only)
 chmod +x create-warp-evm.sh
 
-# 3. Definir a chave privada EVM (owner do Warp)
+# 3. Set EVM private key (Warp owner)
 export ETH_PRIVATE_KEY="0xSUA_CHAVE_EVM"
 
-# 4. (Opcional) Definir a chave privada Terra Classic para deploy automático
+# 4. (Optional) Set Terra Classic private key for automatic deploy
 export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"
 
-# 5. Executar
+# 5. Run
 ./create-warp-evm.sh
 ```
 
-O script apresenta dois menus interativos:
+The script presents two interactive menus:
 
 ```
-PASSO 1 — SELECIONAR TOKEN (Terra Classic)
-   [1]  wlunc  — Wrapped Terra Classic LUNC  (native/collateral)  ✅ warp terra deployado
-   [2]  ustc   — Wrapped TerraClassic USD    (native/collateral)  ✅ warp terra deployado
-   [3]  juris  — Juris Token                 (cw20/collateral)    ✅ warp terra deployado
-   [4]  xpto   — XPTO Token                  (cw20/collateral)    ✅ warp terra deployado
+STEP 1 — SELECT TOKEN (Terra Classic)
+   [1]  wlunc  — Wrapped Terra Classic LUNC  (native/collateral)  ✅ terra warp deployed
+   [2]  ustc   — Wrapped TerraClassic USD    (native/collateral)  ✅ terra warp deployed
+   [3]  juris  — Juris Token                 (cw20/collateral)    ✅ terra warp deployed
+   [4]  xpto   — XPTO Token                  (cw20/collateral)    ✅ terra warp deployed
 
-  Escolha o token [1-4]: 4
+  Choose the token [1-4]: 4
 
-PASSO 2 — SELECIONAR REDE EVM
-   [1]  bsctestnet — BSC Testnet             [testnet] [novo deploy]
-   [2]  sepolia    — Ethereum Sepolia Testnet [testnet] [warp já deployado]
+STEP 2 — SELECT EVM NETWORK
+   [1]  bsctestnet — BSC Testnet             [testnet] [new deploy]
+   [2]  sepolia    — Ethereum Sepolia Testnet [testnet] [warp already deployed]
 
-  Escolha a rede [1-2]: 2
+  Choose the network [1-2]: 2
 
-▶ Prosseguir com deploy de XPTO na rede Ethereum Sepolia Testnet? [s/N]: s
+▶ Proceed with XPTO deploy on Ethereum Sepolia Testnet? [s/N]: s
 ```
 
 ---
 
-### 6.2 Deploy automático da Terra Classic
+### 6.2 Automatic Terra Classic deploy
 
-Quando um token ainda não tem Warp na Terra Classic (`deployed: false`), o script oferece **duas opções**:
+When a token does not yet have a Warp on Terra Classic (`deployed: false`), the script offers **two options**:
 
-#### Opção A — Automático (recomendado)
+#### Option A — Automatic (recommended)
 
-Defina `TERRA_PRIVATE_KEY` e o script faz tudo sozinho:
+Set `TERRA_PRIVATE_KEY` and the script does everything automatically:
 
 ```bash
 export ETH_PRIVATE_KEY="0xSUA_CHAVE_EVM"
@@ -395,18 +395,18 @@ export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"  ← chave sem prefixo 0x
 ./create-warp-evm.sh
 ```
 
-O script irá automaticamente:
-1. Gerar o arquivo de configuração `warp/terraclassic-<tipo>-<token>.json`
-2. Copiar o `config.yaml` para a raiz do projeto (necessário para o `yarn cw-hpl`)
-3. Executar `yarn cw-hpl warp create ... -n terraclassic`
-4. Extrair o endereço `terra1...` do output
-5. Converter para hex `0x...` (via Python3 — `bech32_to_hex`)
-6. Atualizar o `warp-evm-config.json` automaticamente
-7. Continuar para o `enrollRemoteRouter` no lado EVM
+The script will automatically:
+1. Generate the configuration file `warp/terraclassic-<type>-<token>.json`
+2. Copy `config.yaml` to the project root (required for `yarn cw-hpl`)
+3. Execute `yarn cw-hpl warp create ... -n terraclassic`
+4. Extract the `terra1...` address from the output
+5. Convert to hex `0x...` (via Python3 — `bech32_to_hex`)
+6. Update `warp-evm-config.json` automatically
+7. Continue to `enrollRemoteRouter` on the EVM side
 
-#### Opção B — Manual
+#### Option B — Manual
 
-Sem `TERRA_PRIVATE_KEY`, o script exibe as instruções e aguarda:
+Without `TERRA_PRIVATE_KEY`, the script displays instructions and waits:
 
 ```bash
 cd ~/cw-hyperlane
@@ -416,20 +416,20 @@ yarn cw-hpl warp create \
   -n terraclassic
 ```
 
-Após o deploy, **preencha o `warp-evm-config.json`** com o endereço retornado (veja [Seção 10](#10-atualizando-o-json-após-o-deploy)) e reexecute o script.
+After deploy, **fill `warp-evm-config.json`** with the returned address (see [Section 10](#10-updating-the-json-after-deploy)) and re-run the script.
 
 ---
 
-### 6.3 Retomando após falha
+### 6.3 Resuming after failure
 
-O script salva o estado em `.warp-evm-state.json`. Para retomar:
+The script saves state in `.warp-evm-state.json`. To resume:
 
 ```bash
 ./create-warp-evm.sh
-# O script detecta o estado anterior e informa os endereços salvos
+# The script detects previous state and reports saved addresses
 ```
 
-Para **recomeçar do zero** (apagar estado):
+To **start from scratch** (delete state):
 
 ```bash
 rm -f .warp-evm-state.json
@@ -438,18 +438,18 @@ rm -f .warp-evm-state.json
 
 ---
 
-### 6.4 Pulando etapas já executadas
+### 6.4 Skipping already executed steps
 
-Use variáveis de ambiente para informar contratos já deployados:
+Use environment variables to inform already deployed contracts:
 
 ```bash
-# Warp Route EVM já deployado → pula Etapa 2
+# Warp Route EVM already deployed → skips Step 2
 export WARP_ADDRESS="0xENDERECO_WARP"
 
-# IGP já deployado → pula Etapa 3
+# IGP already deployed → skips Step 3
 export IGP_ADDRESS="0xENDERECO_IGP"
 
-# Pular o enrollRemoteRouter
+# Skip enrollRemoteRouter
 export SKIP_ENROLL="1"
 
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
@@ -458,11 +458,11 @@ export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 
 ---
 
-## 7. O que o script configura — Etapas detalhadas
+## 7. What the script configures — Detailed steps
 
-### Etapa 1 — Gerar Warp YAML
+### Step 1 — Generate Warp YAML
 
-Gera o arquivo `warp/warp-<rede>-<token>.yaml` para o Hyperlane CLI:
+Generates the file `warp/warp-<network>-<token>.yaml` for the Hyperlane CLI:
 
 ```yaml
 # Exemplo: warp/warp-sepolia-xpto.yaml
@@ -483,9 +483,9 @@ sepolia:
 
 ---
 
-### Etapa 2 — Deploy Warp Route
+### Step 2 — Deploy Warp Route
 
-Executa o deploy do token sintético na rede EVM via Hyperlane CLI:
+Executes the synthetic token deploy on the EVM network via Hyperlane CLI:
 
 ```bash
 hyperlane warp deploy \
@@ -494,15 +494,15 @@ hyperlane warp deploy \
   --yes
 ```
 
-Cria o contrato ERC20 sintético (`wXPTO`) e registra no Mailbox da rede.
+Creates the synthetic ERC20 contract (`wXPTO`) and registers it in the network Mailbox.
 
 ---
 
-### Etapa 3 — Deploy IGP customizado
+### Step 3 — Deploy custom IGP
 
-Deploya o `TerraClassicIGPStandalone` com `hookType = 4`.
+Deploys `TerraClassicIGPStandalone` with `hookType = 4`.
 
-O script usa `cast send --create` com o bytecode compilado pelo Foundry (compatível com **Foundry v1.5+**, que entrou em modo dry-run por padrão no `forge create`):
+The script uses `cast send --create` with bytecode compiled by Foundry (compatible with **Foundry v1.5+**, which defaulted to dry-run mode in `forge create`):
 
 ```bash
 # Compilação
@@ -516,7 +516,7 @@ cast send \
   --create $BYTECODE_COM_ARGS_CONSTRUCTOR
 ```
 
-| Parâmetro | Valor |
+| Parameter | Value |
 |---|---|
 | `_GASORACLE` | Oracle oficial Hyperlane da rede |
 | `_GASOVERHEAD` | `200000` |
@@ -524,9 +524,9 @@ cast send \
 
 ---
 
-### Etapa 4 — Configurar Gas Oracle
+### Step 4 — Configure Gas Oracle
 
-Chama `setRemoteGasData` no **GAS ORACLE** (não no IGP) para configurar a taxa de câmbio e gas price:
+Calls `setRemoteGasData` on the **GAS ORACLE** (not the IGP) to configure the exchange rate and gas price:
 
 ```bash
 cast send $GAS_ORACLE \
@@ -535,7 +535,7 @@ cast send $GAS_ORACLE \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-| Parâmetro | Significado |
+| Parameter | Meaning |
 |---|---|
 | `1325` | Domain ID da Terra Classic |
 | `142244393` | Exchange rate ETH/LUNC (escala 1e8) |
@@ -545,39 +545,39 @@ cast send $GAS_ORACLE \
 
 ---
 
-### Etapa 5 — Configurar Hook (AggregationHook = MerkleTree + IGP)
+### Step 5 — Configure Hook (AggregationHook = MerkleTree + IGP)
 
-O Warp precisa usar um **`AggregationHook`** que combina:
+The Warp needs to use an **`AggregationHook`** that combines:
 
-- **`MerkleTreeHook`** — insere a mensagem na árvore merkle do Mailbox, permitindo que o validator a assine
-- **`IGP customizado`** — cobra o gas no momento do envio
+- **`MerkleTreeHook`** — inserts the message into the Mailbox merkle tree, allowing the validator to sign it
+- **Custom `IGP`** — charges gas at the time of dispatch
 
 > ⚠️ **Por que não usar o IGP diretamente como hook?**
 > O `requiredHook` do Mailbox Sepolia é o `ProtocolFee` (não o MerkleTreeHook). O MerkleTreeHook faz parte
 > do `defaultHook`. Ao setar um hook customizado no Warp sem incluir o MerkleTree, as mensagens **nunca
 > entram na merkle tree** — o validator não as vê e não as assina, impedindo a entrega na Terra Classic.
 
-O script deploya o `AggregationHook` via factory e o seta no Warp:
+The script deploys the `AggregationHook` via factory and sets it on the Warp:
 
 ```bash
-# 1. Deploy do AggregationHook (endereço deterministico via factory)
+# 1. Deploy AggregationHook (deterministic address via factory)
 cast call $AGG_HOOK_FACTORY \
   "deploy(address[])(address)" \
   "[$MERKLE_TREE_HOOK,$IGP_ADDRESS]" \
   --rpc-url $RPC
 
-# 2. Deploy on-chain
+# 2. On-chain deploy
 cast send $AGG_HOOK_FACTORY \
   "deploy(address[])" \
   "[$MERKLE_TREE_HOOK,$IGP_ADDRESS]" \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# 3. Setar no Warp Route
+# 3. Set on Warp Route
 cast send $WARP_ADDRESS "setHook(address)" $AGG_HOOK_ADDRESS \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-| Parâmetro | Endereço (Sepolia) |
+| Parameter | Address (Sepolia) |
 |---|---|
 | `MERKLE_TREE_HOOK` | `0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d` |
 | `AGG_HOOK_FACTORY` | `0x160C28C92cA453570aD7C031972b58d5Dd128F72` |
@@ -586,9 +586,9 @@ O endereço do `AggregationHook` deployado é salvo em `hook_aggregation` no `wa
 
 ---
 
-### Etapa 6 — Configurar ISM
+### Step 6 — Configure ISM
 
-Se um `deployed_address` estiver definido no JSON, o script aplica ao Warp Route:
+If a `deployed_address` is defined in the JSON, the script applies it to the Warp Route:
 
 ```bash
 cast send $WARP_ADDRESS \
@@ -596,13 +596,13 @@ cast send $WARP_ADDRESS \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-Caso contrário, o Warp herda o ISM padrão do Mailbox (comportamento normal).
+Otherwise, the Warp inherits the Mailbox default ISM (normal behavior).
 
 ---
 
-### Etapa 7 — enrollRemoteRouter (EVM → Terra Classic)
+### Step 7 — enrollRemoteRouter (EVM → Terra Classic)
 
-Registra o Warp Terra Classic no contrato EVM, autorizando mensagens vindas do domínio 1325:
+Registers the Terra Classic Warp on the EVM contract, authorizing messages from domain 1325:
 
 ```bash
 cast send $WARP_ADDRESS \
@@ -611,20 +611,20 @@ cast send $WARP_ADDRESS \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-O `bytes32` é o endereço `terra1...` do Warp na Terra Classic convertido de bech32 para hex de 32 bytes.
+The `bytes32` is the `terra1...` address of the Warp on Terra Classic converted from bech32 to 32-byte hex.
 
 > ⚠️ **Atenção ao formato bytes32:** endereços CosmWasm têm 32 bytes (64 hex chars) — não devem ser
 > tratados como endereços EVM (20 bytes). A função `to_bytes32` do script foi corrigida para distinguir
 > automaticamente os dois tipos: usa padding esquerdo com zeros apenas para endereços EVM (40 chars),
 > e mantém o hash CosmWasm inalterado quando já tem 64 chars.
 
-> Esta etapa é **pulada** se `deployed: false` no JSON e `TERRA_PRIVATE_KEY` não foi definida.
+> This step is **skipped** if `deployed: false` in the JSON and `TERRA_PRIVATE_KEY` is not set.
 
 ---
 
-### Etapa 7B — set_route (Terra Classic → EVM)
+### Step 7B — set_route (Terra Classic → EVM)
 
-Registra o Warp EVM no contrato Warp da Terra Classic, criando o **vínculo bidirecional** completo:
+Registers the EVM Warp on the Terra Classic Warp contract, creating the complete **bidirectional link**:
 
 ```javascript
 // CosmWasm execute (executado via Node.js + @cosmjs)
@@ -649,11 +649,11 @@ Para executar manualmente depois, use o script auxiliar `enroll-terra-router.sh`
 
 ---
 
-### Etapa 8 — Verificação final
+### Step 8 — Final verification
 
-O script verifica on-chain via `cast call`:
+The script verifies on-chain via `cast call`:
 
-| Verificação | Função | Esperado |
+| Verification | Function | Expected |
 |---|---|---|
 | Mailbox existe | `eth_getCode` | bytecode != `0x` |
 | Warp Route existe | `eth_getCode` | bytecode != `0x` |
@@ -663,13 +663,13 @@ O script verifica on-chain via `cast call`:
 | Router Terra (EVM→Terra) | `routers(uint32)(bytes32)` | bytes32 do Warp Terra |
 | Router EVM (Terra→EVM) | `router.list_routes` (CosmWasm) | domain EVM → bytes32 do Warp EVM |
 
-> Se a verificação do Router Terra mostrar `0x000...`, execute `enroll-terra-router.sh` manualmente.
+> If the Terra Router verification shows `0x000...`, run `enroll-terra-router.sh` manually.
 
 ---
 
-## 8. Deploy manual do IGP via Remix
+## 8. Manual IGP deploy via Remix
 
-Quando o Foundry não está instalado, o script para na Etapa 3 com instruções. Siga:
+When Foundry is not installed, the script stops at Step 3 with instructions. Follow:
 
 **1.** Abra [remix.ethereum.org](https://remix.ethereum.org)
 
@@ -705,27 +705,27 @@ export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 
 ---
 
-## 9. Deploy do Warp na Terra Classic (manual)
+## 9. Warp deploy on Terra Classic (manual)
 
-Para fazer o deploy manualmente (sem `TERRA_PRIVATE_KEY`):
+To deploy manually (without `TERRA_PRIVATE_KEY`):
 
-### Token CW20
+### CW20 Token
 
 ```bash
-# 1. Criar o arquivo de configuração (já existe em warp/)
+# 1. Create the configuration file (already exists in warp/)
 cat warp/terraclassic-cw20-novotoken.json
 
-# 2. Definir chave privada
+# 2. Set private key
 export PRIVATE_KEY="SUA_CHAVE_TERRA_HEX"  ← sem prefixo 0x
 
-# 3. Deploy (rodar da raiz do projeto)
+# 3. Deploy (run from project root)
 cd ~/cw-hyperlane
 yarn cw-hpl warp create \
   ./warp/terraclassic-cw20-novotoken.json \
   -n terraclassic
 ```
 
-### Token Native
+### Native Token
 
 ```bash
 cat warp/terraclassic-native-novotoken.json
@@ -735,21 +735,21 @@ yarn cw-hpl warp create \
   -n terraclassic
 ```
 
-**Saída esperada:**
+**Expected output:**
 ```
 [DEBUG] [contract] deploying hpl_warp_cw20
 [INFO]  [contract] deployed hpl_warp_cw20 at terra1ENDERECODEPLOY...
 ```
 
-Após o deploy, o endereço é automaticamente salvo em `context/terraclassic.json`.
+After deploy, the address is automatically saved in `context/terraclassic.json`.
 
 ---
 
-## 10. Atualizando o JSON após o deploy
+## 10. Updating the JSON after deploy
 
-### Após deploy do Warp na Terra Classic
+### After Warp deploy on Terra Classic
 
-Abra `warp-evm-config.json` e preencha a seção do token:
+Open `warp-evm-config.json` and fill in the token section:
 
 ```json
 "novotoken": {
@@ -761,7 +761,7 @@ Abra `warp-evm-config.json` e preencha a seção do token:
 }
 ```
 
-**Convertendo bech32 → hex manualmente:**
+**Converting bech32 → hex manually:**
 
 ```bash
 python3 - "terra1ENDERECO..." <<'EOF'
@@ -782,7 +782,7 @@ print('0x' + ''.join(f'{b:02x}' for b in result))
 EOF
 ```
 
-### Após deploy do Warp e IGP na rede EVM
+### After Warp and IGP deploy on the EVM network
 
 ```json
 "warp_tokens": {
@@ -798,20 +798,20 @@ EOF
 
 ---
 
-## 11. Scripts auxiliares
+## 11. Helper scripts
 
-A pasta `script-warp-terraclassic/` contém scripts de suporte para operações pontuais — úteis tanto para correções manuais quanto para uso após o deploy inicial.
+The `script-warp-terraclassic/` folder contains support scripts for specific operations — useful for manual corrections and post-deploy use.
 
 ---
 
-### `enroll-terra-router.sh` — Vincular rota EVM no Warp Terra Classic
+### `enroll-terra-router.sh` — Link EVM route in Terra Classic Warp
 
-Chama `router.set_route` no contrato Warp da **Terra Classic** para registrar um Warp EVM como roteador autorizado.
+Calls `router.set_route` on the **Terra Classic** Warp contract to register an EVM Warp as an authorized router.
 
-**Quando usar:**
-- O deploy foi feito sem `TERRA_PRIVATE_KEY` (Etapa 7B pulada)
-- O `transfer_remote` falha com `route not found`
-- Precisa re-registrar a rota após troca do contrato EVM
+**When to use:**
+- Deploy was done without `TERRA_PRIVATE_KEY` (Step 7B skipped)
+- `transfer_remote` fails with `route not found`
+- Need to re-register the route after replacing the EVM contract
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
@@ -819,17 +819,17 @@ export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 ./enroll-terra-router.sh
 ```
 
-O script apresenta menus interativos para selecionar token e rede, mostra o resumo da operação e pede confirmação antes de enviar.
+The script presents interactive menus to select token and network, shows the operation summary, and asks for confirmation before sending.
 
 > 📄 Documentação completa: [`doc/enroll-terra-router-guide.md`](./enroll-terra-router-guide.md)
 
 ---
 
-### `transfer-cw20-terra.sh` — Transferir tokens CW20 na Terra Classic
+### `transfer-cw20-terra.sh` — Transfer CW20 tokens on Terra Classic
 
-Realiza uma transferência simples de tokens CW20 entre contas na Terra Classic.
+Performs a simple CW20 token transfer between accounts on Terra Classic.
 
-**Configurações padrão** (sobrescrevíveis via env vars):
+**Default settings** (overridable via env vars):
 
 | Variável | Padrão |
 |---|---|
@@ -842,55 +842,55 @@ Realiza uma transferência simples de tokens CW20 entre contas na Terra Classic.
 cd ~/cw-hyperlane/script-warp-terraclassic
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 
-# Transferência padrão (100 XPTO)
+# Default transfer (100 XPTO)
 ./transfer-cw20-terra.sh
 
-# Ou com valores customizados
+# Or with custom values
 export AMOUNT="50000000000"
 export RECIPIENT_ADDRESS="terra1OUTRO..."
 ./transfer-cw20-terra.sh
 ```
 
-O script exibe saldos antes e depois, salva relatório em `log/TRANSFER-CW20-<timestamp>.txt`.
+The script displays balances before and after, saves report in `log/TRANSFER-CW20-<timestamp>.txt`.
 
 ---
 
-## 12. Usando em outro projeto (portabilidade)
+## 12. Using in another project (portability)
 
-A pasta `script-warp-terraclassic/` foi projetada para ser **100% portável**. O script detecta automaticamente a raiz do projeto (onde está o `package.json`) subindo os diretórios.
+The `script-warp-terraclassic/` folder is designed to be **100% portable**. The script automatically detects the project root (where `package.json` is) by traversing parent directories.
 
-### Copiar para um novo projeto
+### Copy to a new project
 
 ```bash
-# Copiar a pasta inteira
+# Copy the entire folder
 cp -r script-warp-terraclassic/ /caminho/do/novo-projeto/script-warp-terraclassic/
 
-# Entrar na pasta
+# Enter the folder
 cd /caminho/do/novo-projeto/script-warp-terraclassic/
 
-# Executar
+# Run
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 ./create-warp-evm.sh
 ```
 
-### O que o script resolve automaticamente
+### What the script handles automatically
 
-| Situação | O que acontece |
+| Situation | What happens |
 |---|---|
-| `package.json` está no diretório pai | `PROJECT_ROOT` é definido como o pai |
-| `config.yaml` está em `script-warp-terraclassic/` mas o `yarn cw-hpl` precisa na raiz | O script copia automaticamente antes de executar |
-| `context/terraclassic.json` é escrito pelo `cw-hpl` na raiz | O script lê do `PROJECT_ROOT/context/` |
+| `package.json` is in the parent directory | `PROJECT_ROOT` is set as the parent |
+| `config.yaml` is in `script-warp-terraclassic/` but `yarn cw-hpl` needs it at root | The script automatically copies it before running |
+| `context/terraclassic.json` is written by `cw-hpl` at root | The script reads from `PROJECT_ROOT/context/` |
 
-### Requisito único
+### Single requirement
 
-O projeto de destino deve ser um `cw-hyperlane` com o `yarn build` já executado (ou seja, `dist/index.js` deve existir). Verifique:
+The target project must be a `cw-hyperlane` with `yarn build` already executed (i.e., `dist/index.js` must exist). Verify:
 
 ```bash
-ls /caminho/do/novo-projeto/dist/index.js   # deve existir
+ls /caminho/do/novo-projeto/dist/index.js   # must exist
 ```
 
-Se não existir:
+If it does not exist:
 ```bash
 cd /caminho/do/novo-projeto
 yarn install && yarn build
@@ -902,8 +902,8 @@ yarn install && yarn build
 
 ### ❌ `ZodError: "received": "tron", "code": "invalid_enum_value"`
 
-**Causa:** Hyperlane CLI abaixo da versão 26 não reconhece o protocolo `tron`.  
-**Solução:** O script atualiza automaticamente. Para forçar manualmente:
+**Cause:** Hyperlane CLI below version 26 does not recognize the `tron` protocol.  
+**Fix:** The script updates automatically. To force manually:
 
 ```bash
 npm install -g @hyperlane-xyz/cli@latest
@@ -914,8 +914,8 @@ hyperlane --version   # deve mostrar 26.x ou superior
 
 ### ❌ `"String must contain at least 1 character"` ao executar `hyperlane warp deploy`
 
-**Causa:** `ETH_PRIVATE_KEY` não está definida ou está vazia.  
-**Solução:**
+**Cause:** `ETH_PRIVATE_KEY` is not set or is empty.  
+**Fix:**
 
 ```bash
 export ETH_PRIVATE_KEY="0xSUA_CHAVE_COMPLETA_COM_0x"
@@ -926,23 +926,23 @@ export ETH_PRIVATE_KEY="0xSUA_CHAVE_COMPLETA_COM_0x"
 
 ### ❌ `"Warning: Dry run enabled, not broadcasting transaction"` (Forge v1.5+)
 
-**Causa:** O Foundry v1.5 passou a usar dry-run por padrão no `forge create`.  
-**Solução:** O script já usa `cast send --create` com bytecode compilado. Se ocorrer com versões antigas do script, atualize o script ou use Remix (Seção 8).
+**Cause:** Foundry v1.5 started using dry-run by default in `forge create`.  
+**Fix:** The script already uses `cast send --create` with compiled bytecode. If this occurs with older script versions, update the script or use Remix (Section 8).
 
 ---
 
 ### ❌ `TimeoutError2` + `account sequence mismatch, expected N, got N-1`
 
-**Causa:** O RPC da Terra Classic está dias atrasado. A TX foi enviada para um nó desatualizado e o CLI expirou esperando confirmação.
+**Cause:** The Terra Classic RPC is days behind. The TX was sent to an outdated node and the CLI timed out waiting for confirmation.
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Comparar blocos dos RPCs
+# Compare RPC block heights
 curl -s "https://rpc.luncblaze.com/status" | jq '.result.sync_info.latest_block_height'
 curl -s "https://rpc.terra-classic.hexxagon.dev/status" | jq '.result.sync_info.latest_block_height'
 ```
 
-**Solução:** Use sempre o `hexxagon` no `config.yaml`:
+**Fix:** Always use `hexxagon` in `config.yaml`:
 
 ```yaml
 endpoint:
@@ -955,8 +955,8 @@ endpoint:
 
 ### ❌ `"Failed to estimate gas: execution reverted"` ao chamar `setRemoteGasData`
 
-**Causa:** `setRemoteGasData` está sendo chamado no contrato IGP em vez do **Gas Oracle**.  
-**Solução:** Use o endereço do `igp.gas_oracle` do JSON, **não** o `igp_custom`:
+**Cause:** `setRemoteGasData` is being called on the IGP contract instead of the **Gas Oracle**.  
+**Fix:** Use the `igp.gas_oracle` address from the JSON, **not** `igp_custom`:
 
 ```bash
 cast send $GAS_ORACLE \
@@ -969,73 +969,73 @@ cast send $GAS_ORACLE \
 
 ### ❌ Mensagem enviada (Sepolia → Terra Classic) mas não chega — validator não assina
 
-**Causa:** O hook do Warp EVM não inclui o `MerkleTreeHook`. Sem ele, a mensagem **não entra na
-merkle tree** do Mailbox e o validator nunca a vê para assinar o checkpoint.
+**Cause:** The EVM Warp hook does not include the `MerkleTreeHook`. Without it, the message **never enters the
+merkle tree** of the Mailbox and the validator never sees it to sign the checkpoint.
 
-Isso ocorre quando o Warp usa o `IGP customizado` diretamente como hook, sem o `AggregationHook`.
+This happens when the Warp uses the custom `IGP` directly as a hook, without the `AggregationHook`.
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
 RPC="https://ethereum-sepolia-rpc.publicnode.com"
 WARP="0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048"
 MERKLE="0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d"
 
-# 1. Verificar o hook atual do Warp
+# 1. Check the current Warp hook
 cast call $WARP "hook()(address)" --rpc-url $RPC
 
-# 2. Verificar o tamanho da merkle tree — deve crescer a cada dispatch
+# 2. Check merkle tree size — should grow with each dispatch
 cast call $MERKLE "count()(uint32)" --rpc-url $RPC
 
-# 3. Verificar o último checkpoint assinado pelo validator no S3
+# 3. Check the last checkpoint signed by the validator on S3
 curl -s "https://BUCKET.s3.REGION.amazonaws.com/checkpoint_latest_index.json"
-# Se o índice for menor que o nonce da mensagem → validator não assinou ainda
+# If index is less than message nonce → validator has not signed yet
 ```
 
-**Solução:** Atualizar o hook para um `AggregationHook = [MerkleTreeHook + IGP]`:
+**Fix:** Update the hook to an `AggregationHook = [MerkleTreeHook + IGP]`:
 
 ```bash
 AGG_FACTORY="0x160C28C92cA453570aD7C031972b58d5Dd128F72"
 MERKLE="0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d"
 IGP_CUSTOM="0xSEU_IGP_CUSTOM"
 
-# Deploy do AggregationHook
+# Deploy AggregationHook
 cast send $AGG_FACTORY \
   "deploy(address[])" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# Obter o endereço
+# Get the address
 AGG_HOOK=$(cast call $AGG_FACTORY \
   "deploy(address[])(address)" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC)
 
-# Setar no Warp
+# Set on Warp
 cast send $WARP "setHook(address)" $AGG_HOOK \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-> O `create-warp-evm.sh` já implementa essa lógica automaticamente na Etapa 5.
-> Para Warps já deployados, basta reexecutar o script com `WARP_ADDRESS` e `IGP_ADDRESS` definidos.
+> The `create-warp-evm.sh` already implements this logic automatically in Step 5.
+> For already deployed Warps, just re-run the script with `WARP_ADDRESS` and `IGP_ADDRESS` set.
 
 ---
 
 ### ❌ `"destination not supported"` ao transferir
 
-**Causa:** O hook do Warp não inclui um IGP com `hookType=4` (INTERCHAIN_GAS_PAYMASTER), ou o
-`AggregationHook` está incorreto.
+**Cause:** The Warp hook does not include an IGP with `hookType=4` (INTERCHAIN_GAS_PAYMASTER), or the
+`AggregationHook` is incorrect.
 
-**Diagnóstico e solução:**
+**Diagnosis and fix:**
 
 ```bash
-# Verificar hook atual (deve ser o AggregationHook)
+# Check current hook (should be the AggregationHook)
 cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 
-# Verificar hookType do IGP customizado (deve ser 4)
+# Check custom IGP hookType (must be 4)
 cast call $IGP_CUSTOM "hookType()(uint8)" --rpc-url $RPC
 
-# Verificar count da merkle tree (deve crescer a cada dispatch)
+# Check merkle tree count (should grow with each dispatch)
 cast call $MERKLE_TREE "count()(uint32)" --rpc-url $RPC
 
-# Se o hook não for o AggregationHook correto, reconfigure (ver seção anterior)
+# If hook is not the correct AggregationHook, reconfigure (see previous section)
 ```
 
 ---
@@ -1043,17 +1043,17 @@ cast call $MERKLE_TREE "count()(uint32)" --rpc-url $RPC
 ### ❌ `"insufficient funds"` no enrollRemoteRouter
 
 **Causa:** A carteira sendo usada não tem saldo **ou** não é o owner do Warp.  
-**Diagnóstico:**
+**Diagnosis:**
 
 ```bash
-# Verificar owner do contrato
+# Check contract owner
 cast call $WARP_ADDRESS "owner()(address)" --rpc-url $RPC
 
-# Verificar saldo
+# Check balance
 cast balance SEU_ENDERECO --rpc-url $RPC | xargs cast to-unit ether
 ```
 
-O `enrollRemoteRouter` deve ser chamado pelo **owner** do Warp Route. Use `ETH_PRIVATE_KEY` da carteira owner.
+The `enrollRemoteRouter` must be called by the **owner** of the Warp Route. Use `ETH_PRIVATE_KEY` from the owner wallet.
 
 ---
 
@@ -1068,7 +1068,7 @@ brew install jq                   # macOS
 
 ### ❌ `"RPC indisponível"`
 
-O script tenta o RPC alternativo automaticamente. Para forçar um RPC específico, edite `rpc_urls` no `warp-evm-config.json`:
+The script automatically tries the alternative RPC. To force a specific RPC, edit `rpc_urls` in `warp-evm-config.json`:
 
 ```json
 "rpc_urls": [
@@ -1081,7 +1081,7 @@ O script tenta o RPC alternativo automaticamente. Para forçar um RPC específic
 
 ### ⚠️ `exchange_rate` desatualizado (transferência muito cara ou muito barata)
 
-Recalcule e atualize o `warp-evm-config.json`:
+Recalculate and update `warp-evm-config.json`:
 
 ```
 exchange_rate = (PRECO_ETH_USD / PRECO_LUNC_USD) × 0,01
@@ -1090,18 +1090,18 @@ Exemplo com ETH = $2.000 e LUNC = $0,00005:
   (2000 / 0,00005) × 0,01 = 80.000.000
 ```
 
-Atualize em `igp.terra_classic_config.exchange_rate` e reexecute a Etapa 4 (Gas Oracle).
+Update in `igp.terra_classic_config.exchange_rate` and re-run Step 4 (Gas Oracle).
 
 ---
 
 ### ❌ `"route not found"` ao chamar `transfer_remote` na Terra Classic
 
-**Causa:** O contrato Warp da Terra Classic não tem a rota para o domínio EVM de destino.
-A Etapa 7B (`set_route`) foi pulada ou falhou durante o deploy.
+**Cause:** The Terra Classic Warp contract does not have a route for the destination EVM domain.
+Step 7B (`set_route`) was skipped or failed during deploy.
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Verificar rotas registradas no Warp Terra Classic
+# Check routes registered on the Terra Classic Warp
 node -e "
 const p=require('path'), nm=p.join('/home/lunc/cw-hyperlane','node_modules');
 const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
@@ -1112,7 +1112,7 @@ const {CosmWasmClient}=require(p.join(nm,'@cosmjs/cosmwasm-stargate'));
 })();"
 ```
 
-**Solução:** Execute o script de correção:
+**Fix:** Run the correction script:
 ```bash
 export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 ./enroll-terra-router.sh
@@ -1122,8 +1122,8 @@ export TERRA_PRIVATE_KEY="sua_chave_terra_hex"
 
 ### ❌ Message ID não aparece nos eventos do Mailbox de destino
 
-**Causa:** A mensagem foi despachada na origem mas o **relayer** ainda não a entregou na cadeia de destino.  
-O processo de entrega Hyperlane tem 3 etapas independentes:
+**Cause:** The message was dispatched at the origin but the **relayer** has not yet delivered it to the destination chain.  
+The Hyperlane delivery process has 3 independent steps:
 
 ```
 1. Origem:   Mailbox.dispatch() → gera message_id
@@ -1131,78 +1131,78 @@ O processo de entrega Hyperlane tem 3 etapas independentes:
 3. Relayer:  lê as assinaturas e chama Mailbox.process() no destino
 ```
 
-**Diagnóstico completo:**
+**Full diagnosis:**
 ```bash
 RPC="https://ethereum-sepolia-rpc.publicnode.com"
 MAILBOX="0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766"
 MSG_ID="0xSEU_MESSAGE_ID"
 
-# 1. Mensagem foi entregue?
+# 1. Was the message delivered?
 cast call $MAILBOX "delivered(bytes32)(bool)" $MSG_ID --rpc-url $RPC
 
-# 2. Router EVM está configurado? (deve ser != 0x000...)
+# 2. Is the EVM Router configured? (must be != 0x000...)
 cast call $SEU_WARP_EVM "routers(uint32)(bytes32)" 1325 --rpc-url $RPC
 
-# 3. Verificar no Hyperlane Explorer:
+# 3. Check in Hyperlane Explorer:
 # https://explorer.hyperlane.xyz/message/$MSG_ID
 ```
 
-**Causas comuns e soluções:**
+**Common causes and fixes:**
 
-| Causa | Diagnóstico | Solução |
+| Cause | Diagnosis | Fix |
 |---|---|---|
-| `enrollRemoteRouter(1325)` faltando no Warp EVM | `routers(1325)` retorna `0x000...` | `cast send $WARP "enrollRemoteRouter(uint32,bytes32)" 1325 0xHEX_TERRA --private-key $ETH_KEY --legacy` |
-| Validador não assinando | Último checkpoint S3 é antigo | Reiniciar o validador Hyperlane |
-| Relayer não rodando | Nenhuma tentativa de `process()` | Iniciar o relayer com `hyperlane relayer --chains sepolia` |
-| Bytes32 errado no `enrollRemoteRouter` | `routers(1325)` ≠ hex do Warp Terra | Re-executar `enrollRemoteRouter` com o hex correto de 32 bytes |
+| `enrollRemoteRouter(1325)` missing on EVM Warp | `routers(1325)` returns `0x000...` | `cast send $WARP "enrollRemoteRouter(uint32,bytes32)" 1325 0xHEX_TERRA --private-key $ETH_KEY --legacy` |
+| Validator not signing | Latest S3 checkpoint is old | Restart the Hyperlane validator |
+| Relayer not running | No `process()` attempts | Start the relayer with `hyperlane relayer --chains sepolia` |
+| Wrong bytes32 in `enrollRemoteRouter` | `routers(1325)` ≠ Warp Terra hex | Re-run `enrollRemoteRouter` with the correct 32-byte hex |
 
-> 💡 **Verificar o validador:** O validador deve ter um `checkpoint_latest_index.json` recente no seu storage (S3/GCS).
-> Se o índice parou de avançar, o validador não está rodando.
+> 💡 **Check the validator:** The validator should have a recent `checkpoint_latest_index.json` in its storage (S3/GCS).
+> If the index stopped advancing, the validator is not running.
 
 ---
 
 ### ❌ `enrollRemoteRouter` falha ou registra bytes32 errado (endereço EVM no lugar do Terra)
 
-**Causa:** A função `to_bytes32` no script estava com um bug: adicionava 24 zeros de padding
-(`000000000000000000000000`) antes do hash, correto para endereços EVM (20 bytes / 40 hex chars)
-mas **errado** para hashes CosmWasm (32 bytes / 64 hex chars).
+**Cause:** The `to_bytes32` function in the script had a bug: it added 24 zero padding bytes
+(`000000000000000000000000`) before the hash, correct for EVM addresses (20 bytes / 40 hex chars)
+but **wrong** for CosmWasm hashes (32 bytes / 64 hex chars).
 
-**Exemplo do problema:**
+**Example of the problem:**
 ```
-# Terra Classic Warp hex (correto = 64 chars):
+# Terra Classic Warp hex (correct = 64 chars):
 d03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
 
-# Resultado errado (88 chars, cast rejeita):
+# Wrong result (88 chars, cast rejects):
 000000000000000000000000d03fafd53ce350f49ba3c6ebcb1bee7cbbf453f261ec8d5ce9f36c55ab3e26a1
 ```
 
-**Verificação:**
+**Verification:**
 ```bash
 cast call $WARP_EVM "routers(uint32)(bytes32)" 1325 --rpc-url $RPC
-# Se retornar 0x000...000 ou um valor com 24 zeros extras no início: re-executar
+# If it returns 0x000...000 or a value with 24 extra leading zeros: re-run
 ```
 
-**Solução manual:**
+**Manual fix:**
 ```bash
-# Pegar o hex correto do warp-evm-config.json:
+# Get the correct hex from warp-evm-config.json:
 HEX=$(jq -r '.terra_classic.tokens.xpto.terra_warp.warp_hexed' warp-evm-config.json)
-HEX="${HEX#0x}"  # remover 0x
+HEX="${HEX#0x}"  # remove 0x
 
-# Verificar tamanho (deve ser 64):
+# Check length (must be 64):
 echo ${#HEX}
 
-# Executar com o hex correto:
+# Run com o hex correto:
 cast send $WARP_EVM \
   "enrollRemoteRouter(uint32,bytes32)" \
   1325 "0x${HEX}" \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 ```
 
-> O script `create-warp-evm.sh` está corrigido desde a versão atual (usa `printf '%064s' ... | tr ' ' '0'`).
+> The script `create-warp-evm.sh` is fixed in the current version (uses `printf '%064s' ... | tr ' ' '0'`).
 
 ---
 
-## 🔗 Links úteis
+## 🔗 Useful links
 
 | Recurso | URL |
 |---|---|
@@ -1220,25 +1220,25 @@ cast send $WARP_EVM \
 
 ---
 
-## 14. Correção manual do AggregationHook (sem o script)
+## 14. Manual AggregationHook fix (without the script)
 
-Esta seção mostra como corrigir o hook de um Warp Route já deployado **manualmente via `cast`**, sem precisar reexecutar o script completo. Use quando mensagens de **EVM → Terra Classic** não chegam e o diagnóstico mostra que o hook está configurado diretamente com o `IGP` (sem o `MerkleTreeHook`).
+This section shows how to fix the hook of an already deployed Warp Route **manually via `cast`**, without needing to re-run the full script. Use when **EVM → Terra Classic** messages do not arrive and diagnosis shows the hook is configured directly with the `IGP` (without the `MerkleTreeHook`).
 
-### Diagnóstico rápido
+### Quick diagnosis
 
 ```bash
-# Verificar o hook atual do Warp (deve ser o AggregationHook, não o IGP)
+# Check the current Warp hook (should be AggregationHook, not IGP)
 cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 
-# Verificar o owner (somente o owner pode chamar setHook)
+# Check the owner (only the owner can call setHook)
 cast call $WARP_ADDRESS "owner()(address)" --rpc-url $RPC
 ```
 
-Se o `hook` retornado for igual ao endereço do seu `IGP customizado` → o problema está confirmado.
+If the returned `hook` equals your custom `IGP` address → the problem is confirmed.
 
 ---
 
-### Sepolia — Corrigir hook manualmente
+### Sepolia — Fix hook manually
 
 ```bash
 export ETH_PRIVATE_KEY="0xSUA_CHAVE_PRIVADA"
@@ -1250,22 +1250,22 @@ MERKLE="0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d"        # MerkleTreeHook ofic
 IGP_CUSTOM="0xSEU_IGP_CUSTOM"                              # seu IGP deployado
 WARP_ADDRESS="0xSEU_WARP"
 
-# Passo 1 — Obter endereço deterministico do AggHook
+# Step 1 — Get deterministic AggHook address
 AGG_HOOK=$(cast call $AGG_FACTORY \
   "deploy(address[])(address)" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC)
 echo "AggHook será: $AGG_HOOK"
 
-# Passo 2 — Deploy do AggregationHook
+# Step 2 — Deploy AggregationHook
 cast send $AGG_FACTORY \
   "deploy(address[])" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# Passo 3 — Setar o AggregationHook no Warp
+# Step 3 — Set AggregationHook on Warp
 cast send $WARP_ADDRESS "setHook(address)" $AGG_HOOK \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# Verificação final
+# Final verification
 cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 ```
 
@@ -1277,7 +1277,7 @@ cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 
 ---
 
-### BSC Testnet — Corrigir hook manualmente
+### BSC Testnet — Fix hook manually
 
 ```bash
 export ETH_PRIVATE_KEY="0xSUA_CHAVE_PRIVADA"
@@ -1289,22 +1289,22 @@ MERKLE="0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f"        # MerkleTreeHook ofic
 IGP_CUSTOM="0xSEU_IGP_CUSTOM"                              # seu IGP deployado
 WARP_ADDRESS="0xSEU_WARP"
 
-# Passo 1 — Obter endereço deterministico do AggHook
+# Step 1 — Get deterministic AggHook address
 AGG_HOOK=$(cast call $AGG_FACTORY \
   "deploy(address[])(address)" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC)
 echo "AggHook será: $AGG_HOOK"
 
-# Passo 2 — Deploy do AggregationHook
+# Step 2 — Deploy AggregationHook
 cast send $AGG_FACTORY \
   "deploy(address[])" "[$MERKLE,$IGP_CUSTOM]" \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# Passo 3 — Setar o AggregationHook no Warp
+# Step 3 — Set AggregationHook on Warp
 cast send $WARP_ADDRESS "setHook(address)" $AGG_HOOK \
   --rpc-url $RPC --private-key $ETH_PRIVATE_KEY --legacy
 
-# Verificação final
+# Final verification
 cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 ```
 
@@ -1318,34 +1318,34 @@ cast call $WARP_ADDRESS "hook()(address)" --rpc-url $RPC
 
 ---
 
-### Reexecutar o script para Warp já deployado (alternativa mais simples)
+### Re-run the script for an already deployed Warp (simpler alternative)
 
-Se preferir usar o script ao invés dos comandos manuais, basta definir os endereços já deployados e reexecutar — o script pula as etapas já concluídas e executa apenas o que falta (como o deploy do AggHook):
+If you prefer to use the script instead of manual commands, just set the already deployed addresses and re-run — the script skips completed steps and only executes what remains (like the AggHook deploy):
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 export ETH_PRIVATE_KEY="0xSUA_CHAVE"
 export TERRA_PRIVATE_KEY="SUA_CHAVE_TERRA"
 
-# O estado anterior é lido automaticamente do .warp-evm-state.json
-# Se não existir, defina manualmente:
+# Previous state is automatically read from .warp-evm-state.json
+# If not present, set manually:
 export WARP_ADDRESS="0xSEU_WARP"
 export IGP_ADDRESS="0xSEU_IGP"
 
 ./create-warp-evm.sh
-# Selecione o token e a rede — o script pulará deploy do Warp e IGP
-# e irá direto para o deploy do AggHook (Etapa 5)
+# Select the token and network — the script will skip Warp and IGP deploy
+# and go directly to AggHook deploy (Step 5)
 ```
 
 ---
 
-## 15. Referência de endereços deployados
+## 15. Deployed address reference
 
-Endereços de todos os contratos ativos neste projeto, para consulta rápida e diagnóstico manual.
+Addresses of all active contracts in this project, for quick reference and manual diagnosis.
 
 ### Sepolia (chain 11155111 / domain 11155111)
 
-| Contrato | Endereço | Explorer |
+| Contract | Address | Explorer |
 |---|---|---|
 | **Mailbox** | `0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766` | [🔗](https://sepolia.etherscan.io/address/0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766) |
 | **MerkleTreeHook** | `0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d` | [🔗](https://sepolia.etherscan.io/address/0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d) |
@@ -1354,28 +1354,28 @@ Endereços de todos os contratos ativos neste projeto, para consulta rápida e d
 | **ISM Factory** | `0xFEb9585b2f948c1eD74034205a7439261a9d27DD` | [🔗](https://sepolia.etherscan.io/address/0xFEb9585b2f948c1eD74034205a7439261a9d27DD) |
 | **Validator Announce** | `0xE6105C59480a1B8CF6db0D655571767f4b31Ef3C` | [🔗](https://sepolia.etherscan.io/address/0xE6105C59480a1B8CF6db0D655571767f4b31Ef3C) |
 
-#### Warps Sepolia
+#### Sepolia Warps
 
-| Token | Warp EVM | IGP Custom | AggHook | ISM |
+| Token | EVM Warp | Custom IGP | AggHook | ISM |
 |---|---|---|---|---|
 | **XPTO** | [`0xbF43aA...`](https://sepolia.etherscan.io/address/0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048) | [`0xf285D5...`](https://sepolia.etherscan.io/address/0xf285D5769db5AE6E79Bb3179d03082f6bc47055f) | [`0x1a13d7...`](https://sepolia.etherscan.io/address/0x1a13d7A50b76d4527a611e507B3f73058eCa5eAC) | — |
 | **XPTV** | [`0x7d92c2...`](https://sepolia.etherscan.io/address/0x7d92c2E01933F1C651845152DBd4222d475Bd9f0) | `0xf285D5...` (mesmo XPTO) | `0x1a13d7...` (mesmo XPTO) | — |
 
-#### Validator Sepolia (S3)
+#### Sepolia Validator (S3)
 
-| Item | Valor |
+| Item | Value |
 |---|---|
-| Endereço | `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` |
+| Address | `0x133fD7F7094DBd17b576907d052a5aCBd48dB526` |
 | Mailbox domain | `11155111` |
 | S3 Bucket | [hyperlane-validator-signatures-igorveras-sepolia](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/) |
 | Announcement | [announcement.json](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/announcement.json) |
-| Último checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
+| Latest checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
 
 ---
 
 ### BSC Testnet (chain 97 / domain 97)
 
-| Contrato | Endereço | Explorer |
+| Contract | Address | Explorer |
 |---|---|---|
 | **Mailbox** | `0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D` | [🔗](https://testnet.bscscan.com/address/0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D) |
 | **MerkleTreeHook** | `0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f` | [🔗](https://testnet.bscscan.com/address/0xc6cbF39A747f5E28d1bDc8D9dfDAb2960Abd5A8f) |
@@ -1384,35 +1384,35 @@ Endereços de todos os contratos ativos neste projeto, para consulta rápida e d
 | **ISM Factory** | `0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763` | [🔗](https://testnet.bscscan.com/address/0x0D96aF0c01c4bbbadaaF989Eb489c8783F35B763) |
 | **Validator Announce** | `0xf09701B0a93210113D175461b6135a96773B5465` | [🔗](https://testnet.bscscan.com/address/0xf09701B0a93210113D175461b6135a96773B5465) |
 
-#### Warps BSC Testnet
+#### BSC Testnet Warps
 
-| Token | Warp EVM | IGP Custom | AggHook | ISM |
+| Token | EVM Warp | Custom IGP | AggHook | ISM |
 |---|---|---|---|---|
 | **XPV** | [`0x11D6aa...`](https://testnet.bscscan.com/address/0x11D6aa52d60611a513ab783842Dc397C86E7fff0) | [`0x7d17d2...`](https://testnet.bscscan.com/address/0x7d17d237c74Fa1bA3B5B56d94E414a4eAa41cE1e) | [`0x3F11a5...`](https://testnet.bscscan.com/address/0x3F11a590B50F959E52a660567865f1B65C913C5D) | [`0x2b31a0...`](https://testnet.bscscan.com/address/0x2b31a08d397b7e508cbE0F5830E8a9182C88b6cA) |
 
-#### Validator BSC Testnet (S3)
+#### BSC Testnet Validator (S3)
 
-| Item | Valor |
+| Item | Value |
 |---|---|
 | Endereço | `0x8BD456605473ad4727ACfDCA0040a0dBD4be2DEA` |
 | Mailbox domain | `97` |
 | S3 Bucket | [hyperlane-validator-signatures-igorveras-bsctestnet](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/) |
 | Announcement | [announcement.json](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/announcement.json) |
-| Último checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
+| Latest checkpoint | [checkpoint_latest_index.json](https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/checkpoint_latest_index.json) |
 
 ---
 
 ### Terra Classic (chain rebel-2 / domain 1325)
 
-| Item | Valor |
+| Item | Value |
 |---|---|
 | RPC | `https://rpc.terra-classic.hexxagon.dev` |
 | LCD | `https://lcd.terra-classic.hexxagon.dev` |
 | Explorer | [finder.hexxagon.io/rebel-2](https://finder.hexxagon.io/rebel-2) |
 
-#### Warps Terra Classic
+#### Terra Classic Warps
 
-| Token | Warp Terra Classic | Hex bytes32 | CW20 Collateral |
+| Token | Terra Classic Warp | Hex bytes32 | CW20 Collateral |
 |---|---|---|---|
 | **XPTO** | [`terra16ql6l4...`](https://finder.hexxagon.io/rebel-2/address/terra16ql6l4fuudg0fxarcm4ukxlw0jalg5ljv8kg6h8f7dk9t2e7y6ssq2hqrm) | `0xd03fafd5...e26a1` | `terra1zle6pw...` |
 | **XPTV** | [`terra1n8y4s...`](https://finder.hexxagon.io/rebel-2/address/terra1n8y4sj9lrqq66pf7je0nm7s6nhln5z4s3accw9g2aassdh8dzqts9y0928) | `0x99c95848...d1017` | `terra19ujvy...` |
@@ -1421,59 +1421,59 @@ Endereços de todos os contratos ativos neste projeto, para consulta rápida e d
 
 ---
 
-### Verificações rápidas via cast
+### Quick verifications via cast
 
 ```bash
-# Verificar hook de qualquer Warp (deve ser o AggHook, não o IGP)
+# Check hook of any Warp (should be AggHook, not IGP)
 cast call $WARP "hook()(address)" --rpc-url $RPC
 
-# Verificar owner de qualquer contrato
+# Check owner of any contract
 cast call $WARP "owner()(address)" --rpc-url $RPC
 
-# Verificar router Terra Classic configurado no Warp EVM
+# Check Terra Classic router configured on EVM Warp
 cast call $WARP "routers(uint32)(bytes32)" 1325 --rpc-url $RPC
 
-# Verificar router BSC Testnet configurado no Warp EVM
+# Check BSC Testnet router configured on EVM Warp
 cast call $WARP "routers(uint32)(bytes32)" 97 --rpc-url $RPC
 
-# Verificar ISM do Warp
+# Check Warp ISM
 cast call $WARP "interchainSecurityModule()(address)" --rpc-url $RPC
 
-# Verificar saldo de uma carteira
+# Check balance de uma carteira
 cast balance $ENDERECO --rpc-url $RPC --ether
 
-# Verificar último checkpoint do validator no S3
+# Check latest validator checkpoint on S3
 curl -s "https://SEU-BUCKET.s3.REGIAO.amazonaws.com/checkpoint_latest_index.json"
 ```
 
 ---
 
-## 16. Como encontrar endereços Hyperlane de qualquer rede
+## 16. How to find Hyperlane addresses for any network
 
-Quando for configurar uma nova rede EVM (mainnet ou testnet), os endereços dos contratos Hyperlane oficiais estão disponíveis em duas fontes principais.
+When configuring a new EVM network (mainnet or testnet), official Hyperlane contract addresses are available from two main sources.
 
-### Fonte 1 — Hyperlane Registry (npm)
+### Source 1 — Hyperlane Registry (npm)
 
-O pacote `@hyperlane-xyz/registry` contém todos os endereços oficiais por rede:
+The `@hyperlane-xyz/registry` package contains all official addresses per network:
 
 ```bash
-# Instalar (já está no projeto como dependência)
+# Install (already in project as dependency)
 npm install @hyperlane-xyz/registry
 
-# Consultar endereços de uma rede específica
+# Query addresses for a specific network
 node -e "
 const addresses = require('@hyperlane-xyz/registry/dist/chains/bsctestnet/addresses.json');
 console.log(JSON.stringify(addresses, null, 2));
 "
 
-# Ou via arquivo direto no node_modules
+# Or via direct file in node_modules
 cat node_modules/@hyperlane-xyz/registry/dist/chains/bsctestnet/addresses.json
 cat node_modules/@hyperlane-xyz/registry/dist/chains/sepolia/addresses.json
 ```
 
-**Campos importantes que você precisa para o `warp-evm-config.json`:**
+**Important fields you need for `warp-evm-config.json`:**
 
-| Campo no JSON | Chave no registry |
+| JSON field | Registry key |
 |---|---|
 | `mailbox.address` | `mailbox` |
 | `hook.merkle_tree` | `merkleTreeHook` |
@@ -1482,59 +1482,59 @@ cat node_modules/@hyperlane-xyz/registry/dist/chains/sepolia/addresses.json
 | `igp.gas_oracle` | `storageGasOracle` |
 | `ism.factory` | `staticMessageIdMultisigIsmFactory` |
 
-### Fonte 2 — GitHub Hyperlane Registry
+### Source 2 — GitHub Hyperlane Registry
 
-Acesse diretamente pelo GitHub:
+Access directly via GitHub:
 
 ```
 https://github.com/hyperlane-xyz/hyperlane-registry/tree/main/chains/<NOME_DA_REDE>
 ```
 
-Exemplo para BSC Testnet:
+Example for BSC Testnet:
 - Endereços: [chains/bsctestnet/addresses.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/bsctestnet/addresses.yaml)
 - Metadados: [chains/bsctestnet/metadata.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/bsctestnet/metadata.yaml)
 
-Exemplo para Sepolia:
+Example for Sepolia:
 - Endereços: [chains/sepolia/addresses.yaml](https://github.com/hyperlane-xyz/hyperlane-registry/blob/main/chains/sepolia/addresses.yaml)
 
-### Fonte 3 — Hyperlane CLI
+### Source 3 — Hyperlane CLI
 
 ```bash
-# Listar todas as redes suportadas
+# List all supported networks
 hyperlane config show --chains
 
-# Ver contratos de uma rede específica
+# View contracts of a specific network
 hyperlane config show --chains sepolia
 ```
 
-### Verificar se um endereço tem código (contrato deployado)
+### Verify if an address has code (deployed contract)
 
-Antes de usar qualquer endereço de factory ou contrato Hyperlane, **sempre confirme** que tem código:
+Before using any factory address or Hyperlane contract, **always confirm** it has code:
 
 ```bash
-# Se retornar "0x" → sem código, endereço errado ou rede errada
+# If it returns "0x" → no code, wrong address or wrong network
 cast code $ENDERECO --rpc-url $RPC
 
-# Verificar múltiplos endereços de uma vez
+# Verify multiple addresses at once
 for ADDR in 0xADDR1 0xADDR2 0xADDR3; do
     CODE=$(cast code $ADDR --rpc-url $RPC 2>/dev/null | wc -c)
     [ $CODE -gt 5 ] && echo "✅ $ADDR" || echo "❌ $ADDR (sem código)"
 done
 ```
 
-### Encontrar o domain ID de uma rede
+### Finding the domain ID of a network
 
-O domain ID Hyperlane geralmente é igual ao `chainId` da rede. Confirme em:
+The Hyperlane domain ID is usually equal to the network `chainId`. Confirm via:
 
 ```bash
-# Consultar no registry
+# Query in the registry
 node -e "
 const meta = require('@hyperlane-xyz/registry/dist/chains/bsctestnet/metadata.json');
 console.log('chainId:', meta.chainId, '| domainId:', meta.domainId || meta.chainId);
 "
 ```
 
-| Rede | chainId | domain Hyperlane |
+| Network | chainId | Hyperlane domain |
 |---|---|---|
 | Ethereum | 1 | 1 |
 | Sepolia | 11155111 | 11155111 |

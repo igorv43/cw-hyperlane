@@ -1,110 +1,110 @@
-# Guia — `transfer-remote-to-terra.sh`
+# Guide — `transfer-remote-to-terra.sh`
 
-Envio de tokens **EVM → Terra Classic** e **Sealevel (Solana) → Terra Classic** via Hyperlane Warp Routes.
+Send tokens **EVM → Terra Classic** and **Sealevel (Solana) → Terra Classic** via Hyperlane Warp Routes.
 
 ---
 
-## Índice
+## Table of Contents
 
-1. [Visão geral](#1-visão-geral)
-2. [Pré-requisitos](#2-pré-requisitos)
-3. [Estrutura de arquivos](#3-estrutura-de-arquivos)
-4. [Modo interativo](#4-modo-interativo)
-5. [Modo não-interativo](#5-modo-não-interativo)
-6. [Variáveis de ambiente](#6-variáveis-de-ambiente)
-7. [Fluxo EVM → Terra Classic](#7-fluxo-evm--terra-classic)
-8. [Fluxo Sealevel → Terra Classic](#8-fluxo-sealevel--terra-classic)
-   - [Importar keypair do Phantom](#importar-keypair-de-uma-carteira-phantom)
-9. [Como verificar a entrega](#9-como-verificar-a-entrega)
-10. [Consultar saldos](#10-consultar-saldos)
-11. [Logs e relatórios](#11-logs-e-relatórios)
-12. [Referências de contratos](#12-referências-de-contratos)
+1. [Overview](#1-overview)
+2. [Prerequisites](#2-prerequisites)
+3. [File structure](#3-file-structure)
+4. [Interactive mode](#4-interactive-mode)
+5. [Non-interactive mode](#5-non-interactive-mode)
+6. [Environment variables](#6-environment-variables)
+7. [EVM → Terra Classic flow](#7-evm--terra-classic-flow)
+8. [Sealevel → Terra Classic flow](#8-sealevel--terra-classic-flow)
+   - [Import keypair from Phantom](#import-keypair-from-a-phantom-wallet)
+9. [How to verify delivery](#9-how-to-verify-delivery)
+10. [Query balances](#10-query-balances)
+11. [Logs and reports](#11-logs-and-reports)
+12. [Contract references](#12-contract-references)
 13. [Troubleshooting](#13-troubleshooting)
 
 ---
 
-## 1. Visão geral
+## 1. Overview
 
-O script `transfer-remote-to-terra.sh` executa uma transferência cross-chain de **qualquer rede de origem** (EVM ou Solana) para a **Terra Classic** usando a infraestrutura Hyperlane Warp.
+The `transfer-remote-to-terra.sh` script executes a cross-chain transfer from **any source network** (EVM or Solana) to **Terra Classic** using Hyperlane Warp infrastructure.
 
 ```
 EVM (Sepolia / BSC Testnet)          Terra Classic
    Warp HypERC20 Synthetic   ──────►   Warp CW20 Collateral
-   transferRemote()                      (tokens liberados)
+   transferRemote()                      (tokens released)
 ```
 
 ```
 Solana Testnet                        Terra Classic
    Warp SealevelHypSynthetic ──────►   Warp CW20 Collateral
-   token transfer-remote                 (tokens liberados)
+   token transfer-remote                 (tokens released)
 ```
 
-**O que o script faz automaticamente:**
-- Lê os contratos deployados dos arquivos `warp-evm-config.json` e `warp-sealevel-config.json`
-- Converte o endereço Terra Classic (bech32) para o formato `bytes32` exigido pelo Hyperlane
-- Consulta o fee IGP via `quoteGasPayment()` (EVM) ou via configuração (Sealevel)
-- Exibe resumo e pede confirmação antes de enviar
-- Grava relatório em `log/TRANSFER-TO-TERRA-<REDE>-<TOKEN>-<timestamp>.txt`
+**What the script does automatically:**
+- Reads deployed contracts from `warp-evm-config.json` and `warp-sealevel-config.json` files
+- Converts the Terra Classic address (bech32) to the `bytes32` format required by Hyperlane
+- Queries the IGP fee via `quoteGasPayment()` (EVM) or via configuration (Sealevel)
+- Displays summary and asks for confirmation before sending
+- Writes report to `log/TRANSFER-TO-TERRA-<NETWORK>-<TOKEN>-<timestamp>.txt`
 
 ---
 
-## 2. Pré-requisitos
+## 2. Prerequisites
 
-### Dependências comuns
+### Common dependencies
 
-| Ferramenta | Como instalar |
+| Tool | How to install |
 |------------|--------------|
 | `jq`       | `sudo apt install jq` |
 | `curl`     | `sudo apt install curl` |
 | `python3`  | `sudo apt install python3` |
 | `python3-bech32` | `pip3 install bech32` |
 
-### Para EVM (Sepolia / BSC Testnet)
+### For EVM (Sepolia / BSC Testnet)
 
-| Ferramenta | Como instalar |
+| Tool | How to install |
 |------------|--------------|
 | `cast` (Foundry) | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` |
-| Chave privada EVM com saldo | Ver seção [7](#7-fluxo-evm--terra-classic) |
+| EVM private key with balance | See section [7](#7-evm--terra-classic-flow) |
 
-### Para Sealevel (Solana)
+### For Sealevel (Solana)
 
-| Ferramenta | Como instalar |
+| Tool | How to install |
 |------------|--------------|
 | `hyperlane-sealevel-client` | `cd /home/lunc/hyperlane-monorepo/rust/sealevel && cargo build` |
-| Keypair Solana (`.json`) | `solana-keygen new -o ~/minha-carteira.json` |
-| Saldo SOL para IGP fee | Obtível via faucet: https://faucet.solana.com |
+| Solana keypair (`.json`) | `solana-keygen new -o ~/my-wallet.json` |
+| SOL balance for IGP fee | Available via faucet: https://faucet.solana.com |
 
 ---
 
-## 3. Estrutura de arquivos
+## 3. File structure
 
 ```
 script-warp-terraclassic/
-├── transfer-remote-to-terra.sh        ← este script
-├── warp-evm-config.json               ← contratos EVM deployados
-├── warp-sealevel-config.json          ← programas Sealevel deployados
+├── transfer-remote-to-terra.sh        ← this script
+├── warp-evm-config.json               ← deployed EVM contracts
+├── warp-sealevel-config.json          ← deployed Sealevel programs
 └── log/
-    ├── transfer-remote-to-terra.log   ← histórico resumido de todas as transferências
-    └── TRANSFER-TO-TERRA-<REDE>-<TOKEN>-<timestamp>.txt  ← relatório individual
+    ├── transfer-remote-to-terra.log   ← summary history of all transfers
+    └── TRANSFER-TO-TERRA-<NETWORK>-<TOKEN>-<timestamp>.txt  ← individual report
 ```
 
 ---
 
-## 4. Modo interativo
+## 4. Interactive mode
 
-Execute sem variáveis de ambiente. O script apresenta um menu numerado com todos os tokens e redes disponíveis:
+Run without environment variables. The script presents a numbered menu with all available tokens and networks:
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 ./transfer-remote-to-terra.sh
 ```
 
-**Exemplo de menu exibido:**
+**Example displayed menu:**
 
 ```
-🌉  TRANSFER REMOTE — Outra Rede → Terra Classic
+🌉  TRANSFER REMOTE — Other Network → Terra Classic
 
-Selecione o token e a rede de origem:
+Select the token and source network:
 
   [1]   LUNC ← Ethereum Sepolia Testnet  (domain 11155111)
   [2]   XPTO ← Ethereum Sepolia Testnet  (domain 11155111)
@@ -115,22 +115,22 @@ Selecione o token e a rede de origem:
   [7]   JURIS ← Solana Testnet           (domain 1399811150)
   [8]   XPTO ← Solana Testnet            (domain 1399811150)
 
-  Opção [1-8]:
+  Option [1-8]:
 ```
 
-O script pergunta sequencialmente:
-1. **Opção** — número do token/rede
-2. **Destinatário** — endereço Terra Classic (`terra1...`)
-3. **Quantidade** — em unidades mínimas (ex: `1000000` = 1 XPTO com 6 decimais)
-4. **Gas fee** — consultado automaticamente; se falhar, pede manualmente
-5. **Chave privada** — EVM (`ETH_PRIVATE_KEY`) ou caminho do keypair Solana
-6. **Confirmação** — `[s/N]` antes de enviar
+The script asks sequentially:
+1. **Option** — token/network number
+2. **Recipient** — Terra Classic address (`terra1...`)
+3. **Amount** — in minimum units (e.g.: `1000000` = 1 XPTO with 6 decimals)
+4. **Gas fee** — queried automatically; if it fails, asks manually
+5. **Private key** — EVM (`ETH_PRIVATE_KEY`) or Solana keypair path
+6. **Confirmation** — `[y/N]` before sending
 
 ---
 
-## 5. Modo não-interativo
+## 5. Non-interactive mode
 
-Passe todas as informações via variáveis de ambiente para automação ou scripts de CI.
+Pass all information via environment variables for automation or CI scripts.
 
 ### EVM → Terra Classic
 
@@ -161,31 +161,31 @@ AUTO_CONFIRM=s \
 ./transfer-remote-to-terra.sh
 ```
 
-> **⚠️ Segurança:** Nunca coloque chaves privadas reais em históricos de shell. Use `export` antes de executar ou passe pela variável no próprio comando e limpe logo em seguida: `unset ETH_PRIVATE_KEY`.
+> **⚠️ Security:** Never put real private keys in shell history. Use `export` before running or pass the variable in the command itself and clear it right after: `unset ETH_PRIVATE_KEY`.
 
 ---
 
-## 6. Variáveis de ambiente
+## 6. Environment variables
 
-| Variável | Obrigatória | Descrição |
+| Variable | Required | Description |
 |----------|-------------|-----------|
-| `TOKEN_KEY` | Não (interativo) | Chave do token no config, ex: `xpto`, `wlunc`, `xpv` |
-| `SOURCE_NETWORK` | Não (interativo) | Rede de origem, ex: `sepolia`, `bsctestnet`, `solanatestnet` |
-| `RECIPIENT` | Não (interativo) | Endereço Terra Classic destino (`terra1...`) |
-| `AMOUNT` | Não (interativo) | Valor em unidades mínimas (sem decimais), ex: `1000000` |
-| `ETH_PRIVATE_KEY` | EVM: sim | Chave privada da carteira EVM, com prefixo `0x` |
-| `SOL_KEYPAIR` | Sealevel: opcional | Caminho para o arquivo `.json` do keypair Solana |
-| `AUTO_CONFIRM` | Não | `s` para confirmar sem interação |
+| `TOKEN_KEY` | No (interactive) | Token key in config, e.g.: `xpto`, `wlunc`, `xpv` |
+| `SOURCE_NETWORK` | No (interactive) | Source network, e.g.: `sepolia`, `bsctestnet`, `solanatestnet` |
+| `RECIPIENT` | No (interactive) | Destination Terra Classic address (`terra1...`) |
+| `AMOUNT` | No (interactive) | Value in minimum units (no decimals), e.g.: `1000000` |
+| `ETH_PRIVATE_KEY` | EVM: yes | EVM wallet private key, with `0x` prefix |
+| `SOL_KEYPAIR` | Sealevel: optional | Path to the Solana keypair `.json` file |
+| `AUTO_CONFIRM` | No | `s` to confirm without interaction |
 
 ---
 
-## 7. Fluxo EVM → Terra Classic
+## 7. EVM → Terra Classic flow
 
-### O que acontece internamente
+### What happens internally
 
 ```
 1. cast call <WARP_EVM> "quoteGasPayment(uint32)" 1325
-   → Retorna o fee em wei necessário para pagar o IGP
+   → Returns the fee in wei required to pay the IGP
 
 2. cast send <WARP_EVM> "transferRemote(uint32,bytes32,uint256)"
    <TC_DOMAIN=1325>  <RECIPIENT_B32>  <AMOUNT>
@@ -194,9 +194,9 @@ AUTO_CONFIRM=s \
    --rpc-url <RPC>
 ```
 
-### Endereços dos contratos EVM (testnet)
+### EVM contract addresses (testnet)
 
-| Rede | Token | Warp Contract | Domain |
+| Network | Token | Warp Contract | Domain |
 |------|-------|--------------|--------|
 | Sepolia | LUNC | `0x224a4419D7FA69D3bEbAbce574c7c84B48D829b4` | 11155111 |
 | Sepolia | XPTO | `0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048` | 11155111 |
@@ -204,9 +204,9 @@ AUTO_CONFIRM=s \
 | BSC Testnet | LUNC | `0x2144Be4477202ba2d50c9A8be3181241878cf7D8` | 97 |
 | BSC Testnet | XPV  | `0x11D6aa52d60611a513ab783842Dc397C86E7fff0` | 97 |
 
-### Converter endereço Terra Classic para bytes32 manualmente
+### Convert Terra Classic address to bytes32 manually
 
-Se precisar calcular o `bytes32` de um endereço manualmente:
+If you need to calculate the `bytes32` of an address manually:
 
 ```python
 import bech32
@@ -218,7 +218,7 @@ print(raw.hex().zfill(64))
 # → 0000000000000000000000003fc7ee49a59c1041d4a58bc21ef657eb443c8bbb
 ```
 
-### Consultar gas fee manualmente
+### Query gas fee manually
 
 ```bash
 # Sepolia → Terra Classic (domain 1325)
@@ -232,21 +232,21 @@ cast call 0x11D6aa52d60611a513ab783842Dc397C86E7fff0 \
     --rpc-url https://bsc-testnet-rpc.publicnode.com
 ```
 
-### Verificar saldo do token EVM (HypERC20 Synthetic)
+### Check EVM token balance (HypERC20 Synthetic)
 
 ```bash
-# Saldo de XPTO na Sepolia
+# XPTO balance on Sepolia
 cast call 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048 \
     "balanceOf(address)(uint256)" \
-    "0xSUA_CARTEIRA_EVM" \
+    "0xYOUR_EVM_WALLET" \
     --rpc-url https://ethereum-sepolia-rpc.publicnode.com
 ```
 
 ---
 
-## 8. Fluxo Sealevel → Terra Classic
+## 8. Sealevel → Terra Classic flow
 
-### O que acontece internamente
+### What happens internally
 
 ```
 hyperlane-sealevel-client \
@@ -257,34 +257,34 @@ hyperlane-sealevel-client \
   --program-id <PROGRAM_ID>
 ```
 
-O `RECIPIENT_B32` é o endereço `terra1...` convertido para hex de 64 caracteres (sem `0x`).
+The `RECIPIENT_B32` is the `terra1...` address converted to 64-character hex (without `0x`).
 
-### Endereços dos programas Sealevel (testnet)
+### Sealevel program addresses (testnet)
 
-| Rede | Token | Program ID | Mint Address |
+| Network | Token | Program ID | Mint Address |
 |------|-------|-----------|-------------|
 | Solana Testnet | JURIS | `G3eEYHv2GrBJ6KTS3XQhRd7QYdwnfWjisQrSVWedQK4y` | `ExzEij8z7xc71kvjuMHmejRkmM4ACgKjDWuEaXdDubRa` |
 | Solana Testnet | XPTO  | `jNkiNLXQetj9L2tDX6xTgx9QP1tgtNgYXamouNbbwx9` | `Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2` |
 
-### Verificar saldo SPL antes de enviar
+### Check SPL balance before sending
 
 ```bash
-# Saldo do token XPTO (SPL) no Solana Testnet
-# Sintaxe correta: <MINT_ADDRESS> --owner <OWNER> --url <RPC>
+# XPTO (SPL) token balance on Solana Testnet
+# Correct syntax: <MINT_ADDRESS> --owner <OWNER> --url <RPC>
 spl-token balance Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
     --owner BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 
-# Saldo nativo de SOL (necessário para pagar IGP fee)
+# Native SOL balance (needed to pay IGP fee)
 solana balance BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 ```
 
-> **ℹ️ Nota sobre token accounts:** Se o comando retornar `Could not find token account`, significa que a carteira ainda não recebeu esse token e portanto não pode enviá-lo. É necessário primeiro receber o token via transferência TC → Solana.
+> **ℹ️ Note about token accounts:** If the command returns `Could not find token account`, it means the wallet has not yet received this token and therefore cannot send it. You must first receive the token via a TC → Solana transfer.
 
-### Keypair Solana configurado no script
+### Solana keypair configured in the script
 
-O campo `keypair` em `warp-sealevel-config.json` define o caminho padrão do keypair:
+The `keypair` field in `warp-sealevel-config.json` defines the default keypair path:
 
 ```json
 "solanatestnet": {
@@ -293,32 +293,32 @@ O campo `keypair` em `warp-sealevel-config.json` define o caminho padrão do key
 }
 ```
 
-Para usar um keypair diferente, passe `SOL_KEYPAIR=/caminho/para/keypair.json` como variável de ambiente.
+To use a different keypair, pass `SOL_KEYPAIR=/path/to/keypair.json` as an environment variable.
 
 ---
 
-### Importar keypair de uma carteira Phantom
+### Import keypair from a Phantom wallet
 
-Se você tem tokens SPL em uma carteira criada pelo **Phantom** (ou outra wallet de browser), você pode exportar a chave privada e converter para o formato JSON que o Solana CLI e o `hyperlane-sealevel-client` esperam.
+If you have SPL tokens in a wallet created by **Phantom** (or another browser wallet), you can export the private key and convert it to the JSON format that the Solana CLI and `hyperlane-sealevel-client` expect.
 
-#### Passo 1 — Exportar a chave do Phantom
+#### Step 1 — Export the key from Phantom
 
-1. Abra o **Phantom** e selecione a conta desejada
-2. Clique nos **3 pontos** (`···`) ao lado do nome da conta → **Account Details**
-3. Clique em **Show Private Key**
-4. Confirme a senha da carteira
-5. Copie a string exibida — é uma chave em formato **base58** (ex: `5K...abc`)
+1. Open **Phantom** and select the desired account
+2. Click the **3 dots** (`···`) next to the account name → **Account Details**
+3. Click **Show Private Key**
+4. Confirm the wallet password
+5. Copy the displayed string — it is a key in **base58** format (e.g.: `5K...abc`)
 
-#### Passo 2 — Converter para keypair JSON
+#### Step 2 — Convert to keypair JSON
 
-Crie o script de conversão:
+Create the conversion script:
 
 ```bash
 cat << 'EOF' > /tmp/convert-phantom-key.py
 import sys, json, base58
 
 if len(sys.argv) < 2:
-    print("Uso: python3 convert-phantom-key.py <CHAVE_PRIVADA_BASE58>")
+    print("Usage: python3 convert-phantom-key.py <BASE58_PRIVATE_KEY>")
     sys.exit(1)
 
 private_key_b58 = sys.argv[1].strip()
@@ -334,32 +334,32 @@ try:
             keypair_array = list(key_bytes) + list(bytes(vk))
         except ImportError:
             keypair_array = list(key_bytes) + [0]*32
-            print("AVISO: nacl não disponível, instale com: pip3 install pynacl")
+            print("WARNING: nacl not available, install with: pip3 install pynacl")
     else:
-        print(f"Tamanho inesperado: {len(key_bytes)} bytes"); sys.exit(1)
+        print(f"Unexpected size: {len(key_bytes)} bytes"); sys.exit(1)
     print(json.dumps(keypair_array))
 except Exception as e:
-    print(f"Erro: {e}"); sys.exit(1)
+    print(f"Error: {e}"); sys.exit(1)
 EOF
 ```
 
-Execute a conversão (substitua `COLE_SUA_CHAVE` pela chave exportada do Phantom):
+Run the conversion (replace `PASTE_YOUR_KEY` with the key exported from Phantom):
 
 ```bash
-# Instalar dependências se necessário
+# Install dependencies if needed
 pip3 install base58 pynacl
 
-# Converter e salvar (substitua BirXd4... pelo pubkey da sua carteira)
-python3 /tmp/convert-phantom-key.py "COLE_SUA_CHAVE" \
+# Convert and save (replace BirXd4... with your wallet pubkey)
+python3 /tmp/convert-phantom-key.py "PASTE_YOUR_KEY" \
     > /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
 
-# Verificar — deve exibir o pubkey correto da sua carteira
+# Verify — should display the correct pubkey of your wallet
 solana-keygen pubkey /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
 ```
 
-#### Passo 3 — Atualizar o config
+#### Step 3 — Update the config
 
-Edite `warp-sealevel-config.json` e aponte o campo `keypair` para o novo arquivo:
+Edit `warp-sealevel-config.json` and point the `keypair` field to the new file:
 
 ```json
 "solanatestnet": {
@@ -368,29 +368,29 @@ Edite `warp-sealevel-config.json` e aponte o campo `keypair` para o novo arquivo
 }
 ```
 
-> **⚠️ Segurança:** O arquivo `.json` do keypair contém a chave privada completa. Mantenha-o com permissões restritas (`chmod 600`) e nunca o compartilhe ou comite em repositórios.
+> **⚠️ Security:** The keypair `.json` file contains the full private key. Keep it with restricted permissions (`chmod 600`) and never share or commit it to repositories.
 
 ```bash
 chmod 600 /home/lunc/keys/solana-keypair-BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j.json
 ```
 
-#### Por que usar uma carteira Phantom e não uma gerada pelo CLI?
+#### Why use a Phantom wallet instead of a CLI-generated one?
 
-Uma carteira criada com `solana-keygen new` começa vazia — ela não tem token accounts criadas para nenhum token SPL. Para enviar XPTO de Solana → TC, a carteira **precisa ter XPTO** previamente recebido (via transferência TC → Solana). Uma carteira Phantom que já recebeu tokens tem as token accounts criadas e o saldo disponível para queimar na transferência cross-chain.
+A wallet created with `solana-keygen new` starts empty — it has no token accounts created for any SPL token. To send XPTO from Solana → TC, the wallet **must have XPTO** previously received (via a TC → Solana transfer). A Phantom wallet that has already received tokens has the token accounts created and the balance available to burn in the cross-chain transfer.
 
 ---
 
-## 9. Como verificar a entrega
+## 9. How to verify delivery
 
-Após o envio, a mensagem percorre:
+After sending, the message travels through:
 
 ```
-Origem → Validator (assina) → Relayer (entrega) → Terra Classic Mailbox → Warp CW20 (libera tokens)
+Origin → Validator (signs) → Relayer (delivers) → Terra Classic Mailbox → Warp CW20 (releases tokens)
 ```
 
-Tempo estimado: **1 a 5 minutos** dependendo do congestionamento.
+Estimated time: **1 to 5 minutes** depending on congestion.
 
-### Passo 1 — Verificar a transação na rede de origem
+### Step 1 — Verify the transaction on the source network
 
 **EVM (Sepolia):**
 ```
@@ -402,30 +402,30 @@ https://sepolia.etherscan.io/tx/<TX_HASH>
 https://explorer.solana.com/tx/<TX_SIGNATURE>?cluster=testnet
 ```
 
-### Passo 2 — Rastrear a mensagem no Hyperlane Explorer
+### Step 2 — Track the message in the Hyperlane Explorer
 
 ```
 https://explorer.hyperlane.xyz/message/<MESSAGE_ID>
 ```
 
-O `MESSAGE_ID` é emitido como evento na transação de origem. Nas transações EVM, ele aparece no log de eventos do Mailbox.
+The `MESSAGE_ID` is emitted as an event in the source transaction. In EVM transactions, it appears in the Mailbox event log.
 
-### Passo 3 — Verificar entrega no Mailbox Terra Classic
+### Step 3 — Verify delivery in the Terra Classic Mailbox
 
 ```bash
-# Verificar se o message_id foi entregue
+# Check if the message_id was delivered
 terrad query wasm contract-state smart \
     terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
-    '{"mailbox":{"message_delivered":{"id":"<MESSAGE_ID_SEM_0x>"}}}' \
+    '{"mailbox":{"message_delivered":{"id":"<MESSAGE_ID_WITHOUT_0x>"}}}' \
     --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-> **Nota:** O `MESSAGE_ID` deve ser informado sem o prefixo `0x`.
+> **Note:** The `MESSAGE_ID` must be provided without the `0x` prefix.
 
-### Passo 4 — Verificar saldo CW20 no destino
+### Step 4 — Check CW20 balance at destination
 
 ```bash
-# Saldo de XPTO no endereço destinatário
+# XPTO balance at the recipient address
 terrad query wasm contract-state smart \
     terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch \
     '{"balance":{"address":"terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k"}}' \
@@ -434,18 +434,18 @@ terrad query wasm contract-state smart \
 
 ---
 
-## 10. Consultar saldos
+## 10. Query balances
 
-### Saldo CW20 no Terra Classic
+### CW20 balance on Terra Classic
 
 ```bash
 terrad query wasm contract-state smart \
     <CONTRATO_CW20> \
-    '{"balance":{"address":"<CARTEIRA_TERRA>"}}' \
+    '{"balance":{"address":"<TERRA_WALLET>"}}' \
     --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-**Exemplo real — XPTO:**
+**Real example — XPTO:**
 ```bash
 terrad query wasm contract-state smart \
     terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch \
@@ -453,19 +453,19 @@ terrad query wasm contract-state smart \
     --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-A resposta tem o formato:
+The response has the format:
 ```json
 {"data":{"balance":"1000000"}}
 ```
 
-### Saldo LUNC nativo
+### Native LUNC balance
 
 ```bash
 terrad query bank balances terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k \
     --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-### Consultar múltiplos tokens em loop
+### Query multiple tokens in a loop
 
 ```bash
 #!/usr/bin/env bash
@@ -487,63 +487,63 @@ for sym in "${!TOKENS[@]}"; do
 done
 ```
 
-### Saldo SPL no Solana Testnet
+### SPL balance on Solana Testnet
 
 ```bash
-# Saldo de XPTO (SPL)
+# XPTO (SPL) balance
 spl-token balance \
     --address Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
-    --owner <SUA_CARTEIRA_SOLANA> \
+    --owner <YOUR_SOLANA_WALLET> \
     --url https://api.testnet.solana.com
 
-# Saldo de SOL nativo
-solana balance <SUA_CARTEIRA_SOLANA> \
+# Native SOL balance
+solana balance <YOUR_SOLANA_WALLET> \
     --url https://api.testnet.solana.com
 ```
 
 ---
 
-## 11. Logs e relatórios
+## 11. Logs and reports
 
-Após cada execução bem-sucedida, o script grava:
+After each successful execution, the script writes:
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---------|----------|
-| `log/transfer-remote-to-terra.log` | Uma linha por transferência: data, rede, token, amount, tx hash |
-| `log/TRANSFER-TO-TERRA-<REDE>-<TOKEN>-<timestamp>.txt` | Relatório completo com todos os parâmetros |
+| `log/transfer-remote-to-terra.log` | One line per transfer: date, network, token, amount, tx hash |
+| `log/TRANSFER-TO-TERRA-<NETWORK>-<TOKEN>-<timestamp>.txt` | Full report with all parameters |
 
-**Exemplo de relatório:**
+**Report example:**
 ```
 TRANSFER REMOTE — SEPOLIA → Terra Classic
-Data           : Thu Mar 12 15:30:00 UTC 2026
+Date           : Thu Mar 12 15:30:00 UTC 2026
 Token          : XPTO / XPTO
-Origem         : SEPOLIA  (evm, domain 11155111)
-Destino        : Terra Classic  (domain 1325)
+Source         : SEPOLIA  (evm, domain 11155111)
+Destination    : Terra Classic  (domain 1325)
 Recipient TC   : terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k
 Recipient b32  : 0000000000000000000000003fc7ee49a59c1041d4a58bc21ef657eb443c8bbb
 Amount         : 1000000
-Warp origem    : 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048
+Warp source    : 0xbF43aA4878f5Ad0fcAC12Cd3A835DD3506981048
 Gas fee (wei)  : 109030327234501
 TX Hash        : 0xabc123...
 ```
 
-**Visualizar histórico:**
+**View history:**
 ```bash
 cat ~/cw-hyperlane/script-warp-terraclassic/log/transfer-remote-to-terra.log
 ```
 
-**Listar todos os relatórios:**
+**List all reports:**
 ```bash
 ls ~/cw-hyperlane/script-warp-terraclassic/log/TRANSFER-TO-TERRA-*.txt
 ```
 
 ---
 
-## 12. Referências de contratos
+## 12. Contract references
 
 ### Terra Classic (rebel-2)
 
-| Contrato | Endereço |
+| Contract | Address |
 |----------|---------|
 | Mailbox | `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf` |
 | ISM Routing | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` |
@@ -554,35 +554,35 @@ ls ~/cw-hyperlane/script-warp-terraclassic/log/TRANSFER-TO-TERRA-*.txt
 | CW20 XPTO | `terra1zle6pwm9aztwu228e0spxrydlvmhj2qrq8ap3x2wrjc52kdvu4fs20rkch` |
 | CW20 XPTV | `terra1dnflusc7slapvals97em3fj4vrfyx90npr3znq6y45qjy7hhd6jqchqsgx` |
 
-### Links úteis
+### Useful links
 
-| Recurso | URL |
+| Resource | URL |
 |---------|-----|
 | Terra Classic Explorer | https://finder.hexxagon.io/rebel-2 |
 | Sepolia Etherscan | https://sepolia.etherscan.io |
 | BSC Testnet Explorer | https://testnet.bscscan.com |
 | Solana Testnet Explorer | https://explorer.solana.com/?cluster=testnet |
 | Hyperlane Explorer | https://explorer.hyperlane.xyz |
-| S3 Validator TC | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/ |
-| S3 Validator Sepolia | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/ |
-| S3 Validator BSC | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/ |
+| TC S3 Validator | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/ |
+| Sepolia S3 Validator | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/ |
+| BSC S3 Validator | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/ |
 
 ---
 
 ## 13. Troubleshooting
 
-### ❌ `quoteGasPayment falhou`
+### ❌ `quoteGasPayment failed`
 
-O script tenta automaticamente todos os RPCs configurados em `rpc_urls`. Se todos falharem, pede o valor manualmente.
+The script automatically tries all RPCs configured in `rpc_urls`. If all fail, it asks for the value manually.
 
-**Valores históricos (referência):**
+**Historical values (reference):**
 
-| Rede origem | Gas fee aproximado |
+| Source network | Approximate gas fee |
 |-------------|-------------------|
 | Sepolia → TC | `109030327234501` wei (~0.00011 ETH) |
-| BSC Testnet → TC | `1` wei (valor simbólico) |
+| BSC Testnet → TC | `1` wei (symbolic value) |
 
-Para consultar manualmente:
+To query manually:
 ```bash
 cast call <WARP_CONTRACT> "quoteGasPayment(uint32)(uint256)" 1325 \
     --rpc-url <RPC_URL>
@@ -590,51 +590,51 @@ cast call <WARP_CONTRACT> "quoteGasPayment(uint32)(uint256)" 1325 \
 
 ---
 
-### ❌ `ERR: endereço deve começar com terra1`
+### ❌ `ERR: address must start with terra1`
 
-O recipient informado não é um endereço Terra Classic válido. Verifique que começa com `terra1` e tem o tamanho correto (44 caracteres).
+The provided recipient is not a valid Terra Classic address. Verify that it starts with `terra1` and has the correct length (44 characters).
 
 ---
 
 ### ❌ `insufficient funds` (EVM)
 
-A carteira não tem saldo suficiente de ETH/BNB para pagar o gas fee + taxa da transação.
+The wallet does not have sufficient ETH/BNB balance to pay the gas fee + transaction fee.
 
 ```bash
-# Verificar saldo ETH da carteira
+# Check ETH wallet balance
 cast balance <SUA_CARTEIRA_EVM> --rpc-url https://ethereum-sepolia-rpc.publicnode.com
 
-# Faucets testnet
+# Testnet faucets
 # Sepolia: https://sepoliafaucet.com
 # BSC Testnet: https://testnet.bnbchain.org/faucet-smart
 ```
 
 ---
 
-### ❌ `SEM SALDO SPL — TRANSFERÊNCIA CANCELADA` (Sealevel)
+### ❌ `NO SPL BALANCE — TRANSFER CANCELLED` (Sealevel)
 
-O script detectou que a carteira não tem tokens SPL do token desejado. Isso ocorre quando:
+The script detected that the wallet has no SPL tokens of the desired token. This happens when:
 
-1. **A carteira nunca recebeu esse token** — a token account não existe ainda
-2. **O saldo é zero** — todos os tokens foram queimados em transferências anteriores
+1. **The wallet has never received this token** — the token account does not exist yet
+2. **The balance is zero** — all tokens were burned in previous transfers
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Sintaxe correta do spl-token balance (mint + owner + url)
+# Correct syntax for spl-token balance (mint + owner + url)
 spl-token balance Db8VbMerYxksYwSSdetpy6Jhp2BrE4hk9Sh9dYJT5dQ2 \
     --owner BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j \
     --url https://api.testnet.solana.com
 ```
 
-**Solução:** Primeiro envie tokens do Terra Classic para o Solana:
+**Fix:** First send tokens from Terra Classic to Solana:
 ```bash
-# Passo 1: TC → Solana (mint tokens na carteira Solana)
+# Step 1: TC → Solana (mint tokens in the Solana wallet)
 TOKEN_KEY=xpto DEST_NETWORK=solanatestnet \
   RECIPIENT="BirXd4QDxfq2vx9LGqgXXSgZrjT81rhoFGUbQRWDEf1j" \
   AMOUNT=2000000 AUTO_CONFIRM=s \
   ./transfer-remote-terra.sh
 
-# Passo 2: após chegar (~2-5 min), enviar Solana → TC
+# Step 2: after arriving (~2-5 min), send Solana → TC
 TOKEN_KEY=xpto SOURCE_NETWORK=solanatestnet \
   RECIPIENT="terra18lr7ujd9nsgyr49930ppaajhadzrezam70j39k" \
   AMOUNT=1000000 AUTO_CONFIRM=s \
@@ -643,9 +643,9 @@ TOKEN_KEY=xpto SOURCE_NETWORK=solanatestnet \
 
 ---
 
-### ❌ `InvalidAccountData` / `BurnChecked` falha (Sealevel)
+### ❌ `InvalidAccountData` / `BurnChecked` failure (Sealevel)
 
-Erro mais detalhado que indica o mesmo problema: token account inexistente ou sem saldo.
+More detailed error indicating the same problem: non-existent token account or zero balance.
 
 ```
 Transaction simulation failed: Error processing Instruction 1: invalid account data for instruction
@@ -653,60 +653,60 @@ Program log: Instruction: BurnChecked
 Program log: Error: InvalidAccountData
 ```
 
-**Causa:** A carteira não tem token account criada para o mint em questão.  
-**Solução:** Igual ao caso acima — primeiro receber tokens via TC → Solana.
+**Cause:** The wallet does not have a token account created for the mint in question.  
+**Fix:** Same as the case above — first receive tokens via TC → Solana.
 
 ---
 
-### ❌ Usar carteira criada via `solana-keygen` vs Phantom
+### ❌ Using a wallet created via `solana-keygen` vs Phantom
 
-Carteiras criadas com `solana-keygen new` começam completamente vazias — sem nenhuma token account SPL. Para enviar tokens Solana → TC, a carteira **precisa ter tokens** previamente recebidos.
+Wallets created with `solana-keygen new` start completely empty — with no SPL token accounts. To send tokens Solana → TC, the wallet **must have tokens** previously received.
 
-Se você tem uma carteira Phantom com saldo, importe-a conforme descrito na [seção 8 — Importar keypair do Phantom](#importar-keypair-de-uma-carteira-phantom).
+If you have a Phantom wallet with balance, import it as described in [section 8 — Import keypair from Phantom](#import-keypair-from-a-phantom-wallet).
 
 ---
 
-### ❌ Mensagem enviada mas tokens não chegaram no Terra Classic
+### ❌ Message sent but tokens did not arrive at Terra Classic
 
-1. **Confirmar a transação na origem** — verificar no Explorer se a tx foi confirmada
-2. **Verificar se o validator fez checkpoint** — acessar o S3 do validator e conferir se há novos arquivos
-3. **Aguardar o relayer** — pode levar até 5 minutos
-4. **Verificar entrega no Mailbox:**
+1. **Confirm the transaction at origin** — check in the Explorer if the tx was confirmed
+2. **Check if the validator made a checkpoint** — access the validator S3 and check for new files
+3. **Wait for the relayer** — can take up to 5 minutes
+4. **Verify delivery in the Mailbox:**
    ```bash
    terrad query wasm contract-state smart \
        terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
-       '{"mailbox":{"message_delivered":{"id":"<MESSAGE_ID_SEM_0x>"}}}' \
+       '{"mailbox":{"message_delivered":{"id":"<MESSAGE_ID_WITHOUT_0x>"}}}' \
        --node https://rpc.terra-classic.hexxagon.dev
    ```
-5. **Verificar saldo CW20** — seção [10](#10-consultar-saldos)
+5. **Check CW20 balance** — section [10](#10-query-balances)
 
 ---
 
-### ❌ `hyperlane-sealevel-client não encontrado`
+### ❌ `hyperlane-sealevel-client not found`
 
-O binário Rust precisa ser compilado:
+The Rust binary needs to be compiled:
 
 ```bash
 cd /home/lunc/hyperlane-monorepo/rust/sealevel
 cargo build
-# Binário gerado em: target/debug/hyperlane-sealevel-client
+# Binary generated at: target/debug/hyperlane-sealevel-client
 ```
 
 ---
 
-### ❌ Combinação TOKEN_KEY + SOURCE_NETWORK não encontrada
+### ❌ TOKEN_KEY + SOURCE_NETWORK combination not found
 
-Os valores de `TOKEN_KEY` e `SOURCE_NETWORK` devem corresponder exatamente às chaves dos arquivos de configuração.
+The values of `TOKEN_KEY` and `SOURCE_NETWORK` must exactly match the keys in the configuration files.
 
-**Valores válidos para EVM (`warp-evm-config.json`):**
+**Valid values for EVM (`warp-evm-config.json`):**
 
-| `SOURCE_NETWORK` | `TOKEN_KEY` disponíveis |
+| `SOURCE_NETWORK` | Available `TOKEN_KEY` values |
 |------------------|------------------------|
 | `sepolia` | `wlunc`, `xpto`, `xptv` |
 | `bsctestnet` | `wlunc`, `xpv` |
 
-**Valores válidos para Sealevel (`warp-sealevel-config.json`):**
+**Valid values for Sealevel (`warp-sealevel-config.json`):**
 
-| `SOURCE_NETWORK` | `TOKEN_KEY` disponíveis |
+| `SOURCE_NETWORK` | Available `TOKEN_KEY` values |
 |------------------|------------------------|
 | `solanatestnet` | `wlunc`, `juris`, `xpto` |

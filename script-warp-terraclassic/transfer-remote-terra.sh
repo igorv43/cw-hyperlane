@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  transfer-remote-terra.sh
-#  Envia tokens via Hyperlane Warp Route: Terra Classic → EVM / Sealevel
+#  Sends tokens via Hyperlane Warp Route: Terra Classic → EVM / Sealevel
 #
-#  Uso:
+#  Usage:
 #    export TERRA_PRIVATE_KEY="<hex_privkey>"
 #    ./transfer-remote-terra.sh
 #
-#  Variáveis opcionais para execução não-interativa:
+#  Optional variables for non-interactive execution:
 #    TOKEN_KEY       = xpto | xptv | xpv | juris | wlunc | ustc
 #    DEST_NETWORK    = sepolia | bsctestnet | solanatestnet
 #    RECIPIENT       = 0x... (EVM) | Base58 (Solana)
 #    AMOUNT          = valor em unidades mínimas (uXPTO, uLUNC etc.)
-#    IGP_FEE_ULUNA   = fee manual (ex: 1780832150). Se vazio, consulta IGP.
+#    IGP_FEE_ULUNA   = manual fee (e.g.: 1780832150). If empty, queries IGP.
 # =============================================================================
 set -euo pipefail
 
-# ─── Cores ────────────────────────────────────────────────────────────────────
+# ─── Colors ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'; DIM='\033[2m'
 
-# ─── Caminhos ─────────────────────────────────────────────────────────────────
+# ─── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$SCRIPT_DIR/log"
 mkdir -p "$LOG_DIR"
@@ -28,13 +28,13 @@ LOG_FILE="$LOG_DIR/transfer-remote-terra.log"
 EVM_CFG="$SCRIPT_DIR/warp-evm-config.json"
 SOL_CFG="$SCRIPT_DIR/warp-sealevel-config.json"
 
-# Endereços Terra Classic fixos
+# Fixed Terra Classic addresses
 TC_RPC="https://rpc.terra-classic.hexxagon.dev"
 TC_LCD="https://lcd.terra-classic.hexxagon.dev"
 TC_CHAIN_ID="rebel-2"
 TC_IGP="terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9"
 
-# Sobrescrever com valores do config se existir
+# Override with config values if it exists
 if command -v jq &>/dev/null && [ -f "$EVM_CFG" ]; then
     TC_RPC=$(jq -r '.terra_classic.rpc  // "https://rpc.terra-classic.hexxagon.dev"' "$EVM_CFG")
     TC_LCD=$(jq -r '.terra_classic.lcd  // "https://lcd.terra-classic.hexxagon.dev"' "$EVM_CFG")
@@ -44,43 +44,43 @@ fi
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔═══════════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${CYAN}║   🌉  TRANSFER REMOTE — Terra Classic → Outra Rede        ║${RESET}"
+echo -e "${BOLD}${CYAN}║   🌉  TRANSFER REMOTE — Terra Classic → Other Network     ║${RESET}"
 echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 
-# ─── Dependências ─────────────────────────────────────────────────────────────
+# ─── Dependencies ────────────────────────────────────────────────────────────
 for dep in node jq curl python3; do
     if ! command -v "$dep" &>/dev/null; then
-        echo -e "${RED}❌ Dependência não encontrada: ${dep}${RESET}"
+        echo -e "${RED}❌ Dependency not found: ${dep}${RESET}"
         exit 1
     fi
 done
 
-# Localizar node_modules
+# Locate node_modules
 PROJECT_ROOT="$SCRIPT_DIR"
 while [ "$PROJECT_ROOT" != "/" ] && [ ! -f "$PROJECT_ROOT/package.json" ]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
 if [ ! -d "$PROJECT_ROOT/node_modules/@cosmjs/cosmwasm-stargate" ]; then
-    echo -e "${RED}❌ node_modules/@cosmjs/cosmwasm-stargate não encontrado em $PROJECT_ROOT${RESET}"
+    echo -e "${RED}❌ node_modules/@cosmjs/cosmwasm-stargate not found in $PROJECT_ROOT${RESET}"
     echo -e "   Execute: cd $PROJECT_ROOT && yarn install"
     exit 1
 fi
 
-# ─── Chave privada ─────────────────────────────────────────────────────────────
+# ─── Private key ──────────────────────────────────────────────────────────────
 if [ -z "${TERRA_PRIVATE_KEY:-}" ]; then
-    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY não definida.${RESET}"
-    echo -n "   Digite sua chave privada hex (não será exibida): "
+    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY not set.${RESET}"
+    echo -n "   Enter your hex private key (will not be displayed): "
     read -rs TERRA_PRIVATE_KEY; echo ""
-    [ -z "$TERRA_PRIVATE_KEY" ] && echo -e "${RED}❌ Chave não fornecida.${RESET}" && exit 1
+    [ -z "$TERRA_PRIVATE_KEY" ] && echo -e "${RED}❌ Key not provided.${RESET}" && exit 1
 fi
 
-# ─── Verificar configs ─────────────────────────────────────────────────────────
-[ ! -f "$EVM_CFG" ] && echo -e "${RED}❌ Não encontrado: $EVM_CFG${RESET}" && exit 1
-[ ! -f "$SOL_CFG" ] && echo -e "${RED}❌ Não encontrado: $SOL_CFG${RESET}" && exit 1
+# ─── Check configs ────────────────────────────────────────────────────────────
+[ ! -f "$EVM_CFG" ] && echo -e "${RED}❌ Not found: $EVM_CFG${RESET}" && exit 1
+[ ! -f "$SOL_CFG" ] && echo -e "${RED}❌ Not found: $SOL_CFG${RESET}" && exit 1
 
-# ─── Construir lista de opções disponíveis (token × rede) ────────────────────
-# Formato: "TOKEN_KEY|DEST_NETWORK|DOMAIN|TYPE|COLLATERAL|WARP_TC|WARP_DEST|DEST_TYPE"
+# ─── Build list of available options (token × network) ──────────────────────
+# Format: "TOKEN_KEY|DEST_NETWORK|DOMAIN|TYPE|COLLATERAL|WARP_TC|WARP_DEST|DEST_TYPE"
 declare -a OPTIONS=()
 declare -a LABELS=()
 
@@ -91,7 +91,7 @@ while IFS= read -r entry; do
     TOKEN=$(echo "$entry"  | cut -d'|' -f3)
     WARP_DEST=$(echo "$entry" | cut -d'|' -f4)
 
-    # Obter dados do token na Terra Classic
+    # Get token data on Terra Classic
     TC_TYPE=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.type // ""' "$EVM_CFG")
     TC_WARP=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.warp_address // ""' "$EVM_CFG")
     TC_COLL=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.collateral_address // ""' "$EVM_CFG")
@@ -121,7 +121,7 @@ while IFS= read -r entry; do
     TOKEN=$(echo "$entry"  | cut -d'|' -f3)
     PROG_HEX=$(echo "$entry" | cut -d'|' -f4)
 
-    # Obter dados do token na Terra Classic (busca no EVM config que tem os tokens TC)
+    # Get token data on Terra Classic (busca no EVM config que tem os tokens TC)
     TC_TYPE=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.type // ""' "$EVM_CFG")
     TC_WARP=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.warp_address // ""' "$EVM_CFG")
     TC_COLL=$(jq -r --arg t "$TOKEN" '.terra_classic.tokens[$t].terra_warp.collateral_address // ""' "$EVM_CFG")
@@ -144,15 +144,15 @@ done < <(jq -r '
 ' "$SOL_CFG" 2>/dev/null)
 
 if [ ${#OPTIONS[@]} -eq 0 ]; then
-    echo -e "${RED}❌ Nenhuma combinação token/rede deployada encontrada nos configs.${RESET}"
+    echo -e "${RED}❌ No deployed token/network combination found in configs.${RESET}"
     echo -e "   Verifique ${EVM_CFG} e ${SOL_CFG}."
     exit 1
 fi
 
-# ─── Seleção interativa ou via variáveis ──────────────────────────────────────
+# ─── Interactive selection or via variables ─────────────────────────────────
 SELECTED_IDX=""
 if [ -n "${TOKEN_KEY:-}" ] && [ -n "${DEST_NETWORK:-}" ]; then
-    # Modo não-interativo: buscar combinação
+    # Non-interactive mode: search for combination
     for i in "${!OPTIONS[@]}"; do
         OPT="${OPTIONS[$i]}"
         T=$(echo "$OPT" | cut -d'|' -f1)
@@ -160,12 +160,12 @@ if [ -n "${TOKEN_KEY:-}" ] && [ -n "${DEST_NETWORK:-}" ]; then
         [ "$T" = "$TOKEN_KEY" ] && [ "$N" = "$DEST_NETWORK" ] && SELECTED_IDX="$i" && break
     done
     if [ -z "$SELECTED_IDX" ]; then
-        echo -e "${RED}❌ Combinação TOKEN_KEY='${TOKEN_KEY}' + DEST_NETWORK='${DEST_NETWORK}' não encontrada.${RESET}"
+        echo -e "${RED}❌ Combination TOKEN_KEY='${TOKEN_KEY}' + DEST_NETWORK='${DEST_NETWORK}' not found.${RESET}"
         exit 1
     fi
 else
-    # Modo interativo
-    echo -e "${BOLD}Selecione o token e a rede de destino:${RESET}"
+    # Interactive mode
+    echo -e "${BOLD}Select the token and destination network:${RESET}"
     echo ""
     for i in "${!LABELS[@]}"; do
         echo -e "  ${CYAN}[$((i+1))]${RESET} ${LABELS[$i]}"
@@ -174,12 +174,12 @@ else
     echo -n "  Opção [1-${#OPTIONS[@]}]: "
     read -r SEL
     if ! [[ "$SEL" =~ ^[0-9]+$ ]] || [ "$SEL" -lt 1 ] || [ "$SEL" -gt "${#OPTIONS[@]}" ]; then
-        echo -e "${RED}❌ Opção inválida.${RESET}" && exit 1
+        echo -e "${RED}❌ Invalid option.${RESET}" && exit 1
     fi
     SELECTED_IDX=$((SEL-1))
 fi
 
-# ─── Extrair dados da opção selecionada ───────────────────────────────────────
+# ─── Extract data from selected option ──────────────────────────────────────
 SEL_OPT="${OPTIONS[$SELECTED_IDX]}"
 TOKEN_KEY=$(echo "$SEL_OPT"   | cut -d'|' -f1)
 DEST_NET=$(echo "$SEL_OPT"    | cut -d'|' -f2)
@@ -194,56 +194,56 @@ TOKEN_UPPER="${TOKEN_KEY^^}"
 NET_UPPER="${DEST_NET^^}"
 
 echo ""
-echo -e "${BOLD}${GREEN}✅ Selecionado:${RESET}  ${TOKEN_UPPER}  →  ${NET_UPPER}  (domain ${DEST_DOMAIN})"
-echo -e "   Tipo token TC : ${TC_TYPE}"
+echo -e "${BOLD}${GREEN}✅ Selected:${RESET}  ${TOKEN_UPPER}  →  ${NET_UPPER}  (domain ${DEST_DOMAIN})"
+echo -e "   TC token type : ${TC_TYPE}"
 echo -e "   Warp TC       : ${TC_WARP}"
 [ -n "$TC_COLL" ] && [ "$TC_COLL" != "null" ] && \
     echo -e "   Collateral    : ${TC_COLL}"
-echo -e "   Warp destino  : ${WARP_DEST}"
+echo -e "   Dest Warp     : ${WARP_DEST}"
 echo ""
 
 # ─── Recipient ────────────────────────────────────────────────────────────────
 if [ -z "${RECIPIENT:-}" ]; then
     if [ "$DEST_TYPE" = "evm" ]; then
-        echo -e "${DIM}  Formato EVM: 0x... (ex: 0x867f9ce9f0d7218b016351cb6122406e6d247a5e)${RESET}"
+        echo -e "${DIM}  EVM format: 0x... (e.g.: 0x867f9ce9f0d7218b016351cb6122406e6d247a5e)${RESET}"
     else
-        echo -e "${DIM}  Formato Solana: Base58 (ex: EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd)${RESET}"
-        echo -e "${DIM}  Ou hex de 64 chars sem 0x${RESET}"
+        echo -e "${DIM}  Solana format: Base58 (e.g.: EMAYGfEyhywUyEX6kfG5FZZMfznmKXM8PbWpkJhJ9Jjd)${RESET}"
+        echo -e "${DIM}  Or 64-char hex without 0x${RESET}"
     fi
-    echo -n "  Endereço do destinatário: "
+    echo -n "  Recipient address: "
     read -r RECIPIENT
 fi
-[ -z "$RECIPIENT" ] && echo -e "${RED}❌ Destinatário não informado.${RESET}" && exit 1
+[ -z "$RECIPIENT" ] && echo -e "${RED}❌ Recipient not provided.${RESET}" && exit 1
 
-# ─── Converter destinatário para bytes32 (hex 64 chars sem 0x) ───────────────
+# ─── Convert recipient to bytes32 (hex 64 chars without 0x) ────────────────
 if [ "$DEST_TYPE" = "evm" ]; then
-    # EVM: remover 0x, pad esquerda com zeros até 64 chars
+    # EVM: remove 0x, left-pad with zeros to 64 chars
     ADDR_CLEAN="${RECIPIENT#0x}"
     ADDR_CLEAN="${ADDR_CLEAN#0X}"
     ADDR_CLEAN=$(echo "$ADDR_CLEAN" | tr '[:upper:]' '[:lower:]')
     if [ ${#ADDR_CLEAN} -gt 64 ] || ! [[ "$ADDR_CLEAN" =~ ^[0-9a-f]+$ ]]; then
-        echo -e "${RED}❌ Endereço EVM inválido: ${RECIPIENT}${RESET}"
+        echo -e "${RED}❌ Invalid EVM address: ${RECIPIENT}${RESET}"
         exit 1
     fi
     RECIPIENT_B32=$(printf '%064s' "$ADDR_CLEAN" | tr ' ' '0')
 else
-    # Sealevel: pode ser Base58 ou hex direto
+    # Sealevel: can be Base58 or direct hex
     if [[ "$RECIPIENT" =~ ^[0-9a-fA-F]{64}$ ]]; then
         RECIPIENT_B32=$(echo "$RECIPIENT" | tr '[:upper:]' '[:lower:]')
     elif [[ "$RECIPIENT" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
         RECIPIENT_B32="${RECIPIENT#0x}"
     else
-        # Tentar decodificar como Base58 via Node.js
+        # Try decoding as Base58 via Node.js
         RECIPIENT_B32=$(node -e "
 const bs58 = require('${PROJECT_ROOT}/node_modules/bs58');
 try {
     const buf = bs58.decode('${RECIPIENT}');
-    if (buf.length !== 32) { process.stderr.write('ERR: tamanho inválido: ' + buf.length + '\n'); process.exit(1); }
+    if (buf.length !== 32) { process.stderr.write('ERR: invalid size: ' + buf.length + '\n'); process.exit(1); }
     process.stdout.write(Buffer.from(buf).toString('hex'));
 } catch(e) { process.stderr.write('ERR: ' + e.message + '\n'); process.exit(1); }
 " 2>&1) || {
-            echo -e "${RED}❌ Endereço Solana inválido: ${RECIPIENT}${RESET}"
-            echo -e "   Use Base58 (ex: EMAYGf...) ou hex de 64 chars."
+            echo -e "${RED}❌ Invalid Solana address: ${RECIPIENT}${RESET}"
+            echo -e "   Use Base58 (e.g.: EMAYGf...) or 64-char hex."
             exit 1
         }
     fi
@@ -256,23 +256,23 @@ if [ -z "${AMOUNT:-}" ]; then
     TOKEN_SYM=$(jq -r --arg t "$TOKEN_KEY" '.terra_classic.tokens[$t].symbol // $t' "$EVM_CFG")
     DECIMALS=$(jq -r --arg t "$TOKEN_KEY" '.terra_classic.tokens[$t].decimals // 6' "$EVM_CFG")
     echo ""
-    echo -e "${DIM}  Decimais: ${DECIMALS} — ex: 1 ${TOKEN_SYM} = 1$(printf '%0.s0' $(seq 1 $DECIMALS))${RESET}"
-    echo -n "  Quantidade (em unidades mínimas, ex: 10000000): "
+    echo -e "${DIM}  Decimals: ${DECIMALS} — e.g.: 1 ${TOKEN_SYM} = 1$(printf '%0.s0' $(seq 1 $DECIMALS))${RESET}"
+    echo -n "  Amount (in minimum units, e.g.: 10000000): "
     read -r AMOUNT
 fi
 if ! [[ "$AMOUNT" =~ ^[0-9]+$ ]] || [ "$AMOUNT" -eq 0 ] 2>/dev/null; then
-    echo -e "${RED}❌ Quantidade inválida: ${AMOUNT}${RESET}" && exit 1
+    echo -e "${RED}❌ Invalid amount: ${AMOUNT}${RESET}" && exit 1
 fi
 
 echo -e "   Amount            : ${AMOUNT}"
 echo ""
 
-# ─── Consultar IGP fee via LCD ─────────────────────────────────────────────────
+# ─── Query IGP fee via LCD ────────────────────────────────────────────────────
 if [ -n "${IGP_FEE_ULUNA:-}" ]; then
-    echo -e "${YELLOW}⚠️  Fee manual: ${IGP_FEE_ULUNA} uluna${RESET}"
+    echo -e "${YELLOW}⚠️  Manual fee: ${IGP_FEE_ULUNA} uluna${RESET}"
     IGP_FEE="$IGP_FEE_ULUNA"
 else
-    echo -e "${DIM}  Consultando fee IGP para domain ${DEST_DOMAIN}...${RESET}"
+    echo -e "${DIM}  Querying IGP fee for domain ${DEST_DOMAIN}...${RESET}"
     GAS_AMOUNT="300000"
     QUERY_B64=$(python3 -c "
 import json,base64
@@ -281,7 +281,7 @@ print(base64.b64encode(json.dumps(q).encode()).decode())
 ")
 
     IGP_FEE=""
-    # Tentar múltiplos LCD endpoints
+    # Try multiple LCD endpoints
     for LCD_TRY in "$TC_LCD" "https://terra-classic-lcd.publicnode.com" "https://lcd.terrarebels.net"; do
         IGP_RESP=$(curl -s --max-time 10 \
             -H "Accept: application/json" \
@@ -296,25 +296,25 @@ print(base64.b64encode(json.dumps(q).encode()).decode())
     done
 
     if [ -z "$IGP_FEE" ]; then
-        # Fallback: valores baseados em uso real do projeto
+        # Fallback: values based on real project usage
         case "$DEST_DOMAIN" in
-            11155111)   IGP_FEE="1780832150" ;;  # Sepolia (valor histórico real)
+            11155111)   IGP_FEE="1780832150" ;;  # Sepolia (real historical value)
             97)         IGP_FEE="500000000"  ;;  # BSC Testnet
             1399811150) IGP_FEE="300000"     ;;  # Solana Testnet
             *)          IGP_FEE="1000000000" ;;
         esac
-        echo -e "${YELLOW}⚠️  IGP query falhou em todos os LCDs, usando fee padrão: ${IGP_FEE} uluna${RESET}"
-        echo -e "${DIM}     (use IGP_FEE_ULUNA=<valor> para sobrescrever)${RESET}"
+        echo -e "${YELLOW}⚠️  IGP query failed on all LCDs, using default fee: ${IGP_FEE} uluna${RESET}"
+        echo -e "${DIM}     (use IGP_FEE_ULUNA=<value> to override)${RESET}"
     fi
 fi
 
-# ─── Confirmação ──────────────────────────────────────────────────────────────
+# ─── Confirmation ─────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "${BOLD}  Resumo da transferência${RESET}"
+echo -e "${BOLD}  Transfer summary${RESET}"
 echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo -e "  Token          : ${TOKEN_UPPER}  (${TC_TYPE})"
-echo -e "  Destino        : ${NET_UPPER}  (domain ${DEST_DOMAIN})"
+echo -e "  Destination    : ${NET_UPPER}  (domain ${DEST_DOMAIN})"
 echo -e "  Recipient      : ${RECIPIENT}"
 echo -e "  Recipient b32  : ${RECIPIENT_B32}"
 echo -e "  Amount         : ${AMOUNT}"
@@ -325,18 +325,18 @@ echo -e "  Warp TC        : ${TC_WARP}"
 echo ""
 
 if [[ "${AUTO_CONFIRM:-}" =~ ^[sStTyY1]$ ]]; then
-    echo -e "${DIM}  (AUTO_CONFIRM ativado — prosseguindo automaticamente)${RESET}"
+    echo -e "${DIM}  (AUTO_CONFIRM enabled — proceeding automatically)${RESET}"
 else
-    echo -n "  Confirmar e enviar? [s/N]: "
+    echo -n "  Confirm and send? [y/N]: "
     read -r CONF
-    [[ ! "$CONF" =~ ^[sS]$ ]] && echo -e "${YELLOW}⚠️  Cancelado pelo usuário.${RESET}" && exit 0
+    [[ ! "$CONF" =~ ^[sSyY]$ ]] && echo -e "${YELLOW}⚠️  Cancelled by user.${RESET}" && exit 0
 fi
 
 echo ""
-echo -e "${BOLD}${GREEN}▶ Executando transferência...${RESET}"
+echo -e "${BOLD}${GREEN}▶ Executing transfer...${RESET}"
 echo ""
 
-# ─── Executar via Node.js + CosmJS ─────────────────────────────────────────────
+# ─── Execute via Node.js + CosmJS ─────────────────────────────────────────────
 RESULT=$(node --input-type=module << NODEJS 2>&1 || true
 import { SigningCosmWasmClient } from '${PROJECT_ROOT}/node_modules/@cosmjs/cosmwasm-stargate/build/index.js';
 import { DirectSecp256k1Wallet } from '${PROJECT_ROOT}/node_modules/@cosmjs/proto-signing/build/index.js';
@@ -348,7 +348,7 @@ const TC_TYPE     = '${TC_TYPE}';
 const TC_COLL     = '${TC_COLL}';
 const TC_WARP     = '${TC_WARP}';
 const DEST_DOMAIN = ${DEST_DOMAIN};
-const RECIPIENT   = '${RECIPIENT_B32}';   // bytes32 sem 0x
+const RECIPIENT   = '${RECIPIENT_B32}';   // bytes32 without 0x
 const AMOUNT      = '${AMOUNT}';
 const IGP_FEE     = '${IGP_FEE}';
 
@@ -358,18 +358,18 @@ async function main() {
     const privBuf = Buffer.from(privHex, 'hex');
     const wallet  = await DirectSecp256k1Wallet.fromKey(privBuf, 'terra');
     const [account] = await wallet.getAccounts();
-    console.log('Remetente: ' + account.address);
+    console.log('Sender: ' + account.address);
 
     const client = await SigningCosmWasmClient.connectWithSigner(
         RPC, wallet,
-        { gasPrice: GasPrice.fromString('28.325uluna') }
+        { gasPrice: GasPrice.fromString('0.015uluna') }
     );
 
     let txHash;
 
     if (TC_TYPE === 'cw20') {
         // ── CW20: increase_allowance + transfer_remote ──────────────────────
-        console.log('Modo CW20: increase_allowance + transfer_remote');
+        console.log('CW20 mode: increase_allowance + transfer_remote');
 
         const msgs = [
             {
@@ -408,12 +408,12 @@ async function main() {
             account.address, msgs, 'auto',
             'transfer_remote CW20 via Hyperlane Warp — transfer-remote-terra.sh'
         );
-        if (result.code !== 0) throw new Error('Tx falhou: ' + result.rawLog);
+        if (result.code !== 0) throw new Error('Tx failed: ' + result.rawLog);
         txHash = result.transactionHash;
 
     } else {
         // ── Native: transfer_remote com funds ───────────────────────────────
-        console.log('Modo native: transfer_remote com funds');
+        console.log('Native mode: transfer_remote with funds');
 
         const result = await client.execute(
             account.address, TC_WARP,
@@ -439,7 +439,7 @@ main().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
 NODEJS
 )
 
-# ─── Resultado ────────────────────────────────────────────────────────────────
+# ─── Result ───────────────────────────────────────────────────────────────────
 while IFS= read -r line; do
     echo -e "  ${DIM}${line}${RESET}"
 done < <(echo "$RESULT" | grep -v "^TX_HASH=\|^SUCCESS\|^ERROR:" || true)
@@ -451,7 +451,7 @@ IS_ERR=$(echo "$RESULT"  | grep "^ERROR:" | sed 's/^ERROR: //' || true)
 echo ""
 if [ "$IS_OK" -gt 0 ] && [ -n "$TX_HASH" ]; then
     echo -e "${BOLD}${GREEN}╔═══════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${BOLD}${GREEN}║  ✅  TRANSFERÊNCIA ENVIADA COM SUCESSO!                   ║${RESET}"
+    echo -e "${BOLD}${GREEN}║  ✅  TRANSFER SENT SUCCESSFULLY!                          ║${RESET}"
     echo -e "${BOLD}${GREEN}╚═══════════════════════════════════════════════════════════╝${RESET}"
     echo ""
     echo -e "  ${BOLD}TX Hash :${RESET} ${TX_HASH}"
@@ -460,13 +460,13 @@ if [ "$IS_OK" -gt 0 ] && [ -n "$TX_HASH" ]; then
     echo -e "${DIM}  A mensagem será relayada pelo Hyperlane Relayer."
     echo -e "  Tempo estimado de entrega: 1-5 minutos.${RESET}"
 
-    # ─── Salvar relatório ─────────────────────────────────────────────────────
+    # ─── Save report ──────────────────────────────────────────────────────────
     REPORT_FILE="$LOG_DIR/TRANSFER-REMOTE-${NET_UPPER}-${TOKEN_UPPER}-$(date +%Y%m%d-%H%M%S).txt"
     {
         echo "TRANSFER REMOTE — Terra Classic → ${NET_UPPER}"
-        echo "Data          : $(date)"
+        echo "Date          : $(date)"
         echo "Token         : ${TOKEN_UPPER}  (${TC_TYPE})"
-        echo "Destino       : ${NET_UPPER}  (domain ${DEST_DOMAIN})"
+        echo "Destination   : ${NET_UPPER}  (domain ${DEST_DOMAIN})"
         echo "Recipient     : ${RECIPIENT}"
         echo "Recipient b32 : ${RECIPIENT_B32}"
         echo "Amount        : ${AMOUNT}"
@@ -476,21 +476,21 @@ if [ "$IS_OK" -gt 0 ] && [ -n "$TX_HASH" ]; then
         echo "TX Hash       : ${TX_HASH}"
         echo "Explorer      : https://finder.hexxagon.io/rebel-2/tx/${TX_HASH}"
     } > "$REPORT_FILE"
-    echo -e "  ${BOLD}Relatório :${RESET} ${REPORT_FILE}"
+    echo -e "  ${BOLD}Report    :${RESET} ${REPORT_FILE}"
     echo ""
     # Log
     echo "$(date) | ${TOKEN_UPPER}→${NET_UPPER} | amount=${AMOUNT} | fee=${IGP_FEE} | tx=${TX_HASH}" >> "$LOG_FILE"
 else
     echo -e "${RED}╔═══════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${RED}║  ❌  ERRO NA TRANSFERÊNCIA                                ║${RESET}"
+    echo -e "${RED}║  ❌  TRANSFER ERROR                                       ║${RESET}"
     echo -e "${RED}╚═══════════════════════════════════════════════════════════╝${RESET}"
     echo ""
-    [ -n "$IS_ERR" ] && echo -e "${RED}  Erro: ${IS_ERR}${RESET}"
+    [ -n "$IS_ERR" ] && echo -e "${RED}  Error: ${IS_ERR}${RESET}"
     echo ""
-    echo -e "${YELLOW}  Dicas:${RESET}"
-    echo -e "  • Verifique se o token/rede estão corretamente configurados"
-    echo -e "  • Aumente IGP_FEE_ULUNA se o erro for sobre gas insuficiente"
-    echo -e "  • Verifique saldo de LUNC para cobrir o IGP fee"
-    echo -e "  • Confirme que o warp route está ativo: enrollRemoteRouter configurado"
+    echo -e "${YELLOW}  Tips:${RESET}"
+    echo -e "  • Check that the token/network are correctly configured"
+    echo -e "  • Increase IGP_FEE_ULUNA if the error is about insufficient gas"
+    echo -e "  • Check LUNC balance to cover the IGP fee"
+    echo -e "  • Confirm that the warp route is active: enrollRemoteRouter configured"
     exit 1
 fi

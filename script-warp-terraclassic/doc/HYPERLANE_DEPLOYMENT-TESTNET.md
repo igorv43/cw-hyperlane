@@ -1,38 +1,38 @@
-# 📘 Guia Completo: Deploy e Configuração Hyperlane na Terra Classic Testnet
+# 📘 Complete Guide: Hyperlane Deployment and Configuration on Terra Classic Testnet
 
-Este guia documenta o processo completo de deploy e configuração dos contratos Hyperlane na Terra Classic Testnet (rebel-2).
+This guide documents the complete process of deploying and configuring Hyperlane contracts on Terra Classic Testnet (rebel-2).
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-1. [Pré-requisitos](#pré-requisitos)
-2. [Verificar Contratos Disponíveis](#verificar-contratos-disponíveis)
-3. [Deploy dos Contratos (Upload)](#deploy-dos-contratos-upload)
-4. [Instanciação dos Contratos](#instanciação-dos-contratos)
-5. [Configuração via Governança](#configuração-via-governança)
-6. [Verificação da Execução](#verificação-da-execução)
-7. [Endereços e Hexed dos Contratos](#endereços-e-hexed-dos-contratos)
+1. [Prerequisites](#prerequisites)
+2. [Verify Available Contracts](#verify-available-contracts)
+3. [Contract Deployment (Upload)](#contract-deployment-upload)
+4. [Contract Instantiation](#contract-instantiation)
+5. [Configuration via Governance](#configuration-via-governance)
+6. [Execution Verification](#execution-verification)
+7. [Contract Addresses and Hexed](#contract-addresses-and-hexed)
 8. [Troubleshooting](#troubleshooting)
 
 ---
 
-## 🔧 Pré-requisitos
+## 🔧 Prerequisites
 
-### Requisitos do Sistema
+### System Requirements
 
-- **Node.js**: v18+ ou v20+
+- **Node.js**: v18+ or v20+
 - **Yarn**: v4.1.0+
-- **Terra Classic Testnet Node**: Acesso ao RPC público
-- **Wallet**: Chave privada configurada
+- **Terra Classic Testnet Node**: Access to public RPC
+- **Wallet**: Private key configured
 
-### Variáveis de Ambiente
+### Environment Variables
 
 ```bash
-export PRIVATE_KEY="sua_chave_privada_hexadecimal"
+export PRIVATE_KEY="your_private_key_hexadecimal"
 ```
 
-### Instalação de Dependências
+### Install Dependencies
 
 ```bash
 cd cw-hyperlane
@@ -41,15 +41,15 @@ yarn install
 
 ---
 
-## 1️⃣ Verificar Contratos Disponíveis
+## 1️⃣ Verify Available Contracts
 
-Antes de fazer o deploy, verifique quais contratos estão disponíveis no repositório remoto:
+Before deploying, verify which contracts are available in the remote repository:
 
 ```bash
 yarn cw-hpl upload remote-list -n terraclassic
 ```
 
-**Output esperado:**
+**Expected output:**
 ```
 Listing available contracts from remote repository...
 - hpl_mailbox
@@ -74,37 +74,37 @@ Listing available contracts from remote repository...
 - hpl_warp_native
 ```
 
-### 📦 Releases Disponíveis
+### 📦 Available Releases
 
-Os contratos WASM compilados estão disponíveis no GitHub Releases:
+The compiled WASM contracts are available on GitHub Releases:
 
 - **Latest Release**: [v0.0.6-rc8](https://github.com/many-things/cw-hyperlane/releases/tag/v0.0.6-rc8)
-- **Download Direto**: https://github.com/many-things/cw-hyperlane/releases/download/v0.0.6-rc8/cw-hyperlane-v0.0.6-rc8.zip
-- **Todas as Versões**: https://github.com/many-things/cw-hyperlane/releases
+- **Direct Download**: https://github.com/many-things/cw-hyperlane/releases/download/v0.0.6-rc8/cw-hyperlane-v0.0.6-rc8.zip
+- **All Versions**: https://github.com/many-things/cw-hyperlane/releases
 
 ---
 
-## 2️⃣ Deploy dos Contratos (Upload)
+## 2️⃣ Contract Deployment (Upload)
 
-### Upload para a Blockchain
+### Upload to Blockchain
 
-Execute o comando para fazer upload de todos os contratos da versão especificada:
+Execute the command to upload all contracts of the specified version:
 
 ```bash
 yarn cw-hpl upload remote v0.0.6-rc8 -n terraclassic
 ```
 
-**O que este comando faz:**
-- 📥 **Baixa os arquivos WASM** do GitHub release
-- 📤 Faz upload para a blockchain Terra Classic Testnet
-- 💾 Armazena os `code_id` de cada contrato
-- 📝 Salva os IDs no arquivo de contexto (`context/terraclassic.json`)
+**What this command does:**
+- 📥 **Downloads WASM files** from GitHub release
+- 📤 Uploads to Terra Classic Testnet blockchain
+- 💾 Stores the `code_id` of each contract
+- 📝 Saves IDs in the context file (`context/terraclassic.json`)
 
-### Hashes dos Contratos (Para Auditoria)
+### Contract Hashes (For Auditing)
 
-Durante o upload, cada contrato gera um **hash SHA-256** do arquivo WASM. Estes hashes são **cruciais para auditoria** e garantem que não houve manipulação dos binários:
+During upload, each contract generates a **SHA-256 hash** of the WASM file. These hashes are **crucial for auditing** and ensure that binaries have not been tampered with:
 
-| Contrato | Hash SHA-256 | Code ID (Testnet) | TX Hash |
+| Contract | SHA-256 Hash | Code ID (Testnet) | TX Hash |
 |----------|--------------|-------------------|---------|
 | **hpl_mailbox** | `12e1eb4266faba3cc99ccf40dd5e65aed3e03a8f9133c4b28fb57b2195863525` | 1981 | `E5D465100CDAE4A8E9CF91996D0F79CDB0818FE959A9DE26AB0731001A0FE74A` |
 | **hpl_validator_announce** | `87cf4cbe4f5b6b3c7a278b4ae0ae980d96c04192f07aa70cc80bd7996b31c6a8` | 1982 | `781048E6DB6ADF70F132F7823F729BE185C994A4FF93051EB0CD8D5DEE44653A` |
@@ -127,48 +127,48 @@ Durante o upload, cada contrato gera um **hash SHA-256** do arquivo WASM. Estes 
 | **hpl_warp_cw20** | `a97d87804fae105d95b916d1aee72f555dd431ece752a646627cf1ac21aa716d` | 1999 | `18FD9952226B3B834BB63BDD095D2129D2BE24C9A750455C0289CBAC03B2C1D4` |
 | **hpl_warp_native** | `5aa1b379e6524a3c2440b61c08c6012cc831403fae0c825b966ceabecfdb172b` | 2000 | `5D8E697027851176A4FE0AB5B6C5FF32EE28D609D4F934DA3AC4A0BBB6B24812` |
 
-#### 🔒 Verificação de Integridade
+#### 🔒 Integrity Verification
 
-Os hashes SHA-256 acima permitem **verificar a integridade** dos contratos:
+The SHA-256 hashes above allow you to **verify the integrity** of contracts:
 
-**Método 1: Verificar contra a blockchain**
+**Method 1: Verify against blockchain**
 
 ```bash
-# Baixar o WASM do code ID (exemplo: hpl_mailbox com code_id 1981)
+# Download WASM from code ID (example: hpl_mailbox with code_id 1981)
 terrad query wasm code 1981 download.wasm \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 
-# Calcular o hash SHA-256
+# Calculate SHA-256 hash
 sha256sum download.wasm
 
-# Comparar com o hash da tabela acima
-# Para hpl_mailbox deve ser: 12e1eb4266faba3cc99ccf40dd5e65aed3e03a8f9133c4b28fb57b2195863525
+# Compare with hash from table above
+# For hpl_mailbox should be: 12e1eb4266faba3cc99ccf40dd5e65aed3e03a8f9133c4b28fb57b2195863525
 ```
 
-**Método 2: Verificar contra o release oficial**
+**Method 2: Verify against official release**
 
 ```bash
-# Baixar o release oficial
+# Download official release
 wget https://github.com/many-things/cw-hyperlane/releases/download/v0.0.6-rc8/cw-hyperlane-v0.0.6-rc8.zip
 unzip cw-hyperlane-v0.0.6-rc8.zip
 
-# Verificar todos os checksums
+# Verify all checksums
 sha256sum -c checksums.txt
 
-# Ou verificar um contrato específico
+# Or verify a specific contract
 sha256sum hpl_mailbox.wasm
 # Output: 12e1eb4266faba3cc99ccf40dd5e65aed3e03a8f9133c4b28fb57b2195863525
 ```
 
-### Verificar Code IDs
+### Verify Code IDs
 
-Os `code_id` são salvos em:
+The `code_id` values are saved in:
 ```bash
 cat context/terraclassic.json
 ```
 
-**Exemplo de conteúdo:**
+**Example content:**
 ```json
 {
   "artifacts": {
@@ -196,54 +196,54 @@ cat context/terraclassic.json
 }
 ```
 
-### Identificando o Módulo de Governança
+### Identifying the Governance Module
 
-Para verificar qual é o endereço do módulo de governança em sua rede:
+To verify the governance module address on your network:
 
 ```bash
-# Ver informações da governança
+# View governance information
 terrad query gov params \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 
-# O módulo de governança geralmente tem o endereço:
+# The governance module usually has the address:
 # terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n (Terra Classic)
 ```
 
 ---
 
-## 3️⃣ Instanciação dos Contratos
+## 3️⃣ Contract Instantiation
 
 ### Script: `CustomInstantiateWasm-testnet.ts`
 
-Este script instancia todos os contratos na blockchain com suas configurações iniciais.
+This script instantiates all contracts on the blockchain with their initial configurations.
 
-#### Executar Instanciação
+#### Execute Instantiation
 
 ```bash
 cd /home/lunc/cw-hyperlane
-PRIVATE_KEY="sua_chave_hex" yarn tsx script/CustomInstantiateWasm-testnet.ts
+PRIVATE_KEY="your_key_hex" yarn tsx script/CustomInstantiateWasm-testnet.ts
 ```
 
-#### Configuração do Script
+#### Script Configuration
 
-O script está configurado com:
+The script is configured with:
 - **RPC**: `https://rpc.luncblaze.com`
 - **Chain ID**: `rebel-2`
 - **Admin/Owner**: `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` ⚠️
 - **Gas Price**: `28.5uluna`
 
-### 📋 Contratos Instanciados - Explicação Detalhada
+### 📋 Instantiated Contracts - Detailed Explanation
 
-O script instancia **12 contratos** na seguinte ordem:
+The script instantiates **12 contracts** in the following order:
 
 ---
 
-#### 1. 📮 MAILBOX - Contrato Principal de Mensagens Cross-Chain
+#### 1. 📮 MAILBOX - Main Cross-Chain Messaging Contract
 
-**Função:** O Mailbox é o contrato central que gerencia o envio e recebimento de mensagens cross-chain. Ele coordena ISMs, Hooks e mantém o nonce de mensagens.
+**Function:** The Mailbox is the central contract that manages sending and receiving cross-chain messages. It coordinates ISMs, Hooks, and maintains message nonce.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "hrp": "terra",
@@ -252,24 +252,24 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `hrp` (string): Human-readable part do endereço Bech32 - prefixo da chain (ex: "terra" para Terra Classic)
-- `domain` (u32): Domain ID único da chain no protocolo Hyperlane. Terra Classic = 1325
-- `owner` (string): Endereço que terá controle admin do contrato (módulo de governança)
+**Parameter Explanation:**
+- `hrp` (string): Human-readable part of Bech32 address - chain prefix (e.g., "terra" for Terra Classic)
+- `domain` (u32): Unique chain domain ID in Hyperlane protocol. Terra Classic = 1325
+- `owner` (string): Address that will have admin control of the contract (governance module)
 
 **Code ID:** `1981`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
 - **Hexed**: `18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b`
 
 ---
 
-#### 2. 📢 VALIDATOR ANNOUNCE - Registro de Validadores
+#### 2. 📢 VALIDATOR ANNOUNCE - Validator Registry
 
-**Função:** Permite que validadores anunciem seus endpoints e localizações para que relayers possam descobrir como obter assinaturas.
+**Function:** Allows validators to announce their endpoints and locations so relayers can discover how to obtain signatures.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "hrp": "terra",
@@ -277,47 +277,47 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `hrp` (string): Prefixo Bech32 da chain
-- `mailbox` (string): Endereço do Mailbox associado a este anunciador
+**Parameter Explanation:**
+- `hrp` (string): Bech32 chain prefix
+- `mailbox` (string): Mailbox address associated with this announcer
 
 **Code ID:** `1982`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra10szy9ppjpgt8xk3tkywu3dhss8s5scsga85f4cgh452p6mwd092qdzfyup`
 - **Hexed**: `7c044284320a16735a2bb11dc8b6f081e1486208e9e89ae117ad141d6dcd7954`
 
 ---
 
-#### 3. 🔐 ISM MULTISIG #1 - Para BSC Testnet (Domain 97)
+#### 3. 🔐 ISM MULTISIG #1 - For BSC Testnet (Domain 97)
 
-**Função:** ISM que valida mensagens usando assinaturas de múltiplos validadores. Requer um threshold mínimo de assinaturas para aprovar uma mensagem.
+**Function:** ISM that validates messages using signatures from multiple validators. Requires a minimum threshold of signatures to approve a message.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Endereço que pode configurar validadores e threshold (módulo de governança)
+**Parameter Explanation:**
+- `owner` (string): Address that can configure validators and threshold (governance module)
 
-**Nota:** Validadores e threshold serão configurados posteriormente via governança.
+**Note:** Validators and threshold will be configured later via governance.
 
 **Code ID:** `1984`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`
 - **Hexed**: `18d6fb643be899d66edc8305aa1cbfa1115d8256a9679581205ae7b4a895c9b6`
 
 ---
 
-#### 4. 🔐 ISM MULTISIG #2 - Para Solana Testnet (Domain 1399811150)
+#### 4. 🔐 ISM MULTISIG #2 - For Solana Testnet (Domain 1399811150)
 
-**Função:** ISM que valida mensagens usando assinaturas de múltiplos validadores para Solana Testnet.
+**Function:** ISM that validates messages using signatures from multiple validators for Solana Testnet.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
@@ -326,17 +326,17 @@ O script instancia **12 contratos** na seguinte ordem:
 
 **Code ID:** `1984`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`
 - **Hexed**: `6fbb4504dc8bcb2c218740f16f482877d2ef608f16665e5543034712af292a3c`
 
 ---
 
-#### 5. 🗺️ ISM ROUTING - Roteador de ISMs
+#### 5. 🗺️ ISM ROUTING - ISM Router
 
-**Função:** Permite usar diferentes ISMs para diferentes domínios (chains). Útil para ter políticas de segurança customizadas por chain de origem.
+**Function:** Allows using different ISMs for different domains (chains). Useful for having customized security policies per source chain.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
@@ -353,39 +353,39 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Endereço que pode adicionar/remover rotas de ISMs
-- `isms` (array): Lista de mapeamentos domain → ISM
-  - `domain` (u32): Domain ID da chain de origem
+**Parameter Explanation:**
+- `owner` (string): Address that can add/remove ISM routes
+- `isms` (array): List of domain → ISM mappings
+  - `domain` (u32): Source chain domain ID
     - Domain 97 = BSC Testnet
     - Domain 1399811150 = Solana Testnet
-  - `address` (string): Endereço do ISM a ser usado para mensagens deste domínio
+  - `address` (string): ISM address to be used for messages from this domain
 
 **Code ID:** `1986`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh`
 - **Hexed**: `bd60d3a486bb73e6e0ae290a2be159086e887a80f08494456924f67030398cbf`
 
 ---
 
-#### 6. 🌳 HOOK MERKLE - Árvore de Merkle para Provas
+#### 6. 🌳 HOOK MERKLE - Merkle Tree for Proofs
 
-**Função:** Mantém uma árvore de Merkle de mensagens enviadas. Isso permite provas eficientes de inclusão de mensagens para validação na chain de destino.
+**Function:** Maintains a Merkle tree of sent messages. This allows efficient inclusion proofs for message validation on the destination chain.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "mailbox": "terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf"
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `mailbox` (string): Endereço do Mailbox associado a este hook
+**Parameter Explanation:**
+- `mailbox` (string): Mailbox address associated with this hook
 
 **Code ID:** `1990`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df`
 - **Hexed**: `3152bdec927acb3783fe38d4c6a6c582cc8a0b4c9ba6e91365df824d7d8611ff`
 
@@ -393,9 +393,9 @@ O script instancia **12 contratos** na seguinte ordem:
 
 #### 7. ⛽ IGP - Interchain Gas Paymaster
 
-**Função:** Gerencia pagamentos de gas para execução de mensagens na chain de destino. Usuários pagam gas na chain de origem, e relayers são reembolsados na chain de destino.
+**Function:** Manages gas payments for message execution on the destination chain. Users pay gas on the source chain, and relayers are reimbursed on the destination chain.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "hrp": "terra",
@@ -406,52 +406,52 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `hrp` (string): Prefixo Bech32
-- `owner` (string): Admin do contrato
-- `gas_token` (string): Token usado para pagamento de gas (micro-luna = uluna)
-- `beneficiary` (string): Endereço que recebe taxas acumuladas
-- `default_gas_usage` (string): Quantidade padrão de gas estimada para execução (100000 = 100k gas units)
+**Parameter Explanation:**
+- `hrp` (string): Bech32 prefix
+- `owner` (string): Contract admin
+- `gas_token` (string): Token used for gas payment (micro-luna = uluna)
+- `beneficiary` (string): Address that receives accumulated fees
+- `default_gas_usage` (string): Default estimated gas amount for execution (100000 = 100k gas units)
 
 **Code ID:** `1987`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`
 - **Hexed**: `9f9e88b11e3233a01f75a8f8ddd49a4ef59f860174109da43784579c883db6b1`
 
 ---
 
-#### 8. 🔮 IGP ORACLE - Oráculo de Preços de Gas
+#### 8. 🔮 IGP ORACLE - Gas Price Oracle
 
-**Função:** Fornece taxas de câmbio de tokens e preços de gas para chains remotas. Essencial para calcular quanto gas cobrar na origem para cobrir custos no destino.
+**Function:** Provides token exchange rates and gas prices for remote chains. Essential for calculating how much gas to charge at origin to cover destination costs.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n"
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Endereço que pode atualizar taxas de câmbio e preços de gas
+**Parameter Explanation:**
+- `owner` (string): Address that can update exchange rates and gas prices
 
-**Nota:** Taxas de câmbio e preços de gas serão configurados via governança.
+**Note:** Exchange rates and gas prices will be configured via governance.
 
 **Code ID:** `1998`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`
 - **Hexed**: `3ac80cf8a4b2fb8d063dfb229a96cfd1813ea81452dc4ea7e315280b74b9ddc7`
 
 ---
 
-#### 9. 🔗 HOOK AGGREGATE #1 - Agregador (Merkle + IGP)
+#### 9. 🔗 HOOK AGGREGATE #1 - Aggregator (Merkle + IGP)
 
-**Função:** Combina múltiplos hooks em um. Este primeiro agregador executa:
-- **Hook Merkle**: registra mensagem na árvore de Merkle
-- **IGP**: processa pagamento de gas
+**Function:** Combines multiple hooks into one. This first aggregator executes:
+- **Hook Merkle**: registers message in Merkle tree
+- **IGP**: processes gas payment
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
@@ -462,27 +462,27 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Admin do contrato
-- `hooks` (array): Lista de endereços de hooks a serem executados em sequência
+**Parameter Explanation:**
+- `owner` (string): Contract admin
+- `hooks` (array): List of hook addresses to be executed in sequence
   - Hook 1: Merkle Tree
   - Hook 2: IGP
 
-**Nota:** Este hook será definido como `default_hook` no Mailbox.
+**Note:** This hook will be set as `default_hook` in the Mailbox.
 
 **Code ID:** `1988`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh`
 - **Hexed**: `a825b2bfd4d9db2e42abf9f5fc526a34e0ce745987e8a6009c1683becab6a428`
 
 ---
 
-#### 10. ⏸️ HOOK PAUSABLE - Hook com Capacidade de Pausa
+#### 10. ⏸️ HOOK PAUSABLE - Hook with Pause Capability
 
-**Função:** Permite pausar o envio de mensagens em caso de emergência. Útil para manutenção ou resposta a incidentes de segurança.
+**Function:** Allows pausing message sending in case of emergency. Useful for maintenance or responding to security incidents.
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
@@ -490,26 +490,26 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Endereço que pode pausar/despausar
-- `paused` (boolean): Estado inicial (false = não pausado, true = pausado)
+**Parameter Explanation:**
+- `owner` (string): Address that can pause/unpause
+- `paused` (boolean): Initial state (false = not paused, true = paused)
 
 **Code ID:** `1991`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l`
 - **Hexed**: `93eb6eef8e84118b4bd42a9d4646ff5af7f07f85c02c2630d092ce30117182c3`
 
 ---
 
-#### 11. 💰 HOOK FEE - Hook de Cobrança de Taxa Fixa
+#### 11. 💰 HOOK FEE - Fixed Fee Charging Hook
 
-**Função:** Cobra uma taxa fixa por mensagem enviada. Pode ser usado para:
-- Monetização do protocolo
-- Prevenção de spam
-- Funding de operações
+**Function:** Charges a fixed fee per message sent. Can be used for:
+- Protocol monetization
+- Spam prevention
+- Operations funding
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
@@ -520,29 +520,29 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Admin do contrato
-- `fee` (object): Configuração da taxa
-  - `denom` (string): Denominação do token (micro-luna = uluna)
-  - `amount` (string): Quantidade de taxa (283215 uluna = 0.283215 LUNC)
+**Parameter Explanation:**
+- `owner` (string): Contract admin
+- `fee` (object): Fee configuration
+  - `denom` (string): Token denomination (micro-luna = uluna)
+  - `amount` (string): Fee amount (283215 uluna = 0.283215 LUNC)
 
-**Nota:** Taxa de 0.283215 LUNC por mensagem enviada.
+**Note:** Fee of 0.283215 LUNC per message sent.
 
 **Code ID:** `1989`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j`
 - **Hexed**: `8934c864640024f2f385ef51639ad0ab46548d417987176913434526c74abd2b`
 
 ---
 
-#### 12. 🔗 HOOK AGGREGATE #2 - Agregador (Pausable + Fee)
+#### 12. 🔗 HOOK AGGREGATE #2 - Aggregator (Pausable + Fee)
 
-**Função:** Segundo agregador que combina:
-- **Hook Pausable**: permite pausar envio de mensagens
-- **Hook Fee**: cobra taxa por mensagem
+**Function:** Second aggregator that combines:
+- **Hook Pausable**: allows pausing message sending
+- **Hook Fee**: charges fee per message
 
-**Parâmetros de Instanciação:**
+**Instantiation Parameters:**
 ```json
 {
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
@@ -553,28 +553,28 @@ O script instancia **12 contratos** na seguinte ordem:
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `owner` (string): Admin do contrato
-- `hooks` (array): Lista de hooks
+**Parameter Explanation:**
+- `owner` (string): Contract admin
+- `hooks` (array): List of hooks
   - Hook 1: Pausable
   - Hook 2: Fee
 
-**Nota:** Este hook será definido como `required_hook` no Mailbox.
+**Note:** This hook will be set as `required_hook` in the Mailbox.
 
 **Code ID:** `1988`
 
-**Endereço Instanciado:**
+**Instantiated Address:**
 - **Address**: `terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj`
 - **Hexed**: `3343dbbd999bd51909a7781cf9d8359b646255be450852b6e14bb2b277fa06a4`
 
 ---
 
-### 🔄 Resumo da Arquitetura
+### 🔄 Architecture Summary
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         MAILBOX                              │
-│  (Contrato Central - Gerencia Envio/Recebimento)            │
+│  (Central Contract - Manages Send/Receive)                  │
 └─────────────┬───────────────────────────────┬────────────────┘
               │                               │
     ┌─────────▼─────────┐         ┌──────────▼──────────┐
@@ -590,51 +590,51 @@ O script instancia **12 contratos** na seguinte ordem:
     └───────────────────┘         └─────────────────────┘
 ```
 
-**Fluxo de Envio:**
-1. Usuário chama `dispatch()` no Mailbox
-2. **Required Hook** é executado (Pausable verifica se não está pausado, Fee cobra taxa)
-3. **Default Hook** é executado (Merkle registra, IGP processa pagamento via Oracle)
-4. Mensagem é emitida como evento
+**Send Flow:**
+1. User calls `dispatch()` on Mailbox
+2. **Required Hook** is executed (Pausable checks if not paused, Fee charges fee)
+3. **Default Hook** is executed (Merkle registers, IGP processes payment via Oracle)
+4. Message is emitted as event
 
-**Fluxo de Recebimento:**
-1. Relayer submete mensagem + metadata
-2. Mailbox consulta **Default ISM** (ISM Routing)
-3. ISM Routing direciona para **ISM Multisig** apropriado (BSC ou Solana)
-4. ISM Multisig valida assinaturas (threshold configurado)
-5. Se válido, mensagem é processada
+**Receive Flow:**
+1. Relayer submits message + metadata
+2. Mailbox queries **Default ISM** (ISM Routing)
+3. ISM Routing directs to appropriate **ISM Multisig** (BSC or Solana)
+4. ISM Multisig validates signatures (configured threshold)
+5. If valid, message is processed
 
-> **🔒 IMPORTANTE - Módulo de Governança:**
+> **🔒 IMPORTANT - Governance Module:**
 > 
-> O endereço `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` é o **módulo de governança** da blockchain.
+> The address `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` is the **governance module** of the blockchain.
 > 
-> **Implicações de Segurança:**
-> - ✅ **Após a instanciação**, apenas a governança pode alterar configurações
-> - ✅ **Nenhuma pessoa individual** tem controle dos contratos
-> - ✅ **Todas as mudanças** devem passar por votação da comunidade
-> - ✅ **Descentralização garantida** desde o primeiro momento
-> - 🔐 **Contratos são imutáveis** exceto por propostas de governança aprovadas
+> **Security Implications:**
+> - ✅ **After instantiation**, only governance can change configurations
+> - ✅ **No individual person** has control of contracts
+> - ✅ **All changes** must pass community voting
+> - ✅ **Decentralization guaranteed** from the first moment
+> - 🔐 **Contracts are immutable** except through approved governance proposals
 
 ---
 
-## 4️⃣ Configuração via Governança
+## 4️⃣ Configuration via Governance
 
 ### Script: `submit-proposal-testnet.ts`
 
-Após a instanciação, os contratos precisam ser configurados. Como o **owner/admin é o módulo de governança**, todas as configurações devem ser feitas através de **propostas de governança**.
+After instantiation, contracts need to be configured. Since the **owner/admin is the governance module**, all configurations must be done through **governance proposals**.
 
-### 📝 Mensagens de Execução - Explicação Detalhada
+### 📝 Execution Messages - Detailed Explanation
 
-A proposta de governança executa **7 mensagens** para configurar o sistema Hyperlane com suporte a **2 chains** (BSC Testnet e Solana Testnet):
+The governance proposal executes **7 messages** to configure the Hyperlane system with support for **2 chains** (BSC Testnet and Solana Testnet):
 
 ---
 
-#### MENSAGEM 1: Configurar Validadores do ISM Multisig para BSC Testnet
+#### MESSAGE 1: Configure ISM Multisig Validators for BSC Testnet
 
-**Objetivo:** Define o conjunto de validadores que irão assinar mensagens provenientes do domínio 97 (BSC Testnet). O threshold de 2 significa que pelo menos 2 dos 3 validadores devem assinar para que uma mensagem seja considerada válida.
+**Objective:** Defines the set of validators that will sign messages from domain 97 (BSC Testnet). A threshold of 2 means at least 2 of 3 validators must sign for a message to be considered valid.
 
-**Contrato Alvo:** ISM Multisig (`terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`)
+**Target Contract:** ISM Multisig (`terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_validators": {
@@ -649,22 +649,22 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `domain` (u32): Domain ID do BSC Testnet no protocolo Hyperlane (97 = BSC Testnet)
-- `threshold` (u8): Número mínimo de assinaturas necessárias (2 de 3 validadores)
-- `validators` (array de HexBinary): Array de 3 endereços hexadecimais (20 bytes cada) dos validadores
+**Parameter Explanation:**
+- `domain` (u32): BSC Testnet domain ID in Hyperlane protocol (97 = BSC Testnet)
+- `threshold` (u8): Minimum number of signatures required (2 of 3 validators)
+- `validators` (array of HexBinary): Array of 3 hexadecimal addresses (20 bytes each) of validators
 
-**Segurança:** Com threshold 2/3, o sistema tolera até 1 validador offline ou malicioso enquanto ainda valida mensagens.
+**Security:** With threshold 2/3, the system tolerates up to 1 validator offline or malicious while still validating messages.
 
 ---
 
-#### MENSAGEM 2: Configurar Validadores do ISM Multisig para Solana Testnet
+#### MESSAGE 2: Configure ISM Multisig Validators for Solana Testnet
 
-**Objetivo:** Define o conjunto de validadores que irão assinar mensagens provenientes do domínio 1399811150 (Solana Testnet). O threshold de 1 significa que pelo menos 1 dos 1 validadores deve assinar para que uma mensagem seja considerada válida.
+**Objective:** Defines the set of validators that will sign messages from domain 1399811150 (Solana Testnet). A threshold of 1 means at least 1 of 1 validators must sign for a message to be considered valid.
 
-**Contrato Alvo:** ISM Multisig (`terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`)
+**Target Contract:** ISM Multisig (`terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_validators": {
@@ -677,20 +677,20 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `domain` (u32): Domain ID do Solana Testnet no protocolo Hyperlane (1399811150 = Solana Testnet)
-- `threshold` (u8): Número mínimo de assinaturas necessárias (1 de 1 validadores)
-- `validators` (array de HexBinary): Array de 1 endereço hexadecimal (20 bytes) do validador
+**Parameter Explanation:**
+- `domain` (u32): Solana Testnet domain ID in Hyperlane protocol (1399811150 = Solana Testnet)
+- `threshold` (u8): Minimum number of signatures required (1 of 1 validators)
+- `validators` (array of HexBinary): Array of 1 hexadecimal address (20 bytes) of validator
 
 ---
 
-#### MENSAGEM 3: Configurar Dados de Gas Remoto no IGP Oracle (BSC e Solana Testnet)
+#### MESSAGE 3: Configure Remote Gas Data in IGP Oracle (BSC and Solana Testnet)
 
-**Objetivo:** Define a taxa de câmbio de tokens e o preço de gas para os domínios 97 (BSC Testnet) e 1399811150 (Solana Testnet). Isso permite que o IGP calcule quanto gas cobrar na chain de origem (Terra) para cobrir os custos de execução nas chains de destino.
+**Objective:** Defines token exchange rate and gas price for domains 97 (BSC Testnet) and 1399811150 (Solana Testnet). This allows IGP to calculate how much gas to charge on the source chain (Terra) to cover execution costs on destination chains.
 
-**Contrato Alvo:** IGP Oracle (`terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`)
+**Target Contract:** IGP Oracle (`terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_remote_gas_data_configs": {
@@ -710,22 +710,22 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 }
 ```
 
-**Explicação dos Parâmetros:**
-- `remote_domain` (u32): Domain ID da chain remota
+**Parameter Explanation:**
+- `remote_domain` (u32): Remote chain domain ID
   - Domain 97 = BSC Testnet
   - Domain 1399811150 = Solana Testnet
-- `token_exchange_rate` (Uint128): Taxa de câmbio entre LUNC e token da chain de destino
-- `gas_price` (Uint128): Preço do gas na chain de destino
+- `token_exchange_rate` (Uint128): Exchange rate between LUNC and destination chain token
+- `gas_price` (Uint128): Gas price on destination chain
 
 ---
 
-#### MENSAGEM 4: Definir Rotas do IGP para o Oracle (BSC e Solana Testnet)
+#### MESSAGE 4: Define IGP Routes to Oracle (BSC and Solana Testnet)
 
-**Objetivo:** Configura o IGP para usar o IGP Oracle ao calcular custos de gas para os domínios 97 (BSC Testnet) e 1399811150 (Solana Testnet). Estas rotas conectam o IGP ao Oracle que fornece dados atualizados de preços e taxas de câmbio.
+**Objective:** Configures IGP to use IGP Oracle when calculating gas costs for domains 97 (BSC Testnet) and 1399811150 (Solana Testnet). These routes connect IGP to the Oracle that provides updated price and exchange rate data.
 
-**Contrato Alvo:** IGP (`terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`)
+**Target Contract:** IGP (`terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "router": {
@@ -747,13 +747,13 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 
 ---
 
-#### MENSAGEM 5: Definir ISM Padrão no Mailbox
+#### MESSAGE 5: Define Default ISM in Mailbox
 
-**Objetivo:** Configura o ISM (Interchain Security Module) padrão que será usado pelo Mailbox para validar mensagens recebidas. O ISM Routing permite usar diferentes estratégias de validação por domínio de origem.
+**Objective:** Configures the default ISM (Interchain Security Module) that will be used by the Mailbox to validate received messages. ISM Routing allows using different validation strategies per origin domain.
 
-**Contrato Alvo:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
+**Target Contract:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_default_ism": {
@@ -764,13 +764,13 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 
 ---
 
-#### MENSAGEM 6: Definir Hook Padrão no Mailbox
+#### MESSAGE 6: Define Default Hook in Mailbox
 
-**Objetivo:** Configura o Hook padrão que será executado ao enviar mensagens. O Hook Aggregate #1 combina Merkle Tree Hook (para provas) e IGP (para pagamento).
+**Objective:** Configures the default hook that will be executed when sending messages. Hook Aggregate #1 combines Merkle Tree Hook (for proofs) and IGP (for payment).
 
-**Contrato Alvo:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
+**Target Contract:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_default_hook": {
@@ -781,13 +781,13 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 
 ---
 
-#### MENSAGEM 7: Definir Hook Requerido no Mailbox
+#### MESSAGE 7: Define Required Hook in Mailbox
 
-**Objetivo:** Configura o Hook obrigatório que SEMPRE será executado ao enviar mensagens, independentemente de hooks customizados especificados pelo remetente. O Hook Aggregate #2 combina Hook Pausable (emergência) e Hook Fee (monetização).
+**Objective:** Configures the mandatory hook that will ALWAYS be executed when sending messages, regardless of custom hooks specified by the sender. Hook Aggregate #2 combines Hook Pausable (emergency) and Hook Fee (monetization).
 
-**Contrato Alvo:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
+**Target Contract:** Mailbox (`terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`)
 
-**Mensagem Executada:**
+**Executed Message:**
 ```json
 {
   "set_required_hook": {
@@ -798,45 +798,45 @@ A proposta de governança executa **7 mensagens** para configurar o sistema Hype
 
 ---
 
-### 📊 Proposta 162 - Status e Detalhes
+### 📊 Proposal 162 - Status and Details
 
-A proposta de configuração foi submetida e aprovada com sucesso:
+The configuration proposal was submitted and approved successfully:
 
-**ID da Proposta:** `162`
+**Proposal ID:** `162`
 
 **Status:** `PROPOSAL_STATUS_PASSED`
 
-**Votos:**
-- **Sim**: `82020035955749071`
-- **Não**: `0`
-- **Abstenções**: `0`
+**Votes:**
+- **Yes**: `82020035955749071`
+- **No**: `0`
+- **Abstentions**: `0`
 - **Veto**: `0`
 
 **Timestamps:**
-- **Submetida**: `2025-12-01T17:16:48.606969070Z`
-- **Fim do Depósito**: `2025-12-04T17:16:48.606969070Z`
-- **Início da Votação**: `2025-12-01T17:16:48.606969070Z`
-- **Fim da Votação**: `2025-12-02T05:16:48.606969070Z`
+- **Submitted**: `2025-12-01T17:16:48.606969070Z`
+- **Deposit End**: `2025-12-04T17:16:48.606969070Z`
+- **Voting Start**: `2025-12-01T17:16:48.606969070Z`
+- **Voting End**: `2025-12-02T05:16:48.606969070Z`
 
-**Título:** `Hyperlane Contracts Configuration - Testnet Multi-Chain`
+**Title:** `Hyperlane Contracts Configuration - Testnet Multi-Chain`
 
-**Resumo:** `Proposal to configure Hyperlane contracts for BSC Testnet and Solana Testnet: set ISM validators (BSC 2/3, Solana 1/1), configure IGP Oracle for testnet chains, set IGP routes, configure default ISM and hooks (default and required) in Mailbox`
+**Summary:** `Proposal to configure Hyperlane contracts for BSC Testnet and Solana Testnet: set ISM validators (BSC 2/3, Solana 1/1), configure IGP Oracle for testnet chains, set IGP routes, configure default ISM and hooks (default and required) in Mailbox`
 
-**Proponente:** `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze`
+**Proposer:** `terra12awgqgwm2evj05ndtgs0xa35uunlpc76d85pze`
 
-**Depósito Total:** `10000000 uluna`
+**Total Deposit:** `10000000 uluna`
 
 ---
 
-## 5️⃣ Verificação da Execução
+## 5️⃣ Execution Verification
 
-### Queries para Verificar Configurações
+### Queries to Verify Configurations
 
-Após a proposta ser aprovada (`PROPOSAL_STATUS_PASSED`), verifique se as configurações foram aplicadas.
+After the proposal is approved (`PROPOSAL_STATUS_PASSED`), verify that configurations were applied.
 
-#### 1. ✅ ISM Multisig BSC - Validadores Configurados
+#### 1. ✅ ISM Multisig BSC - Validators Configured
 
-**O que verifica:** Confirma que os 3 validadores foram registrados no ISM Multisig para o domínio 97 (BSC Testnet) com threshold de 2 assinaturas.
+**What it verifies:** Confirms that 3 validators were registered in ISM Multisig for domain 97 (BSC Testnet) with threshold of 2 signatures.
 
 **Query:**
 ```bash
@@ -846,21 +846,21 @@ terrad query wasm contract-state smart terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49n
   --chain-id rebel-2
 ```
 
-**Esperado:**
+**Expected:**
 ```yaml
 data:
-  threshold: 2                              # Mínimo de 2 assinaturas necessárias
-  validators:                               # Lista de 3 validadores (endereços hex 20 bytes)
-  - 242d8a855a8c932dec51f7999ae7d1e48b10c95e  # Validador 1
-  - f620f5e3d25a3ae848fec74bccae5de3edcd8796  # Validador 2
-  - 1f030345963c54ff8229720dd3a711c15c554aeb  # Validador 3
+  threshold: 2                              # Minimum of 2 signatures required
+  validators:                               # List of 3 validators (hex addresses 20 bytes)
+  - 242d8a855a8c932dec51f7999ae7d1e48b10c95e  # Validator 1
+  - f620f5e3d25a3ae848fec74bccae5de3edcd8796  # Validator 2
+  - 1f030345963c54ff8229720dd3a711c15c554aeb  # Validator 3
 ```
 
 ---
 
-#### 2. ✅ ISM Multisig Solana - Validadores Configurados
+#### 2. ✅ ISM Multisig Solana - Validators Configured
 
-**O que verifica:** Confirma que o validador foi registrado no ISM Multisig para o domínio 1399811150 (Solana Testnet) com threshold de 1 assinatura.
+**What it verifies:** Confirms that the validator was registered in ISM Multisig for domain 1399811150 (Solana Testnet) with threshold of 1 signature.
 
 **Query:**
 ```bash
@@ -872,19 +872,19 @@ terrad query wasm contract-state smart terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen
 
 ---
 
-#### 3. ✅ IGP Oracle - Gas Price Configurado
+#### 3. ✅ IGP Oracle - Gas Price Configured
 
-**O que verifica:** Confirma que o Oracle tem dados de preço de gas e taxa de câmbio configurados para BSC Testnet (domain 97) e Solana Testnet (domain 1399811150).
+**What it verifies:** Confirms that the Oracle has gas price and exchange rate data configured for BSC Testnet (domain 97) and Solana Testnet (domain 1399811150).
 
 **Query:**
 ```bash
-# Para BSC Testnet
+# For BSC Testnet
 terrad query wasm contract-state smart terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
   '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":97}}}' \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 
-# Para Solana Testnet
+# For Solana Testnet
 terrad query wasm contract-state smart terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
   '{"oracle":{"get_exchange_rate_and_gas_price":{"dest_domain":1399811150}}}' \
   --node https://rpc.luncblaze.com:443 \
@@ -893,19 +893,19 @@ terrad query wasm contract-state smart terra18tyqe79yktac6p3alv3f49k06xqna2q52tw
 
 ---
 
-#### 4. ✅ IGP - Rota Configurada
+#### 4. ✅ IGP - Route Configured
 
-**O que verifica:** Confirma que o IGP tem rotas configuradas apontando para o Oracle.
+**What it verifies:** Confirms that IGP has routes configured pointing to the Oracle.
 
 **Query:**
 ```bash
-# Para BSC Testnet
+# For BSC Testnet
 terrad query wasm contract-state smart terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9 \
   '{"router":{"get_route":{"domain":97}}}' \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 
-# Para Solana Testnet
+# For Solana Testnet
 terrad query wasm contract-state smart terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9 \
   '{"router":{"get_route":{"domain":1399811150}}}' \
   --node https://rpc.luncblaze.com:443 \
@@ -914,9 +914,9 @@ terrad query wasm contract-state smart terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsg
 
 ---
 
-#### 5. ✅ Mailbox - ISM Padrão
+#### 5. ✅ Mailbox - Default ISM
 
-**O que verifica:** Confirma que o Mailbox tem um ISM configurado para validar mensagens recebidas.
+**What it verifies:** Confirms that the Mailbox has an ISM configured to validate received messages.
 
 **Query:**
 ```bash
@@ -926,17 +926,17 @@ terrad query wasm contract-state smart terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7r
   --chain-id rebel-2
 ```
 
-**Esperado:**
+**Expected:**
 ```yaml
 data:
-  default_ism: terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh  # Endereço do ISM Routing
+  default_ism: terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh  # ISM Routing address
 ```
 
 ---
 
-#### 6. ✅ Mailbox - Hook Padrão
+#### 6. ✅ Mailbox - Default Hook
 
-**O que verifica:** Confirma que o Mailbox tem um Hook configurado para processar envios de mensagens.
+**What it verifies:** Confirms that the Mailbox has a hook configured to process message sends.
 
 **Query:**
 ```bash
@@ -946,17 +946,17 @@ terrad query wasm contract-state smart terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7r
   --chain-id rebel-2
 ```
 
-**Esperado:**
+**Expected:**
 ```yaml
 data:
-  default_hook: terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh  # Endereço do Hook Aggregate #1
+  default_hook: terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh  # Hook Aggregate #1 address
 ```
 
 ---
 
-#### 7. ✅ Mailbox - Hook Requerido
+#### 7. ✅ Mailbox - Required Hook
 
-**O que verifica:** Confirma que o Mailbox tem um Hook obrigatório que SEMPRE será executado ao enviar mensagens.
+**What it verifies:** Confirms that the Mailbox has a mandatory hook that will ALWAYS be executed when sending messages.
 
 **Query:**
 ```bash
@@ -966,31 +966,31 @@ terrad query wasm contract-state smart terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7r
   --chain-id rebel-2
 ```
 
-**Esperado:**
+**Expected:**
 ```yaml
 data:
-  required_hook: terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj  # Endereço do Hook Aggregate #2
+  required_hook: terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj  # Hook Aggregate #2 address
 ```
 
 ---
 
-### Script de Verificação Completo
+### Complete Verification Script
 
-Use o script `query-proposal-status.ts` para verificação automatizada:
+Use the `query-proposal-status.ts` script for automated verification:
 
 ```bash
 npx tsx script/query-proposal-status.ts 162
 ```
 
-Este script verifica automaticamente todas as configurações acima.
+This script automatically verifies all configurations above.
 
 ---
 
-## 6️⃣ Endereços e Hexed dos Contratos
+## 6️⃣ Contract Addresses and Hexed
 
-### Tabela de Endereços
+### Address Table
 
-| Contrato | Endereço (Bech32) | Hexed (32 bytes) |
+| Contract | Address (Bech32) | Hexed (32 bytes) |
 |----------|-------------------|------------------|
 | **Mailbox** | `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf` | `18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b` |
 | **Validator Announce** | `terra10szy9ppjpgt8xk3tkywu3dhss8s5scsga85f4cgh452p6mwd092qdzfyup` | `7c044284320a16735a2bb11dc8b6f081e1486208e9e89ae117ad141d6dcd7954` |
@@ -1005,7 +1005,7 @@ Este script verifica automaticamente todas as configurações acima.
 | **Hook Fee** | `terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j` | `8934c864640024f2f385ef51639ad0ab46548d417987176913434526c74abd2b` |
 | **Hook Aggregate 2** | `terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj` | `3343dbbd999bd51909a7781cf9d8359b646255be450852b6e14bb2b277fa06a4` |
 
-### JSON Completo
+### Complete JSON
 
 ```json
 {
@@ -1024,31 +1024,31 @@ Este script verifica automaticamente todas as configurações acima.
 }
 ```
 
-### Uso dos Endereços
+### Address Usage
 
-**Para Relayer:**
+**For Relayer:**
 ```yaml
 mailbox: "0x18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b"
 validatorAnnounce: "0x7c044284320a16735a2bb11dc8b6f081e1486208e9e89ae117ad141d6dcd7954"
 ```
 
-**Para Validadores:**
+**For Validators:**
 ```yaml
 mailbox: "0x18111026c945381eb4a6e6852a4affd2b4023e918787379cea28d001314ee44b"
 merkleTreeHook: "0x3152bdec927acb3783fe38d4c6a6c582cc8a0b4c9ba6e91365df824d7d8611ff"
 ```
 
-**Para Warp Routes (interchainSecurityModule / messageIdMultisigIsm):**
+**For Warp Routes (interchainSecurityModule / messageIdMultisigIsm):**
 
-Os endereços hex dos ISM Multisig são usados quando você precisa referenciar o `interchainSecurityModule` em configurações de Warp Routes:
+The hex addresses of ISM Multisig contracts are used when you need to reference `interchainSecurityModule` in Warp Route configurations:
 
 **BSC Testnet (Domain 97):**
 ```yaml
 interchainSecurityModule:
   type: messageIdMultisigIsm
-  # O endereço hex do ISM Multisig BSC é:
+  # The hex address of ISM Multisig BSC is:
   address: "0x18d6fb643be899d66edc8305aa1cbfa1115d8256a9679581205ae7b4a895c9b6"
-  # Ou use a configuração com validadores:
+  # Or use configuration with validators:
   validators:
     - "242d8a855a8c932dec51f7999ae7d1e48b10c95e"
     - "f620f5e3d25a3ae848fec74bccae5de3edcd8796"
@@ -1060,235 +1060,235 @@ interchainSecurityModule:
 ```yaml
 interchainSecurityModule:
   type: messageIdMultisigIsm
-  # O endereço hex do ISM Multisig Solana é:
+  # The hex address of ISM Multisig Solana is:
   address: "0x6fbb4504dc8bcb2c218740f16f482877d2ef608f16665e5543034712af292a3c"
-  # Ou use a configuração com validadores:
+  # Or use configuration with validators:
   validators:
     - "d4ce8fa138d4e083fc0e480cca0dbfa4f5f30bd5"
   threshold: 1
 ```
 
-**Nota:** Em configurações de Warp Routes, geralmente você especifica os `validators` e `threshold` diretamente, e o Hyperlane CLI cria ou referencia o ISM apropriado. O endereço hex acima é o endereço do contrato ISM Multisig instanciado na Terra Classic Testnet.
+**Note:** In Warp Route configurations, you typically specify `validators` and `threshold` directly, and the Hyperlane CLI creates or references the appropriate ISM. The hex address above is the address of the ISM Multisig contract instantiated on Terra Classic Testnet.
 
 ---
 
 ## 7️⃣ Troubleshooting
 
-### Erro: "insufficient fees"
+### Error: "insufficient fees"
 
-**Problema:** Taxa de gas muito baixa.
+**Problem:** Gas fee too low.
 
-**Solução:** Aumente o gas price:
+**Solution:** Increase gas price:
 ```bash
 --gas-prices 28.5uluna
 --gas-adjustment 2.0
 ```
 
-### Erro: "out of gas"
+### Error: "out of gas"
 
-**Problema:** Gas limit estimado muito baixo.
+**Problem:** Estimated gas limit too low.
 
-**Solução:** Use gas fixo ou aumente o adjustment:
+**Solution:** Use fixed gas or increase adjustment:
 ```bash
 --gas 1000000
-# ou
+# or
 --gas-adjustment 2.5
 ```
 
-### Erro: "contract not found"
+### Error: "contract not found"
 
-**Problema:** Contrato não foi instanciado ou endereço incorreto.
+**Problem:** Contract was not instantiated or address is incorrect.
 
-**Solução:** Verifique o endereço:
+**Solution:** Verify the address:
 ```bash
 terrad query wasm contract <ADDRESS> \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2
 ```
 
-### Proposta não executa automaticamente
+### Proposal does not execute automatically
 
-**Problema:** Período de votação ainda não terminou.
+**Problem:** Voting period has not ended yet.
 
-**Solução:** Aguarde o `voting_end_time`:
+**Solution:** Wait for `voting_end_time`:
 ```bash
 terrad query gov proposal 162 \
   --node https://rpc.luncblaze.com:443 \
   --chain-id rebel-2 | grep voting_end_time
 ```
 
-### Query retorna erro de schema
+### Query returns schema error
 
-**Problema:** Query incorreta para o contrato.
+**Problem:** Incorrect query for the contract.
 
-**Solução:** Use as queries documentadas na seção [Verificação da Execução](#5️⃣-verificação-da-execução).
+**Solution:** Use queries documented in the [Execution Verification](#5️⃣-execution-verification) section.
 
 ---
 
-## 📚 Recursos Adicionais
+## 📚 Additional Resources
 
-### Documentação Oficial
+### Official Documentation
 
 - [Hyperlane Docs](https://docs.hyperlane.xyz/)
 - [Terra Classic Docs](https://docs.terra.money/)
 - [CosmWasm Docs](https://docs.cosmwasm.com/)
 
-### Repositório e Releases
+### Repository and Releases
 
 - **GitHub Repository**: https://github.com/many-things/cw-hyperlane
 - **Releases**: https://github.com/many-things/cw-hyperlane/releases
 - **Latest Release (v0.0.6-rc8)**:
   - Tag: https://github.com/many-things/cw-hyperlane/releases/tag/v0.0.6-rc8
   - Download: https://github.com/many-things/cw-hyperlane/releases/download/v0.0.6-rc8/cw-hyperlane-v0.0.6-rc8.zip
-  - Checksums: Incluído no arquivo ZIP
+  - Checksums: Included in ZIP file
 
-### Arquivos de Configuração
+### Configuration Files
 
-- `script/CustomInstantiateWasm-testnet.ts` - Script de instanciação (testnet)
-- `script/submit-proposal-testnet.ts` - Script de configuração via governança (testnet)
-- `script/query-proposal-status.ts` - Script de verificação de proposta
-- `config.yaml` - Configuração da rede
-- `context/terraclassic.json` - Contexto do deployment
+- `script/CustomInstantiateWasm-testnet.ts` - Instantiation script (testnet)
+- `script/submit-proposal-testnet.ts` - Governance configuration script (testnet)
+- `script/query-proposal-status.ts` - Proposal verification script
+- `config.yaml` - Network configuration
+- `context/terraclassic.json` - Deployment context
 
-### Scripts Úteis
+### Useful Scripts
 
 ```bash
-# Listar contratos disponíveis
+# List available contracts
 yarn cw-hpl upload remote-list -n terraclassic
 
-# Upload de contratos
+# Upload contracts
 yarn cw-hpl upload remote v0.0.6-rc8 -n terraclassic
 
-# Instanciar contratos (testnet)
+# Instantiate contracts (testnet)
 yarn tsx script/CustomInstantiateWasm-testnet.ts
 
-# Criar proposta de governança (testnet)
+# Create governance proposal (testnet)
 yarn tsx script/submit-proposal-testnet.ts
 
-# Verificar status da proposta
+# Verify proposal status
 npx tsx script/query-proposal-status.ts 162
 ```
 
 ---
 
-## ✅ Checklist de Deploy
+## ✅ Deployment Checklist
 
-### Pré-Deploy
-- [ ] Verificar contratos disponíveis (`yarn cw-hpl upload remote-list`)
-- [ ] Baixar e verificar checksums dos WASMs
-- [ ] Confirmar que admin/owner será o módulo de governança
+### Pre-Deployment
+- [ ] Verify available contracts (`yarn cw-hpl upload remote-list`)
+- [ ] Download and verify WASM checksums
+- [ ] Confirm that admin/owner will be the governance module
 
-### Deploy
-- [ ] Upload dos contratos (`yarn cw-hpl upload remote`)
-- [ ] Verificar code IDs em `context/terraclassic.json`
-- [ ] Instanciar contratos (`CustomInstantiateWasm-testnet.ts`)
-- [ ] **CRÍTICO**: Verificar que owner é o módulo de governança
-- [ ] Salvar endereços dos contratos
+### Deployment
+- [ ] Upload contracts (`yarn cw-hpl upload remote`)
+- [ ] Verify code IDs in `context/terraclassic.json`
+- [ ] Instantiate contracts (`CustomInstantiateWasm-testnet.ts`)
+- [ ] **CRITICAL**: Verify that owner is the governance module
+- [ ] Save contract addresses
 
-### Configuração
-- [ ] Criar proposta de configuração (`submit-proposal-testnet.ts`)
-- [ ] Votar na proposta (obter quorum)
-- [ ] Aguardar aprovação da proposta
-- [ ] Verificar que status = `PROPOSAL_STATUS_PASSED`
-- [ ] Verificar configurações aplicadas (todas as queries ou usar script)
+### Configuration
+- [ ] Create configuration proposal (`submit-proposal-testnet.ts`)
+- [ ] Vote on proposal (obtain quorum)
+- [ ] Wait for proposal approval
+- [ ] Verify that status = `PROPOSAL_STATUS_PASSED`
+- [ ] Verify configurations applied (all queries or use script)
 
-### Verificação de Segurança
-- [ ] ✅ Confirmar que todos os contratos têm governança como owner
-- [ ] ✅ Verificar que ninguém pode alterar contratos diretamente
-- [ ] ✅ Validar hashes dos contratos na blockchain
-- [ ] ✅ Comparar endereços com a documentação oficial
+### Security Verification
+- [ ] ✅ Confirm that all contracts have governance as owner
+- [ ] ✅ Verify that no one can change contracts directly
+- [ ] ✅ Validate contract hashes on blockchain
+- [ ] ✅ Compare addresses with official documentation
 
-### Pós-Deploy
-- [ ] Configurar relayer com os endereços hexed
-- [ ] Configurar validadores
-- [ ] Testar envio de mensagens
-- [ ] Documentar todos os endereços e code IDs
-- [ ] Publicar informações para auditoria
+### Post-Deployment
+- [ ] Configure relayer with hexed addresses
+- [ ] Configure validators
+- [ ] Test message sending
+- [ ] Document all addresses and code IDs
+- [ ] Publish information for auditing
 
 ---
 
-## 🔒 Segurança e Governança
+## 🔒 Security and Governance
 
-### Modelo de Governança On-Chain
+### On-Chain Governance Model
 
-Os contratos Hyperlane são **governados pela comunidade** através do módulo de governança da Terra Classic:
+Hyperlane contracts are **governed by the community** through Terra Classic's governance module:
 
-#### Características de Segurança
+#### Security Features
 
-1. **Controle Descentralizado**
-   - ✅ Nenhuma entidade única controla os contratos
-   - ✅ Admin/Owner = Módulo de Governança
-   - ✅ Todas as mudanças requerem votação
+1. **Decentralized Control**
+   - ✅ No single entity controls contracts
+   - ✅ Admin/Owner = Governance Module
+   - ✅ All changes require voting
 
-2. **Processo de Alteração**
+2. **Change Process**
    ```
-   Proposta → Período de Votação → Aprovação → Execução Automática
+   Proposal → Voting Period → Approval → Automatic Execution
    ```
 
-3. **Transparência Total**
-   - 📊 Todas as propostas são públicas
-   - 🗳️ Todos os votos são registrados na blockchain
-   - 📝 Histórico completo de mudanças
-   - 🔍 Auditável por qualquer pessoa
+3. **Total Transparency**
+   - 📊 All proposals are public
+   - 🗳️ All votes are recorded on blockchain
+   - 📝 Complete history of changes
+   - 🔍 Auditable by anyone
 
-4. **Proteção Contra Ataques**
-   - 🛡️ Impossível alterar contratos sem aprovação da comunidade
-   - 🛡️ Período de votação permite análise e discussão
-   - 🛡️ Quorum e threshold previnem manipulação
-   - 🛡️ Veto da comunidade para propostas maliciosas
+4. **Protection Against Attacks**
+   - 🛡️ Impossible to change contracts without community approval
+   - 🛡️ Voting period allows analysis and discussion
+   - 🛡️ Quorum and threshold prevent manipulation
+   - 🛡️ Community veto for malicious proposals
 
-### Verificação de Ownership
+### Ownership Verification
 
-**Sempre verifique** que os contratos estão sob controle da governança:
+**Always verify** that contracts are under governance control:
 
 ```bash
-# Verificar owner de cada contrato
+# Verify owner of each contract
 for contract in \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv \
   terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh
 do
-  echo "Verificando: $contract"
+  echo "Verifying: $contract"
   terrad query wasm contract-state smart $contract \
     '{"ownable":{"owner":{}}}' \
     --node https://rpc.luncblaze.com:443 \
     --chain-id rebel-2
 done
 
-# Todos devem retornar:
+# All should return:
 # owner: terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n
 ```
 
-### Para Auditores
+### For Auditors
 
-Ao auditar este deployment, verifique:
+When auditing this deployment, verify:
 
-1. ✅ **Hashes WASM** correspondem aos releases oficiais
-2. ✅ **Owner/Admin** é o módulo de governança
-3. ✅ **Code IDs** estão documentados corretamente
-4. ✅ **Configurações** foram aplicadas via governança (Proposta 162)
-5. ✅ **Nenhuma backdoor** ou função privilegiada além da governança
-
----
-
-## 📞 Suporte
-
-Para problemas ou dúvidas:
-1. Verifique os logs da execução
-2. Consulte o troubleshooting acima
-3. Revise a documentação oficial do Hyperlane
-4. Verifique os contratos na blockchain usando as queries
-5. Confirme que ownership está correto (módulo de governança)
-6. Use o script `query-proposal-status.ts` para verificação automatizada
+1. ✅ **WASM Hashes** match official releases
+2. ✅ **Owner/Admin** is the governance module
+3. ✅ **Code IDs** are documented correctly
+4. ✅ **Configurations** were applied via governance (Proposal 162)
+5. ✅ **No backdoor** or privileged function beyond governance
 
 ---
 
-**Última atualização:** 2025-12-02  
-**Versão dos Contratos:** v0.0.6-rc8  
+## 📞 Support
+
+For problems or questions:
+1. Check execution logs
+2. Consult troubleshooting above
+3. Review official Hyperlane documentation
+4. Verify contracts on blockchain using queries
+5. Confirm that ownership is correct (governance module)
+6. Use `query-proposal-status.ts` script for automated verification
+
+---
+
+**Last updated:** 2025-12-02  
+**Contract Version:** v0.0.6-rc8  
 **Chain:** Terra Classic Testnet (rebel-2)  
 **RPC:** https://rpc.luncblaze.com  
-**Governança:** Terra Classic On-Chain Governance  
-**Admin/Owner:** `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` (Módulo de Governança)  
-**Proposta de Configuração:** #162 (APROVADA)  
-**Chains Suportadas:** BSC Testnet (Domain 97), Solana Testnet (Domain 1399811150)
+**Governance:** Terra Classic On-Chain Governance  
+**Admin/Owner:** `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` (Governance Module)  
+**Configuration Proposal:** #162 (APPROVED)  
+**Supported Chains:** BSC Testnet (Domain 97), Solana Testnet (Domain 1399811150)
 

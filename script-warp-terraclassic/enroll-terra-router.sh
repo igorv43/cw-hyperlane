@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  enroll-terra-router.sh
-#  Registra a rota EVM (Sepolia) no contrato Warp Terra Classic
-#  Resolve o erro: "route not found" ao chamar transfer_remote
+#  Registers the EVM route on the Terra Classic Warp contract
+#  Fixes the error: "route not found" when calling transfer_remote
 #
-#  O que faz:
-#    Chama router.set_route no contrato Warp da Terra Classic para registrar
-#    o endereço do Warp EVM (ex: Sepolia) como roteador do domínio alvo.
+#  What it does:
+#    Calls router.set_route on the Terra Classic Warp contract to register
+#    the EVM Warp address (e.g.: Sepolia) as the router for the target domain.
 #
-#  USO:
-#    export TERRA_PRIVATE_KEY="sua_chave_hex"
+#  USAGE:
+#    export TERRA_PRIVATE_KEY="your_hex_key"
 #    ./enroll-terra-router.sh
 # =============================================================================
 set -euo pipefail
@@ -28,38 +28,38 @@ echo -e "${BOLD}${CYAN}║   enrollRemoteRouter — TERRA CLASSIC (set_route)   
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${RESET}"
 echo -e ""
 
-# ─── Verificar dependências ────────────────────────────────────────────────────
+# ─── Check dependencies ──────────────────────────────────────────────────────
 for dep in node jq; do
     if ! command -v "$dep" &>/dev/null; then
-        echo -e "${RED}❌ Dependência não encontrada: ${dep}${RESET}"
+        echo -e "${RED}❌ Dependency not found: ${dep}${RESET}"
         exit 1
     fi
 done
 
 if [ ! -f "$CONFIG_JSON" ]; then
-    echo -e "${RED}❌ Arquivo não encontrado: $CONFIG_JSON${RESET}"
+    echo -e "${RED}❌ File not found: $CONFIG_JSON${RESET}"
     exit 1
 fi
 
-# ─── Localizar node_modules ─────────────────────────────────────────────────
+# ─── Locate node_modules ────────────────────────────────────────────────────
 PROJECT_ROOT="$SCRIPT_DIR"
 while [ "$PROJECT_ROOT" != "/" ] && [ ! -f "$PROJECT_ROOT/package.json" ]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
 if [ ! -d "$PROJECT_ROOT/node_modules/@cosmjs/cosmwasm-stargate" ]; then
-    echo -e "${RED}❌ node_modules não encontrado em $PROJECT_ROOT${RESET}"
+    echo -e "${RED}❌ node_modules not found in $PROJECT_ROOT${RESET}"
     echo -e "   Execute: cd $PROJECT_ROOT && yarn install"
     exit 1
 fi
 
-# ─── Ler configuração do config JSON ──────────────────────────────────────────
+# ─── Read configuration from config JSON ────────────────────────────────────
 TERRA_RPC=$(jq -r '.terra_classic.rpc'      "$CONFIG_JSON")
 TERRA_CHAIN=$(jq -r '.terra_classic.chain_id' "$CONFIG_JSON")
 
-echo -e "${BOLD}📌 Selecione o TOKEN a vincular:${RESET}"
+echo -e "${BOLD}📌 Select the TOKEN to link:${RESET}"
 echo -e ""
 
-# Listar tokens disponíveis com warp_address no Terra
+# List available tokens with warp_address on Terra
 TOKENS=$(jq -r '.terra_classic.tokens | to_entries[] | select(.value.terra_warp.warp_address != "" and .value.terra_warp.warp_address != null) | .key' "$CONFIG_JSON")
 TOKEN_LIST=()
 while IFS= read -r t; do
@@ -67,7 +67,7 @@ while IFS= read -r t; do
 done <<< "$TOKENS"
 
 if [ ${#TOKEN_LIST[@]} -eq 0 ]; then
-    echo -e "${RED}❌ Nenhum token com warp_address configurado no Terra Classic.${RESET}"
+    echo -e "${RED}❌ No token with warp_address configured on Terra Classic.${RESET}"
     exit 1
 fi
 
@@ -78,11 +78,11 @@ for i in "${!TOKEN_LIST[@]}"; do
     echo -e "  ${CYAN}[$((i+1))]${RESET} ${BOLD}${SYMBOL}${RESET} — ${WADDR}"
 done
 echo -e ""
-echo -ne "${YELLOW}▶ Digite o número: ${RESET}"
+echo -ne "${YELLOW}▶ Enter the number: ${RESET}"
 read -r TOKEN_IDX
 TOKEN_IDX=$((TOKEN_IDX - 1))
 if [ "$TOKEN_IDX" -lt 0 ] || [ "$TOKEN_IDX" -ge "${#TOKEN_LIST[@]}" ]; then
-    echo -e "${RED}❌ Opção inválida.${RESET}"; exit 1
+    echo -e "${RED}❌ Invalid option.${RESET}"; exit 1
 fi
 
 TOKEN_KEY="${TOKEN_LIST[$TOKEN_IDX]}"
@@ -90,10 +90,10 @@ TERRA_WARP_ADDR=$(jq -r ".terra_classic.tokens.${TOKEN_KEY}.terra_warp.warp_addr
 TOKEN_SYMBOL=$(jq -r ".terra_classic.tokens.${TOKEN_KEY}.symbol" "$CONFIG_JSON")
 
 echo -e ""
-echo -e "${BOLD}📌 Selecione a rede EVM de destino:${RESET}"
+echo -e "${BOLD}📌 Select the destination EVM network:${RESET}"
 echo -e ""
 
-# Listar redes que têm este token deployado
+# List networks that have this token deployed
 NETWORKS=$(jq -r --arg tk "$TOKEN_KEY" \
     '.networks | to_entries[] | select(.value.enabled == true and .value.warp_tokens[$tk].deployed == true) | .key' \
     "$CONFIG_JSON")
@@ -103,8 +103,8 @@ while IFS= read -r n; do
 done <<< "$NETWORKS"
 
 if [ ${#NET_LIST[@]} -eq 0 ]; then
-    echo -e "${RED}❌ Nenhuma rede EVM com ${TOKEN_KEY} deployado.${RESET}"
-    echo -e "${YELLOW}   Verifique warp_tokens.${TOKEN_KEY}.deployed=true no config.${RESET}"
+    echo -e "${RED}❌ No EVM network with ${TOKEN_KEY} deployed.${RESET}"
+    echo -e "${YELLOW}   Check warp_tokens.${TOKEN_KEY}.deployed=true in config.${RESET}"
     exit 1
 fi
 
@@ -116,11 +116,11 @@ for i in "${!NET_LIST[@]}"; do
     echo -e "  ${CYAN}[$((i+1))]${RESET} ${BOLD}${ND}${RESET} (domain ${DOM}) — ${WADDR}"
 done
 echo -e ""
-echo -ne "${YELLOW}▶ Digite o número: ${RESET}"
+echo -ne "${YELLOW}▶ Enter the number: ${RESET}"
 read -r NET_IDX
 NET_IDX=$((NET_IDX - 1))
 if [ "$NET_IDX" -lt 0 ] || [ "$NET_IDX" -ge "${#NET_LIST[@]}" ]; then
-    echo -e "${RED}❌ Opção inválida.${RESET}"; exit 1
+    echo -e "${RED}❌ Invalid option.${RESET}"; exit 1
 fi
 
 NET_KEY="${NET_LIST[$NET_IDX]}"
@@ -128,35 +128,35 @@ EVM_DOMAIN=$(jq -r ".networks.${NET_KEY}.domain"                        "$CONFIG
 EVM_DISPLAY=$(jq -r ".networks.${NET_KEY}.display_name"                  "$CONFIG_JSON")
 EVM_WARP_ADDR=$(jq -r ".networks.${NET_KEY}.warp_tokens.${TOKEN_KEY}.address" "$CONFIG_JSON")
 
-# Converter endereço EVM para bytes32 sem 0x
+# Convert EVM address to bytes32 without 0x
 EVM_WARP_HEX="${EVM_WARP_ADDR#0x}"
 EVM_WARP_B32=$(printf '%064s' "$EVM_WARP_HEX" | tr ' ' '0')
 
-# ─── Chave privada ────────────────────────────────────────────────────────────
+# ─── Private key ──────────────────────────────────────────────────────────────
 if [ -z "${TERRA_PRIVATE_KEY:-}" ]; then
     echo -e ""
-    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY não definida.${RESET}"
-    echo -e "   export TERRA_PRIVATE_KEY=\"sua_chave_hex\""
+    echo -e "${YELLOW}⚠️  TERRA_PRIVATE_KEY not set.${RESET}"
+    echo -e "   export TERRA_PRIVATE_KEY=\"your_hex_key\""
     echo -n "   > "
     read -rs TERRA_PRIVATE_KEY
     echo ""
     if [ -z "$TERRA_PRIVATE_KEY" ]; then
-        echo -e "${RED}❌ Chave privada não fornecida. Abortando.${RESET}"; exit 1
+        echo -e "${RED}❌ Private key not provided. Aborting.${RESET}"; exit 1
     fi
 fi
 TERRA_PRIVATE_KEY="${TERRA_PRIVATE_KEY#0x}"
 
-# ─── Resumo ───────────────────────────────────────────────────────────────────
+# ─── Summary ─────────────────────────────────────────────────────────────────
 echo -e ""
-echo -e "${BOLD}📋 Parâmetros da operação:${RESET}"
+echo -e "${BOLD}📋 Operation parameters:${RESET}"
 echo -e "   ${CYAN}Token         :${RESET} $TOKEN_SYMBOL ($TOKEN_KEY)"
 echo -e "   ${CYAN}Terra Warp    :${RESET} $TERRA_WARP_ADDR"
-echo -e "   ${CYAN}Rede EVM      :${RESET} $EVM_DISPLAY (domain $EVM_DOMAIN)"
+echo -e "   ${CYAN}EVM Network   :${RESET} $EVM_DISPLAY (domain $EVM_DOMAIN)"
 echo -e "   ${CYAN}EVM Warp      :${RESET} $EVM_WARP_ADDR"
 echo -e "   ${CYAN}EVM bytes32   :${RESET} $EVM_WARP_B32"
 echo -e "   ${CYAN}RPC Terra     :${RESET} $TERRA_RPC"
 echo -e ""
-echo -e "${BOLD}Mensagem CosmWasm que será executada:${RESET}"
+echo -e "${BOLD}CosmWasm message to be executed:${RESET}"
 echo -e "${CYAN}{
   \"router\": {
     \"set_route\": {
@@ -169,17 +169,17 @@ echo -e "${CYAN}{
 }${RESET}"
 echo -e ""
 
-echo -ne "${YELLOW}▶ Confirmar? [s/N]: ${RESET}"
+echo -ne "${YELLOW}▶ Confirm? [y/N]: ${RESET}"
 read -r CONFIRM
-if [[ ! "$CONFIRM" =~ ^[sS]$ ]]; then
-    echo -e "${RED}❌ Cancelado.${RESET}"; exit 0
+if [[ ! "$CONFIRM" =~ ^[sStTyY]$ ]]; then
+    echo -e "${RED}❌ Cancelled.${RESET}"; exit 0
 fi
 
 echo -e ""
-echo -e "${BOLD}⏳ Enviando transação...${RESET}"
+echo -e "${BOLD}⏳ Sending transaction...${RESET}"
 echo -e ""
 
-# ─── Exportar variáveis para o Node.js via env (heredoc com aspas = sem expansão bash) ───
+# ─── Export variables to Node.js via env (heredoc with quotes = no bash expansion) ───
 export _NM="$PROJECT_ROOT"
 export _RPC="$TERRA_RPC"
 export _WARP="$TERRA_WARP_ADDR"
@@ -187,8 +187,8 @@ export _DOMAIN="$EVM_DOMAIN"
 export _ROUTE="$EVM_WARP_B32"
 export _KEY="$TERRA_PRIVATE_KEY"
 
-# ─── Node.js inline para executar o set_route ────────────────────────────────
-# IMPORTANTE: desabilitar set -e para capturar erros manualmente
+# ─── Inline Node.js to execute set_route ────────────────────────────────────
+# IMPORTANT: disable set -e to capture errors manually
 set +e
 RESULT=$(node --no-warnings - 2>&1 <<'NODEJS_EOF'
 const path = require('path');
@@ -211,7 +211,7 @@ async function main() {
         privKeyBytes = fromHex(privKeyHex);
     } catch(e) {
         console.log("STATUS=error");
-        console.log("ERR=Chave privada inválida: " + e.message);
+        console.log("ERR=Invalid private key: " + e.message);
         return;
     }
 
@@ -221,8 +221,8 @@ async function main() {
 
     const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, { gasPrice });
 
-    // Verificar se rota já existe usando list_routes (mais confiável)
-    // get_route retorna {route: null} quando NÃO existe — não usar para checar!
+    // Check if route already exists using list_routes (more reliable)
+    // get_route returns {route: null} when NOT set — do not use for checking!
     try {
         const routes = await client.queryContractSmart(terraWarp, {
             router: { list_routes: {} }
@@ -234,7 +234,7 @@ async function main() {
             return;
         }
     } catch(e) {
-        // fallback: tentar prosseguir
+        // fallback: proceed anyway
     }
 
     const msg = {
@@ -269,15 +269,15 @@ NODEJS_EOF
 EXIT_CODE=$?
 set -e
 
-# Mostrar output bruto em caso de falha total do node
+# Show raw output in case of total node failure
 if [ $EXIT_CODE -ne 0 ] && ! echo "$RESULT" | grep -q "^STATUS="; then
-    echo -e "${RED}❌ Falha inesperada no Node.js (exit $EXIT_CODE):${RESET}"
+    echo -e "${RED}❌ Unexpected Node.js failure (exit $EXIT_CODE):${RESET}"
     echo -e "${YELLOW}$RESULT${RESET}"
     exit 1
 fi
 
-# IMPORTANTE: usar "|| echo """ para evitar que grep sem match (exit 1) cause
-# saída do script com set -euo pipefail (bug: grep exits 1 when no match found)
+# IMPORTANT: use "|| echo """ to prevent grep with no match (exit 1) from causing
+# script exit with set -euo pipefail (bug: grep exits 1 when no match found)
 TX_HASH=$(echo "$RESULT"  | grep "^TX_HASH="        | cut -d= -f2  || echo "")
 HEIGHT=$(echo "$RESULT"   | grep "^HEIGHT="         | cut -d= -f2  || echo "")
 GAS_USED=$(echo "$RESULT" | grep "^GAS_USED="       | cut -d= -f2  || echo "")
@@ -287,42 +287,42 @@ EXISTING=$(echo "$RESULT" | grep "^EXISTING_ROUTE=" | cut -d= -f2  || echo "")
 ERR_MSG=$(echo "$RESULT"  | grep "^ERR="            | cut -d= -f2- || echo "")
 
 if [ "$STATUS" = "error" ]; then
-    echo -e "${RED}❌ Erro ao executar set_route:${RESET}"
+    echo -e "${RED}❌ Error executing set_route:${RESET}"
     echo -e "   ${YELLOW}${ERR_MSG}${RESET}"
     echo -e ""
-    echo -e "${BOLD}Output completo:${RESET}"
+    echo -e "${BOLD}Full output:${RESET}"
     echo -e "$RESULT"
     exit 1
 elif [ "$STATUS" = "already_set" ]; then
-    echo -e "${GREEN}✅ Rota já estava configurada!${RESET}"
-    echo -e "   ${CYAN}Rota existente:${RESET} $EXISTING"
+    echo -e "${GREEN}✅ Route was already configured!${RESET}"
+    echo -e "   ${CYAN}Existing route:${RESET} $EXISTING"
     echo -e ""
-    echo -e "${YELLOW}⚠️  Se o erro 'route not found' persiste, verifique:${RESET}"
-    echo -e "   1. Se o endereço EVM bate com o Warp deployado"
-    echo -e "   2. Se o domain correto está sendo passado no transfer_remote"
+    echo -e "${YELLOW}⚠️  If the 'route not found' error persists, check:${RESET}"
+    echo -e "   1. Whether the EVM address matches the deployed Warp"
+    echo -e "   2. Whether the correct domain is being passed in transfer_remote"
 else
     echo -e ""
     echo -e "${BOLD}${GREEN}╔══════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${BOLD}${GREEN}║    ✅ set_route EXECUTADO COM SUCESSO!               ║${RESET}"
+    echo -e "${BOLD}${GREEN}║    ✅ set_route EXECUTED SUCCESSFULLY!               ║${RESET}"
     echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${RESET}"
     echo -e ""
-    echo -e "${BOLD}📦 Transação:${RESET}"
+    echo -e "${BOLD}📦 Transaction:${RESET}"
     echo -e "   ${CYAN}TX Hash   :${RESET} ${BOLD}${TX_HASH}${RESET}"
-    echo -e "   ${CYAN}Bloco     :${RESET} $HEIGHT"
-    echo -e "   ${CYAN}Gas usado :${RESET} $GAS_USED"
-    echo -e "   ${CYAN}Remetente :${RESET} $SENDER"
+    echo -e "   ${CYAN}Block     :${RESET} $HEIGHT"
+    echo -e "   ${CYAN}Gas used  :${RESET} $GAS_USED"
+    echo -e "   ${CYAN}Sender    :${RESET} $SENDER"
     echo -e ""
     echo -e "   ${BOLD}🔗 Explorer:${RESET}"
     echo -e "   ${CYAN}https://finder.hexxagon.io/${TERRA_CHAIN}/tx/${TX_HASH}${RESET}"
 fi
 
 echo -e ""
-echo -e "${BOLD}📋 Configuração registrada:${RESET}"
+echo -e "${BOLD}📋 Registered configuration:${RESET}"
 echo -e "   ${CYAN}Terra Warp   :${RESET} $TERRA_WARP_ADDR"
-echo -e "   ${CYAN}Domain EVM   :${RESET} $EVM_DOMAIN ($EVM_DISPLAY)"
+echo -e "   ${CYAN}EVM Domain   :${RESET} $EVM_DOMAIN ($EVM_DISPLAY)"
 echo -e "   ${CYAN}EVM Warp     :${RESET} $EVM_WARP_ADDR"
 echo -e "   ${CYAN}EVM bytes32  :${RESET} $EVM_WARP_B32"
 echo -e ""
-echo -e "${GREEN}✅ O contrato Terra Classic agora conhece a rota para $EVM_DISPLAY!${RESET}"
-echo -e "   transfer_remote { dest_domain: $EVM_DOMAIN } deve funcionar."
+echo -e "${GREEN}✅ The Terra Classic contract now knows the route to $EVM_DISPLAY!${RESET}"
+echo -e "   transfer_remote { dest_domain: $EVM_DOMAIN } should work now."
 echo -e ""

@@ -1,92 +1,92 @@
-# Guia — Submissão de Proposta de Governança Hyperlane (Terra Classic Testnet)
+# Guide — Hyperlane Governance Proposal Submission (Terra Classic Testnet)
 
 > **Script**: `submit-proposal-testnet.ts`  
-> **Localização**: `/home/lunc/cw-hyperlane/script-warp-terraclassic/submit-proposal-testnet.ts`  
-> **Rede**: Terra Classic Testnet (`rebel-2`)
+> **Location**: `/home/lunc/cw-hyperlane/script-warp-terraclassic/submit-proposal-testnet.ts`  
+> **Network**: Terra Classic Testnet (`rebel-2`)
 
 ---
 
-## Índice
+## Table of Contents
 
-1. [Visão Geral](#1--visão-geral)
-2. [Pré-requisitos](#2--pré-requisitos)
-3. [Estrutura de Arquivos](#3--estrutura-de-arquivos)
-4. [Modos de Execução](#4--modos-de-execução)
-5. [Como Executar](#5--como-executar)
-6. [O que o Script Configura](#6--o-que-o-script-configura)
-   - [MSG 1 — ISM Multisig BSC Testnet](#msg-1--ism-multisig-bsc-testnet-domínio-97)
-   - [MSG 2 — ISM Multisig Sepolia](#msg-2--ism-multisig-sepolia-domínio-11155111)
-   - [MSG 3 — ISM Multisig Solana](#msg-3--ism-multisig-solana-domínio-1399811150)
-   - [MSG 4 — IGP Oracle (Exchange Rate e Gas Price)](#msg-4--igp-oracle-exchange-rate-e-gas-price)
-   - [MSG 5 — IGP Rotas para Oracle](#msg-5--igp-rotas-para-oracle)
-   - [MSG 6 — ISM Routing para Sepolia](#msg-6--ism-routing-para-sepolia)
+1. [Overview](#1--overview)
+2. [Prerequisites](#2--prerequisites)
+3. [File Structure](#3--file-structure)
+4. [Execution Modes](#4--execution-modes)
+5. [How to Run](#5--how-to-run)
+6. [What the Script Configures](#6--what-the-script-configures)
+   - [MSG 1 — ISM Multisig BSC Testnet](#msg-1--ism-multisig-bsc-testnet-domain-97)
+   - [MSG 2 — ISM Multisig Sepolia](#msg-2--ism-multisig-sepolia-domain-11155111)
+   - [MSG 3 — ISM Multisig Solana](#msg-3--ism-multisig-solana-domain-1399811150)
+   - [MSG 4 — IGP Oracle (Exchange Rate and Gas Price)](#msg-4--igp-oracle-exchange-rate-and-gas-price)
+   - [MSG 5 — IGP Routes to Oracle](#msg-5--igp-routes-to-oracle)
+   - [MSG 6 — ISM Routing for Sepolia](#msg-6--ism-routing-for-sepolia)
    - [MSG 7 — Mailbox: Default ISM](#msg-7--mailbox-default-ism)
    - [MSG 8 — Mailbox: Default Hook](#msg-8--mailbox-default-hook)
    - [MSG 9 — Mailbox: Required Hook](#msg-9--mailbox-required-hook)
-7. [Contratos Configurados](#7--contratos-configurados)
-8. [Como Alterar ISM (Validators)](#8--como-alterar-ism-validators)
-9. [Como Alterar IGP (Taxa de Câmbio e Gas Price)](#9--como-alterar-igp-taxa-de-câmbio-e-gas-price)
-10. [Como Alterar Hooks](#10--como-alterar-hooks)
-11. [Como Adicionar uma Nova Rede](#11--como-adicionar-uma-nova-rede)
-12. [Submeter Proposta via CLI](#12--submeter-proposta-via-cli)
-13. [Votar na Proposta](#13--votar-na-proposta)
-14. [Verificar Execução](#14--verificar-execução)
-15. [Arquivos Gerados](#15--arquivos-gerados)
+7. [Configured Contracts](#7--configured-contracts)
+8. [How to Change ISM (Validators)](#8--how-to-change-ism-validators)
+9. [How to Change IGP (Exchange Rate and Gas Price)](#9--how-to-change-igp-exchange-rate-and-gas-price)
+10. [How to Change Hooks](#10--how-to-change-hooks)
+11. [How to Add a New Network](#11--how-to-add-a-new-network)
+12. [Submit Proposal via CLI](#12--submit-proposal-via-cli)
+13. [Vote on the Proposal](#13--vote-on-the-proposal)
+14. [Verify Execution](#14--verify-execution)
+15. [Generated Files](#15--generated-files)
 16. [Troubleshooting](#16--troubleshooting)
-17. [Links Úteis](#17--links-úteis)
+17. [Useful Links](#17--useful-links)
 
 ---
 
-## 1 — Visão Geral
+## 1 — Overview
 
-O script `submit-proposal-testnet.ts` serve para **configurar os contratos Hyperlane no Terra Classic Testnet** de forma segura, via proposta de governança, ou diretamente para testes rápidos.
+The `submit-proposal-testnet.ts` script is used to **configure Hyperlane contracts on Terra Classic Testnet** safely via governance proposal, or directly for quick tests.
 
-### O que ele faz
+### What it does
 
-O script empacota 9 mensagens de execução de contrato em uma **proposta de governança** (ou executa diretamente), configurando:
+The script packages 9 contract execution messages into a **governance proposal** (or executes directly), configuring:
 
-| Componente | O que configura |
+| Component | What it configures |
 |---|---|
-| **ISM Multisig** | Quais validadores assinam mensagens de cada rede remota |
-| **ISM Routing** | Qual ISM Multisig usar para cada domínio de origem |
-| **IGP Oracle** | Taxa de câmbio LUNC ↔ token remoto + gas price |
-| **IGP** | Rotas para consultar Oracle ao calcular taxa de gás |
-| **Mailbox** | ISM padrão, hook padrão e hook obrigatório |
+| **ISM Multisig** | Which validators sign messages from each remote network |
+| **ISM Routing** | Which ISM Multisig to use for each origin domain |
+| **IGP Oracle** | LUNC ↔ remote token exchange rate + gas price |
+| **IGP** | Routes to query Oracle when calculating gas fees |
+| **Mailbox** | Default ISM, default hook, and required hook |
 
-### Diagrama de fluxo (mensagem recebida)
-
-```
-Mensagem chega (ex: Sepolia → TC)
-       ↓
-  Mailbox consulta ISM Routing
-       ↓
-  ISM Routing direciona para ISM_MULTISIG_SEP
-       ↓
-  ISM Multisig valida assinaturas do validador Sepolia
-       ↓
-  Mensagem entregue ao contrato destinatário (Warp)
-```
-
-### Diagrama de fluxo (mensagem enviada)
+### Flow diagram (incoming message)
 
 ```
-transfer_remote() chamado no Warp (TC → destino)
+Message arrives (e.g.: Sepolia → TC)
        ↓
-  Mailbox executa Required Hook (Pausable + Fee)
+  Mailbox queries ISM Routing
        ↓
-  Mailbox executa Default Hook (Merkle + IGP)
+  ISM Routing directs to ISM_MULTISIG_SEP
        ↓
-  IGP calcula taxa → consulta Oracle → cobra LUNC do remetente
-  Merkle registra a mensagem na árvore para o validador assinar
+  ISM Multisig validates Sepolia validator signatures
        ↓
-  Mensagem emitida como evento
+  Message delivered to destination contract (Warp)
+```
+
+### Flow diagram (outgoing message)
+
+```
+transfer_remote() called on Warp (TC → destination)
        ↓
-  Validador assina o checkpoint → Relayer entrega no destino
+  Mailbox executes Required Hook (Pausable + Fee)
+       ↓
+  Mailbox executes Default Hook (Merkle + IGP)
+       ↓
+  IGP calculates fee → queries Oracle → charges LUNC from sender
+  Merkle registers the message in the tree for the validator to sign
+       ↓
+  Message emitted as event
+       ↓
+  Validator signs the checkpoint → Relayer delivers to destination
 ```
 
 ---
 
-## 2 — Pré-requisitos
+## 2 — Prerequisites
 
 ### Software
 
@@ -97,61 +97,61 @@ node --version
 # npx + tsx
 npm install -g tsx
 
-# Dependências do projeto (instalar na pasta do script)
+# Project dependencies (install in the script folder)
 cd ~/cw-hyperlane/script-warp-terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 
-### Carteira
+### Wallet
 
-Você precisa de uma carteira Terra Classic com:
-- Saldo de LUNC para pagar taxas de transação
-- Em modo `proposal`: pelo menos **10 LUNC** para depósito inicial da proposta
+You need a Terra Classic wallet with:
+- LUNC balance to pay transaction fees
+- In `proposal` mode: at least **10 LUNC** for the proposal initial deposit
 
-### Chave privada
+### Private key
 
-A chave privada deve ser configurada via variável de ambiente:
+The private key must be set via environment variable:
 
 ```bash
 export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# ou
+# or
 export PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-> ⚠️ **NUNCA** coloque a chave privada diretamente no script ou em arquivos de configuração versionados!
+> ⚠️ **NEVER** put the private key directly in the script or in versioned configuration files!
 
 ---
 
-## 3 — Estrutura de Arquivos
+## 3 — File Structure
 
 ```
 script-warp-terraclassic/
-├── submit-proposal-testnet.ts     ← Script principal
-├── exec_msgs_testnet.json         ← Gerado: mensagens individuais
-├── proposal_testnet.json          ← Gerado: proposta formatada para terrad
+├── submit-proposal-testnet.ts     ← Main script
+├── exec_msgs_testnet.json         ← Generated: individual messages
+├── proposal_testnet.json          ← Generated: proposal formatted for terrad
 └── doc/
-    └── submit-proposal-guide.md  ← Este documento
+    └── submit-proposal-guide.md  ← This document
 ```
 
 ---
 
-## 4 — Modos de Execução
+## 4 — Execution Modes
 
-O script possui dois modos controlados pela variável de ambiente `MODE`:
+The script has two modes controlled by the `MODE` environment variable:
 
-### Modo `proposal` (padrão — recomendado para produção)
+### Mode `proposal` (default — recommended for production)
 
-Gera os arquivos JSON com a proposta formatada e exibe o comando `terrad` para submetê-la. **Não executa nenhum contrato diretamente**.
+Generates JSON files with the formatted proposal and displays the `terrad` command to submit it. **Does not execute any contract directly**.
 
 ```bash
-# MODE=proposal é o padrão, não precisa definir
+# MODE=proposal is the default, no need to define
 export TERRA_PRIVATE_KEY="xxxxxxxx..."
 npx tsx submit-proposal-testnet.ts
 ```
 
-### Modo `direct` (para testes rápidos)
+### Mode `direct` (for quick tests)
 
-Executa as mensagens diretamente na blockchain, sem passar por governança. Use apenas em testnet/desenvolvimento.
+Executes messages directly on the blockchain, without going through governance. Use only in testnet/development.
 
 ```bash
 export MODE=direct
@@ -159,32 +159,32 @@ export TERRA_PRIVATE_KEY="xxxxxxxx..."
 npx tsx submit-proposal-testnet.ts
 ```
 
-> ⚠️ O modo `direct` só funciona se a carteira for a **owner/admin** dos contratos. Em produção, os contratos são gerenciados pelo módulo de governança (`terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`).
+> ⚠️ The `direct` mode only works if the wallet is the **owner/admin** of the contracts. In production, contracts are managed by the governance module (`terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n`).
 
 ---
 
-## 5 — Como Executar
+## 5 — How to Run
 
-### Passo 1 — Instalar dependências
+### Step 1 — Install dependencies
 
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 
-### Passo 2 — Configurar a chave privada
+### Step 2 — Set the private key
 
 ```bash
 export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-### Passo 3 — Executar o script
+### Step 3 — Run the script
 
 ```bash
 npx tsx submit-proposal-testnet.ts
 ```
 
-### Saída esperada (modo `proposal`)
+### Expected output (`proposal` mode)
 
 ```
 ================================================================================
@@ -220,16 +220,16 @@ terrad tx gov submit-proposal proposal_testnet.json \
 
 ---
 
-## 6 — O que o Script Configura
+## 6 — What the Script Configures
 
-### Fluxo geral das 9 mensagens
+### General flow of the 9 messages
 
 ```
-MSG 1  → ISM_MULTISIG_BSC   → set_validators (BSC, domínio 97)
-MSG 2  → ISM_MULTISIG_SEP   → set_validators (Sepolia, domínio 11155111)
-MSG 3  → ISM_MULTISIG_SOL   → set_validators (Solana, domínio 1399811150)
-MSG 4  → IGP_ORACLE          → set_remote_gas_data_configs (3 redes)
-MSG 5  → IGP                 → set_routes (3 redes → Oracle)
+MSG 1  → ISM_MULTISIG_BSC   → set_validators (BSC, domain 97)
+MSG 2  → ISM_MULTISIG_SEP   → set_validators (Sepolia, domain 11155111)
+MSG 3  → ISM_MULTISIG_SOL   → set_validators (Solana, domain 1399811150)
+MSG 4  → IGP_ORACLE          → set_remote_gas_data_configs (3 networks)
+MSG 5  → IGP                 → set_routes (3 networks → Oracle)
 MSG 6  → ISM_ROUTING         → set (Sepolia → ISM_MULTISIG_SEP)
 MSG 7  → MAILBOX             → set_default_ism (ISM Routing)
 MSG 8  → MAILBOX             → set_default_hook (Merkle + IGP)
@@ -238,11 +238,11 @@ MSG 9  → MAILBOX             → set_required_hook (Pausable + Fee)
 
 ---
 
-### MSG 1 — ISM Multisig BSC Testnet (Domínio 97)
+### MSG 1 — ISM Multisig BSC Testnet (Domain 97)
 
-**Contrato**: `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`
+**Contract**: `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv`
 
-**O que faz**: Registra os 3 validadores que assinam mensagens vindas da BSC Testnet. O threshold de **2/3** significa que pelo menos 2 dos 3 precisam assinar.
+**What it does**: Registers the 3 validators that sign messages coming from BSC Testnet. The threshold of **2/3** means at least 2 of the 3 must sign.
 
 ```json
 {
@@ -258,18 +258,18 @@ MSG 9  → MAILBOX             → set_required_hook (Pausable + Fee)
 }
 ```
 
-**Como encontrar os validadores BSC**: Consulte o S3 do validador:
+**How to find BSC validators**: Check the validator's S3:
 ```
 https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/announcement.json
 ```
 
 ---
 
-### MSG 2 — ISM Multisig Sepolia (Domínio 11155111)
+### MSG 2 — ISM Multisig Sepolia (Domain 11155111)
 
-**Contrato**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
+**Contract**: `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa`
 
-**O que faz**: Registra 1 validador para mensagens vindas do Sepolia. Threshold **1/1**.
+**What it does**: Registers 1 validator for messages coming from Sepolia. Threshold **1/1**.
 
 ```json
 {
@@ -283,20 +283,20 @@ https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazona
 }
 ```
 
-**Como encontrar o validador Sepolia**:
+**How to find the Sepolia validator**:
 ```
 https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/announcement.json
 ```
 
-O campo `validator` no JSON de anúncio é o endereço do validador (sem `0x`).
+The `validator` field in the announcement JSON is the validator address (without `0x`).
 
 ---
 
-### MSG 3 — ISM Multisig Solana (Domínio 1399811150)
+### MSG 3 — ISM Multisig Solana (Domain 1399811150)
 
-**Contrato**: `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`
+**Contract**: `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a`
 
-**O que faz**: Registra 1 validador para mensagens vindas do Solana Testnet. Threshold **1/1**.
+**What it does**: Registers 1 validator for messages coming from Solana Testnet. Threshold **1/1**.
 
 ```json
 {
@@ -310,19 +310,19 @@ O campo `validator` no JSON de anúncio é o endereço do validador (sem `0x`).
 }
 ```
 
-**Como encontrar o validador Solana**:
+**How to find the Solana validator**:
 ```
 https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/
 ```
-> O validador do Solana que assina para TC está no anúncio do lado Terra Classic.
+> The Solana validator that signs for TC is in the announcement on the Terra Classic side.
 
 ---
 
-### MSG 4 — IGP Oracle (Exchange Rate e Gas Price)
+### MSG 4 — IGP Oracle (Exchange Rate and Gas Price)
 
-**Contrato**: `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`
+**Contract**: `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg`
 
-**O que faz**: Configura o preço do gás e a taxa de câmbio entre LUNC e o token nativo de cada rede de destino. O IGP usa esses dados para calcular quanto cobrar do remetente.
+**What it does**: Configures the gas price and exchange rate between LUNC and the native token of each destination network. The IGP uses this data to calculate how much to charge the sender.
 
 ```json
 {
@@ -348,35 +348,35 @@ https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazo
 }
 ```
 
-**Fórmula de cálculo do custo**:
+**Cost calculation formula**:
 ```
-Custo em LUNC = (gas_usado_no_destino × gas_price × token_exchange_rate) / 1e10
+Cost in LUNC = (gas_used_on_destination × gas_price × token_exchange_rate) / 1e10
 ```
 
-**Como encontrar valores atualizados**:
+**How to find updated values**:
 
-| Rede | Consultar gas price |
+| Network | Check gas price at |
 |---|---|
 | Sepolia | https://sepolia.etherscan.io/gastracker |
 | BSC Testnet | https://testnet.bscscan.com/gastracker |
 | Solana Testnet | https://explorer.solana.com/?cluster=testnet |
 
-Para taxa de câmbio LUNC/ETH:
+For LUNC/ETH exchange rate:
 ```bash
-# Via CoinGecko (exemplo)
+# Via CoinGecko (example)
 curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_currencies=usd"
 ```
 
-> O `token_exchange_rate` é calculado como: `(preço_LUNC / preço_destino_token) × 1e18`  
-> Exemplo: LUNC = 0.000088 USD, ETH = 1800 USD → rate = (0.000088/1800) × 1e18 ≈ 4.9e10
+> The `token_exchange_rate` is calculated as: `(LUNC_price / destination_token_price) × 1e18`  
+> Example: LUNC = $0.000088, ETH = $1800 → rate = (0.000088/1800) × 1e18 ≈ 4.9e10
 
 ---
 
-### MSG 5 — IGP Rotas para Oracle
+### MSG 5 — IGP Routes to Oracle
 
-**Contrato**: `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`
+**Contract**: `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9`
 
-**O que faz**: Configura o IGP para consultar o IGP Oracle ao calcular taxas de gás para cada domínio remoto.
+**What it does**: Configures the IGP to query the IGP Oracle when calculating gas fees for each remote domain.
 
 ```json
 {
@@ -394,11 +394,11 @@ curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_c
 
 ---
 
-### MSG 6 — ISM Routing para Sepolia
+### MSG 6 — ISM Routing for Sepolia
 
-**Contrato**: `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh`
+**Contract**: `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh`
 
-**O que faz**: Registra no ISM Routing que mensagens vindas do domínio `11155111` (Sepolia) devem ser validadas pelo `ISM_MULTISIG_SEP`.
+**What it does**: Registers in the ISM Routing that messages from domain `11155111` (Sepolia) must be validated by `ISM_MULTISIG_SEP`.
 
 ```json
 {
@@ -411,15 +411,15 @@ curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_c
 }
 ```
 
-> **Nota**: BSC e Solana já estão configurados no ISM Routing pelos scripts anteriores. Este passo adiciona Sepolia.
+> **Note**: BSC and Solana are already configured in ISM Routing by previous scripts. This step adds Sepolia.
 
 ---
 
 ### MSG 7 — Mailbox: Default ISM
 
-**Contrato**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
+**Contract**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
 
-**O que faz**: Define o ISM Routing como o módulo de segurança padrão do Mailbox. Toda mensagem recebida será validada pelo ISM Routing, que direciona para o ISM Multisig correto de acordo com o domínio de origem.
+**What it does**: Sets ISM Routing as the default security module of the Mailbox. Every incoming message will be validated by ISM Routing, which directs to the correct ISM Multisig based on the origin domain.
 
 ```json
 {
@@ -433,11 +433,11 @@ curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_c
 
 ### MSG 8 — Mailbox: Default Hook
 
-**Contrato**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
+**Contract**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
 
-**O que faz**: Define o **Hook Aggregate #1** como hook padrão para envio de mensagens. Este hook combina:
-- **Merkle Hook**: Adiciona a mensagem à árvore de Merkle para que o validador possa assinar o checkpoint
-- **IGP Hook**: Processa o pagamento de gás para execução no destino
+**What it does**: Sets **Hook Aggregate #1** as the default hook for outgoing messages. This hook combines:
+- **Merkle Hook**: Adds the message to the Merkle tree so the validator can sign the checkpoint
+- **IGP Hook**: Processes the gas payment for execution at the destination
 
 ```json
 {
@@ -447,17 +447,17 @@ curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_c
 }
 ```
 
-> ⚠️ **Importante**: O Merkle Hook é essencial! Se o hook padrão não incluir o Merkle Hook, o validador não conseguirá assinar os checkpoints e as mensagens nunca serão entregues.
+> ⚠️ **Important**: The Merkle Hook is essential! If the default hook does not include the Merkle Hook, the validator will not be able to sign checkpoints and messages will never be delivered.
 
 ---
 
 ### MSG 9 — Mailbox: Required Hook
 
-**Contrato**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
+**Contract**: `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf`
 
-**O que faz**: Define o **Hook Aggregate #2** como hook obrigatório (sempre executado, não pode ser bypassado). Este hook combina:
-- **Hook Pausable**: Permite pausar o envio de mensagens em emergências
-- **Hook Fee**: Cobra uma taxa fixa de ~0.283215 LUNC por mensagem (anti-spam)
+**What it does**: Sets **Hook Aggregate #2** as the required hook (always executed, cannot be bypassed). This hook combines:
+- **Hook Pausable**: Allows pausing message sending in emergencies
+- **Hook Fee**: Charges a fixed fee of ~0.283215 LUNC per message (anti-spam)
 
 ```json
 {
@@ -469,33 +469,33 @@ curl "https://api.coingecko.com/api/v3/simple/price?ids=terra-luna,ethereum&vs_c
 
 ---
 
-## 7 — Contratos Configurados
+## 7 — Configured Contracts
 
-### Tabela de endereços (Testnet `rebel-2`)
+### Address table (Testnet `rebel-2`)
 
-| Contrato | Endereço | Função |
+| Contract | Address | Function |
 |---|---|---|
-| **Mailbox** | `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf` | Hub central de mensagens |
-| **ISM Routing** | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | Direciona para ISM correto por domínio |
-| **ISM Multisig BSC** | `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv` | Valida msgs da BSC Testnet (2/3) |
-| **ISM Multisig Sepolia** | `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa` | Valida msgs do Sepolia (1/1) |
-| **ISM Multisig Solana** | `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a` | Valida msgs do Solana (1/1) |
-| **IGP** | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Processa pagamento de gás |
-| **IGP Oracle** | `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg` | Fornece preços de gás por rede |
+| **Mailbox** | `terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf` | Central message hub |
+| **ISM Routing** | `terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh` | Directs to correct ISM per domain |
+| **ISM Multisig BSC** | `terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv` | Validates msgs from BSC Testnet (2/3) |
+| **ISM Multisig Sepolia** | `terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa` | Validates msgs from Sepolia (1/1) |
+| **ISM Multisig Solana** | `terra1d7a52pxu309jcgv8grck7jpgwlfw7cy0zen9u42rqdr39tef9g7qc8gp4a` | Validates msgs from Solana (1/1) |
+| **IGP** | `terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9` | Processes gas payment |
+| **IGP Oracle** | `terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg` | Provides gas prices per network |
 | **Hook Aggregate 1** | `terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh` | Default hook (Merkle + IGP) |
 | **Hook Aggregate 2** | `terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj` | Required hook (Pausable + Fee) |
-| **Governance Module** | `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` | Owner dos contratos em produção |
+| **Governance Module** | `terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` | Contract owner in production |
 
 ---
 
-## 8 — Como Alterar ISM (Validators)
+## 8 — How to Change ISM (Validators)
 
-### Cenário: Adicionar novo validador ao BSC (mudar de 2/3 para 3/4)
+### Scenario: Add new validator to BSC (change from 2/3 to 3/4)
 
-**No script** (`submit-proposal-testnet.ts`), localize a MSG 1 e altere:
+**In the script** (`submit-proposal-testnet.ts`), locate MSG 1 and modify:
 
 ```typescript
-// Antes (2/3)
+// Before (2/3)
 set_validators: {
   domain: 97,
   threshold: 2,
@@ -506,7 +506,7 @@ set_validators: {
   ],
 },
 
-// Depois (3/4)
+// After (3/4)
 set_validators: {
   domain: 97,
   threshold: 3,
@@ -514,42 +514,42 @@ set_validators: {
     '242d8a855a8c932dec51f7999ae7d1e48b10c95e',
     'f620f5e3d25a3ae848fec74bccae5de3edcd8796',
     '1f030345963c54ff8229720dd3a711c15c554aeb',
-    'NOVO_VALIDATOR_SEM_0X_PREFIX',              // ← novo
+    'NEW_VALIDATOR_WITHOUT_0X_PREFIX',              // ← new
   ],
 },
 ```
 
-### Cenário: Verificar validators atuais no contrato
+### Scenario: Check current validators on the contract
 
 ```bash
-# Consultar validators configurados para BSC (domínio 97)
+# Query validators configured for BSC (domain 97)
 terrad query wasm contract-state smart \
   terra1rrt0kepmazvavmkusvz6589l5yg4mqjk49netqfqttnmf2y4exmqxhp0hv \
   '{"get_validators":{"domain":97}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Consultar validators configurados para Sepolia (domínio 11155111)
+# Query validators configured for Sepolia (domain 11155111)
 terrad query wasm contract-state smart \
   terra1mzkakdts4958dyks72saw9wgas2eqmmxpuqc8gut2jvt9xuj8qzqc03vxa \
   '{"get_validators":{"domain":11155111}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-### Cenário: Adicionar suporte a nova rede (ex: Avalanche Fuji, domínio 43113)
+### Scenario: Add support for a new network (e.g.: Avalanche Fuji, domain 43113)
 
-1. **Descobrir o endereço do validador** — Consulte o S3 do validador Avalanche:
+1. **Find the validator address** — Check the Avalanche validator's S3:
    ```
-   https://hyperlane-validator-signatures-<nome>-avalanchefuji.s3.us-east-1.amazonaws.com/announcement.json
+   https://hyperlane-validator-signatures-<name>-avalanchefuji.s3.us-east-1.amazonaws.com/announcement.json
    ```
 
-2. **Criar novo contrato ISM Multisig** para o domínio (via governance ou script de deploy)
+2. **Create a new ISM Multisig contract** for the domain (via governance or deploy script)
 
-3. **Adicionar nova constante no script**:
+3. **Add a new constant to the script**:
    ```typescript
-   const ISM_MULTISIG_AVAX = 'terra1...novo_contrato...';
+   const ISM_MULTISIG_AVAX = 'terra1...new_contract...';
    ```
 
-4. **Adicionar nova MSG de set_validators**:
+4. **Add a new set_validators MSG**:
    ```typescript
    {
      contractAddress: ISM_MULTISIG_AVAX,
@@ -558,39 +558,39 @@ terrad query wasm contract-state smart \
        set_validators: {
          domain: 43113,
          threshold: 1,
-         validators: ['ENDERECO_VALIDADOR_SEM_0X'],
+         validators: ['VALIDATOR_ADDRESS_WITHOUT_0X'],
        },
      },
    },
    ```
 
-5. **Adicionar MSG de ISM Routing** para mapear o novo domínio ao ISM_MULTISIG_AVAX
+5. **Add ISM Routing MSG** to map the new domain to ISM_MULTISIG_AVAX
 
 ---
 
-## 9 — Como Alterar IGP (Taxa de Câmbio e Gas Price)
+## 9 — How to Change IGP (Exchange Rate and Gas Price)
 
-### Conceitos
+### Concepts
 
-| Campo | Unidade | Descrição |
+| Field | Unit | Description |
 |---|---|---|
-| `token_exchange_rate` | `1e18` base | Razão entre o preço do LUNC e o token nativo do destino |
-| `gas_price` | wei / lamports | Gas price na rede destino |
+| `token_exchange_rate` | `1e18` base | Ratio between the LUNC price and the destination native token |
+| `gas_price` | wei / lamports | Gas price on the destination network |
 
-### Fórmula para calcular `token_exchange_rate`
+### Formula to calculate `token_exchange_rate`
 
 ```
-token_exchange_rate = (preço_LUNC_USD / preço_token_destino_USD) × 1e18
+token_exchange_rate = (LUNC_price_USD / destination_token_price_USD) × 1e18
 ```
 
-**Exemplos**:
+**Examples**:
 - LUNC = $0.000088, ETH = $1800 → rate = (0.000088/1800) × 1e18 ≈ `49000000000000`
 - LUNC = $0.000088, BNB = $250 → rate = (0.000088/250) × 1e18 ≈ `352000000000000`
 - LUNC = $0.000088, SOL = $130 → rate = (0.000088/130) × 1e18 ≈ `677000000000000`
 
-### Como alterar no script
+### How to change in the script
 
-Localize MSG 4 em `submit-proposal-testnet.ts` e edite os valores:
+Locate MSG 4 in `submit-proposal-testnet.ts` and edit the values:
 
 ```typescript
 {
@@ -600,7 +600,7 @@ Localize MSG 4 em `submit-proposal-testnet.ts` e edite os valores:
       configs: [
         {
           remote_domain: 11155111,
-          token_exchange_rate: '49000000000000',  // ← atualizar
+          token_exchange_rate: '49000000000000',  // ← update
           gas_price: '15000000000',               // ← 15 Gwei
         },
         // ...
@@ -610,9 +610,9 @@ Localize MSG 4 em `submit-proposal-testnet.ts` e edite os valores:
 },
 ```
 
-### Alterar manualmente via `terrad` (sem proposta)
+### Change manually via `terrad` (without proposal)
 
-Se você for o admin/owner do contrato:
+If you are the admin/owner of the contract:
 
 ```bash
 terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
@@ -627,7 +627,7 @@ terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhr
       ]
     }
   }' \
-  --from <sua-carteira> \
+  --from <your-wallet> \
   --chain-id rebel-2 \
   --gas auto \
   --gas-adjustment 1.5 \
@@ -636,16 +636,16 @@ terrad tx wasm execute terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhr
   -y
 ```
 
-### Verificar configuração atual do Oracle
+### Check current Oracle configuration
 
 ```bash
-# Consultar gas data para Sepolia (11155111)
+# Query gas data for Sepolia (11155111)
 terrad query wasm contract-state smart \
   terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
   '{"get_remote_gas_data":{"domain":11155111}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Consultar gas data para BSC (97)
+# Query gas data for BSC (97)
 terrad query wasm contract-state smart \
   terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg \
   '{"get_remote_gas_data":{"domain":97}}' \
@@ -654,59 +654,59 @@ terrad query wasm contract-state smart \
 
 ---
 
-## 10 — Como Alterar Hooks
+## 10 — How to Change Hooks
 
-### O que é um Hook?
+### What is a Hook?
 
-Um Hook é executado toda vez que uma mensagem é **enviada** pelo Mailbox. Existem dois tipos:
-- **Default Hook**: Executado para todas as mensagens (contém Merkle + IGP)
-- **Required Hook**: Sempre executado antes do default (contém Pausable + Fee)
+A Hook is executed every time a message is **sent** by the Mailbox. There are two types:
+- **Default Hook**: Executed for all messages (contains Merkle + IGP)
+- **Required Hook**: Always executed before the default (contains Pausable + Fee)
 
-### Cenário: Verificar hooks atuais
+### Scenario: Check current hooks
 
 ```bash
-# Verificar ISM padrão
+# Check default ISM
 terrad query wasm contract-state smart \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   '{"default_ism":{}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Verificar hook padrão
+# Check default hook
 terrad query wasm contract-state smart \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   '{"default_hook":{}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 
-# Verificar hook obrigatório
+# Check required hook
 terrad query wasm contract-state smart \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   '{"required_hook":{}}' \
   --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-### Cenário: Trocar o Default Hook
+### Scenario: Change the Default Hook
 
-No script, localize MSG 8 e altere o endereço do hook:
+In the script, locate MSG 8 and change the hook address:
 
 ```typescript
 {
   contractAddress: MAILBOX,
   msg: {
     set_default_hook: {
-      hook: 'terra1...novo_hook_address...',  // ← novo endereço
+      hook: 'terra1...new_hook_address...',  // ← new address
     },
   },
 },
 ```
 
-> ⚠️ **Atenção**: O novo hook deve **sempre incluir o Merkle Hook** (`terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df`). Sem ele, o validador não consegue assinar checkpoints e as mensagens não são entregues.
+> ⚠️ **Warning**: The new hook must **always include the Merkle Hook** (`terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df`). Without it, the validator cannot sign checkpoints and messages will not be delivered.
 
-### Alterar hook manualmente via `terrad`
+### Change hook manually via `terrad`
 
 ```bash
 terrad tx wasm execute terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
-  '{"set_default_hook":{"hook":"terra1...novo_hook..."}}' \
-  --from <sua-carteira> \
+  '{"set_default_hook":{"hook":"terra1...new_hook..."}}' \
+  --from <your-wallet> \
   --chain-id rebel-2 \
   --gas auto \
   --gas-adjustment 1.5 \
@@ -715,43 +715,43 @@ terrad tx wasm execute terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39
   -y
 ```
 
-### Endereços dos hooks individuais (referência)
+### Individual hook addresses (reference)
 
-| Hook | Endereço | Função |
+| Hook | Address | Function |
 |---|---|---|
-| **Merkle Hook** | `terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df` | Registra msgs no Merkle tree |
-| **Hook Pausable** | `terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l` | Pausa envio em emergências |
-| **Hook Fee** | `terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j` | Cobra taxa fixa por mensagem |
+| **Merkle Hook** | `terra1x9ftmmyj0t9n0ql78r2vdfk9stxg5z6vnwnwjym9m7py6lvxz8ls7sa3df` | Registers msgs in Merkle tree |
+| **Hook Pausable** | `terra1j04kamuwssgckj7592w5v3hlttmlqlu9cqkzvvxsjt8rqyt3stps0xan5l` | Pauses sending in emergencies |
+| **Hook Fee** | `terra13y6vseryqqj09uu9aagk8xks4dr9fr2p0xr3w6gngdzjd362h54sz5fr3j` | Charges fixed fee per message |
 | **Hook Agg #1** | `terra14qjm9075m8djus4tl86lc5n2xnsvuazesl52vqyuz6pmaj4k5s5qu5q6jh` | Merkle + IGP (default) |
 | **Hook Agg #2** | `terra1xdpah0ven023jzd80qw0nkp4ndjxy4d7g5y99dhpfwetyal6q6jqpk42rj` | Pausable + Fee (required) |
 
 ---
 
-## 11 — Como Adicionar uma Nova Rede
+## 11 — How to Add a New Network
 
-Para adicionar suporte a uma nova rede EVM (ex: Polygon Mumbai, domínio `80001`):
+To add support for a new EVM network (e.g.: Polygon Mumbai, domain `80001`):
 
-### Passo 1 — Obter o endereço do validador
-
-```bash
-curl https://hyperlane-validator-signatures-<nome>-mumbai.s3.us-east-1.amazonaws.com/announcement.json
-# O campo "validator" contém o endereço (sem 0x)
-```
-
-### Passo 2 — Criar ISM Multisig para a nova rede
+### Step 1 — Get the validator address
 
 ```bash
-# Via Hyperlane CLI (em EVM) ou cw-hpl CLI (em TC)
-# Ou verificar se já existe um contrato reutilizável
+curl https://hyperlane-validator-signatures-<name>-mumbai.s3.us-east-1.amazonaws.com/announcement.json
+# The "validator" field contains the address (without 0x)
 ```
 
-### Passo 3 — Atualizar o script
+### Step 2 — Create ISM Multisig for the new network
+
+```bash
+# Via Hyperlane CLI (on EVM) or cw-hpl CLI (on TC)
+# Or check if there is an existing reusable contract
+```
+
+### Step 3 — Update the script
 
 ```typescript
-// 1. Adicionar constante
-const ISM_MULTISIG_MUMBAI = 'terra1...novo_contrato...';
+// 1. Add constant
+const ISM_MULTISIG_MUMBAI = 'terra1...new_contract...';
 
-// 2. Adicionar MSG para set_validators
+// 2. Add MSG for set_validators
 {
   contractAddress: ISM_MULTISIG_MUMBAI,
   description: 'Configure multisig for Mumbai (domain 80001)',
@@ -759,22 +759,22 @@ const ISM_MULTISIG_MUMBAI = 'terra1...novo_contrato...';
     set_validators: {
       domain: 80001,
       threshold: 1,
-      validators: ['ENDERECO_VALIDATOR_SEM_0X'],
+      validators: ['VALIDATOR_ADDRESS_WITHOUT_0X'],
     },
   },
 },
 
-// 3. Adicionar ao IGP Oracle (MSG 4)
+// 3. Add to IGP Oracle (MSG 4)
 {
   remote_domain: 80001,
   token_exchange_rate: '...',  // LUNC/MATIC exchange rate × 1e18
   gas_price: '...',
 },
 
-// 4. Adicionar às rotas IGP (MSG 5)
+// 4. Add to IGP routes (MSG 5)
 { domain: 80001, route: IGP_ORACLE },
 
-// 5. Adicionar ao ISM Routing (nova MSG)
+// 5. Add to ISM Routing (new MSG)
 {
   contractAddress: ISM_ROUTING,
   msg: {
@@ -790,15 +790,15 @@ const ISM_MULTISIG_MUMBAI = 'terra1...novo_contrato...';
 
 ---
 
-## 12 — Submeter Proposta via CLI
+## 12 — Submit Proposal via CLI
 
-Após executar o script no modo `proposal`, dois arquivos são gerados. Use-os para submeter a proposta:
+After running the script in `proposal` mode, two files are generated. Use them to submit the proposal:
 
 ```bash
-# 1. Revisar o arquivo da proposta
+# 1. Review the proposal file
 cat proposal_testnet.json
 
-# 2. Submeter a proposta
+# 2. Submit the proposal
 terrad tx gov submit-proposal proposal_testnet.json \
   --from hyperlane-testnet \
   --chain-id rebel-2 \
@@ -808,23 +808,23 @@ terrad tx gov submit-proposal proposal_testnet.json \
   --node https://rpc.luncblaze.com:443 \
   -y
 
-# 3. Anotar o PROPOSAL_ID exibido na saída
-# Procure por: proposal_id: "XX"
+# 3. Note the PROPOSAL_ID shown in the output
+# Look for: proposal_id: "XX"
 ```
 
-> 💡 Para submeter você precisa de pelo menos **10 LUNC** na carteira para o depósito inicial.
+> 💡 To submit you need at least **10 LUNC** in your wallet for the initial deposit.
 
 ---
 
-## 13 — Votar na Proposta
+## 13 — Vote on the Proposal
 
 ```bash
-# Listar propostas ativas
+# List active proposals
 terrad query gov proposals \
   --status voting_period \
   --node https://rpc.luncblaze.com:443
 
-# Votar YES na proposta (substitua <ID> pelo número)
+# Vote YES on the proposal (replace <ID> with the number)
 terrad tx gov vote <ID> yes \
   --from hyperlane-testnet \
   --chain-id rebel-2 \
@@ -834,28 +834,28 @@ terrad tx gov vote <ID> yes \
   --node https://rpc.luncblaze.com:443 \
   -y
 
-# Verificar resultado da votação
+# Check voting result
 terrad query gov proposal <ID> \
   --node https://rpc.luncblaze.com:443
 ```
 
 ---
 
-## 14 — Verificar Execução
+## 14 — Verify Execution
 
-Após aprovação da proposta, verifique se os contratos foram configurados corretamente:
+After the proposal is approved, verify that the contracts have been correctly configured:
 
-### Verificar ISM padrão no Mailbox
+### Check default ISM in Mailbox
 
 ```bash
 terrad query wasm contract-state smart \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   '{"default_ism":{}}' \
   --node https://rpc.terra-classic.hexxagon.dev
-# Deve retornar o endereço do ISM Routing
+# Should return the ISM Routing address
 ```
 
-### Verificar validators do BSC
+### Check BSC validators
 
 ```bash
 terrad query wasm contract-state smart \
@@ -864,7 +864,7 @@ terrad query wasm contract-state smart \
   --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-### Verificar oracle para Sepolia
+### Check oracle for Sepolia
 
 ```bash
 terrad query wasm contract-state smart \
@@ -873,26 +873,26 @@ terrad query wasm contract-state smart \
   --node https://rpc.terra-classic.hexxagon.dev
 ```
 
-### Verificar hook padrão do Mailbox
+### Check Mailbox default hook
 
 ```bash
 terrad query wasm contract-state smart \
   terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf \
   '{"default_hook":{}}' \
   --node https://rpc.terra-classic.hexxagon.dev
-# Deve retornar o endereço do Hook Aggregate #1
+# Should return the Hook Aggregate #1 address
 ```
 
 ---
 
-## 15 — Arquivos Gerados
+## 15 — Generated Files
 
-| Arquivo | Descrição |
+| File | Description |
 |---|---|
-| `exec_msgs_testnet.json` | Array com todas as mensagens de execução individuais |
-| `proposal_testnet.json` | Proposta completa no formato esperado pelo `terrad` |
+| `exec_msgs_testnet.json` | Array with all individual execution messages |
+| `proposal_testnet.json` | Complete proposal formatted for `terrad` |
 
-### Exemplo de `proposal_testnet.json`
+### Example `proposal_testnet.json`
 
 ```json
 {
@@ -919,12 +919,12 @@ terrad query wasm contract-state smart \
 
 ### ❌ `ERROR: Set the PRIVATE_KEY environment variable.`
 
-**Causa**: A chave privada não foi configurada.
+**Cause**: The private key was not configured.
 
-**Solução**:
+**Solution**:
 ```bash
 export TERRA_PRIVATE_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# ou
+# or
 export PRIVATE_KEY="xxxxxxxx..."
 ```
 
@@ -932,9 +932,9 @@ export PRIVATE_KEY="xxxxxxxx..."
 
 ### ❌ `Error: Account 'terra1...' does not exist on chain`
 
-**Causa**: A carteira associada à chave privada não tem saldo ou não foi ativada na rede.
+**Cause**: The wallet associated with the private key has no balance or has not been activated on the network.
 
-**Solução**: Envie LUNC para a carteira:
+**Solution**: Send LUNC to the wallet:
 ```bash
 terrad query bank balances terra1... --node https://rpc.terra-classic.hexxagon.dev
 ```
@@ -943,11 +943,11 @@ terrad query bank balances terra1... --node https://rpc.terra-classic.hexxagon.d
 
 ### ❌ `out of gas in location: wasm contract`
 
-**Causa**: Gas insuficiente para executar todas as 9 mensagens em sequência.
+**Cause**: Insufficient gas to execute all 9 messages in sequence.
 
-**Solução** (modo direct): O script usa `'auto'` para estimar gas automaticamente. Certifique-se de ter saldo suficiente.
+**Solution** (direct mode): The script uses `'auto'` to automatically estimate gas. Make sure you have sufficient balance.
 
-**Solução** (via terrad CLI): Aumente o `--gas-adjustment`:
+**Solution** (via terrad CLI): Increase `--gas-adjustment`:
 ```bash
 terrad tx gov submit-proposal proposal_testnet.json \
   --gas auto \
@@ -959,17 +959,17 @@ terrad tx gov submit-proposal proposal_testnet.json \
 
 ### ❌ `failed to execute message: unauthorized`
 
-**Causa**: A carteira não tem permissão para executar os contratos diretamente (modo `direct`).
+**Cause**: The wallet does not have permission to execute contracts directly (`direct` mode).
 
-**Solução**: Em produção, use o modo `proposal` para submeter via governança. Os contratos aceitam somente mensagens com `sender = terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` (módulo de governança).
+**Solution**: In production, use `proposal` mode to submit via governance. Contracts only accept messages with `sender = terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n` (governance module).
 
 ---
 
 ### ❌ `Cannot find module '@cosmjs/cosmwasm-stargate'`
 
-**Causa**: Dependências não instaladas.
+**Cause**: Dependencies not installed.
 
-**Solução**:
+**Solution**:
 ```bash
 cd ~/cw-hyperlane/script-warp-terraclassic
 npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
@@ -977,31 +977,31 @@ npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 
 ---
 
-### ❌ Proposta aprovada mas contratos não foram configurados
+### ❌ Proposal approved but contracts were not configured
 
-**Causa**: Pode ser um erro no formato das mensagens no `proposal_testnet.json`, ou o contrato rejeitou a execução.
+**Cause**: There may be an error in the message format in `proposal_testnet.json`, or the contract rejected the execution.
 
-**Diagnóstico**: Consulte o TX hash da execução da proposta no explorer:
+**Diagnosis**: Check the TX hash of the proposal execution in the explorer:
 ```
 https://finder.hexxagon.io/rebel-2/
 ```
 
 ---
 
-## 17 — Links Úteis
+## 17 — Useful Links
 
 ### Explorers
 
-| Rede | Explorer |
+| Network | Explorer |
 |---|---|
 | Terra Classic Testnet | https://finder.hexxagon.io/rebel-2/ |
 | Sepolia | https://sepolia.etherscan.io |
 | BSC Testnet | https://testnet.bscscan.com |
 | Solana Testnet | https://explorer.solana.com/?cluster=testnet |
 
-### Contratos on-chain (Testnet)
+### On-chain Contracts (Testnet)
 
-| Contrato | Explorer Link |
+| Contract | Explorer Link |
 |---|---|
 | Mailbox | https://finder.hexxagon.io/rebel-2/address/terra1rqg3qfkfg5upad9xu6zj5jhl626qy053s7rn08829rgqzv2wu39s5la8yf |
 | ISM Routing | https://finder.hexxagon.io/rebel-2/address/terra1h4sd8fyxhde7dc9w9y9zhc2epphgs75q7zzfg3tfynm8qvpe3jlsd7sauh |
@@ -1011,21 +1011,21 @@ https://finder.hexxagon.io/rebel-2/
 | IGP | https://finder.hexxagon.io/rebel-2/address/terra1n70g3vg7xge6q8m44rudm4y6fm6elpspwsgfmfphs3teezpak6cs6wxlk9 |
 | IGP Oracle | https://finder.hexxagon.io/rebel-2/address/terra18tyqe79yktac6p3alv3f49k06xqna2q52twyaflrz55qka9emhrs30k3hg |
 
-### S3 dos Validadores
+### Validator S3 Storage
 
-| Validador | URL |
+| Validator | URL |
 |---|---|
 | Terra Classic | https://hyperlane-validator-signatures-igorveras-terraclassic.s3.us-east-1.amazonaws.com/ |
 | Sepolia | https://hyperlane-validator-signatures-igorveras-sepolia.s3.us-east-1.amazonaws.com/ |
 | BSC Testnet | https://hyperlane-validator-signatures-igorveras-bsctestnet.s3.us-east-1.amazonaws.com/ |
 
-### Documentação Hyperlane
+### Hyperlane Documentation
 
 - https://docs.hyperlane.xyz/docs/reference/messaging/messaging-interface
 - https://docs.hyperlane.xyz/docs/reference/ISM/multisig-ISM
 - https://docs.hyperlane.xyz/docs/reference/hooks/interchain-gas
 
-### RPC Nodes Terra Classic
+### Terra Classic RPC Nodes
 
 | Endpoint | Provider |
 |---|---|
